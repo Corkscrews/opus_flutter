@@ -10,13 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface: ^3.0.0
-  opus_flutter_android: ^3.0.1
-  opus_flutter_ios: ^3.0.1
-  opus_flutter_linux: ^3.0.0
-  opus_flutter_macos: ^3.0.0
-  opus_flutter_windows: ^3.0.0
-  opus_flutter_web: ^3.0.3
+  opus_flutter_platform_interface:
+    path: ../opus_flutter_platform_interface
+  opus_flutter_android:
+    path: ../opus_flutter_android
+  opus_flutter_ios:
+    path: ../opus_flutter_ios
+  opus_flutter_linux:
+    path: ../opus_flutter_linux
+  opus_flutter_macos:
+    path: ../opus_flutter_macos
+  opus_flutter_windows:
+    path: ../opus_flutter_windows
+  opus_flutter_web:
+    path: ../opus_flutter_web
 
 dev_dependencies:
   flutter_test:

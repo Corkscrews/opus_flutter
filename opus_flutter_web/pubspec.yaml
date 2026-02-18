@@ -12,7 +12,8 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  opus_flutter_platform_interface: ^3.0.0
+  opus_flutter_platform_interface:
+    path: ../opus_flutter_platform_interface
   wasm_ffi: ^2.1.0
 
 dev_dependencies:

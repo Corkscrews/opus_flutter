@@ -88,22 +88,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  inject_js:
+  http:
     dependency: transitive
     description:
-      name: inject_js
-      sha256: "3ab213e2c76375a611f57eb0044d32c6e18c5091d52510e7fe9f88f6bee83d19"
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
-  js:
+    version: "1.6.0"
+  http_parser:
     dependency: transitive
     description:
-      name: js
-      sha256: d9bdfd70d828eeb352390f81b18d6a354ef2044aa28ef25682079797fa7cd174
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.3"
+    version: "4.1.2"
   leak_tracker:
     dependency: transitive
     description:
@@ -198,10 +198,9 @@ packages:
   opus_flutter_web:
     dependency: "direct main"
     description:
-      name: opus_flutter_web
-      sha256: "037a4cdb27c3a1c05c85aed3dbe0a4b8c2f49ccce33cef259ef34f1815af6785"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../opus_flutter_web"
+      relative: true
+    source: path
     version: "3.0.3"
   opus_flutter_windows:
     dependency: "direct main"
@@ -343,6 +342,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.7"
+  typed_data:
+    dependency: transitive
+    description:
+      name: typed_data
+      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  universal_io:
+    dependency: transitive
+    description:
+      name: universal_io
+      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
   vector_math:
     dependency: transitive
     description:
@@ -359,14 +374,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
-  web_ffi:
+  wasm_ffi:
     dependency: transitive
     description:
-      name: web_ffi
-      sha256: "48ef8037f7bc051d11b88d0f2903e02bec21092c51833d37c3361c36e3edc4f7"
+      name: wasm_ffi
+      sha256: bb58f268afc14f2591b9d15c797e74ad7f14696f2b87f0d49e00cf41bde0dc7a
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.2"
+    version: "2.1.0"
+  web:
+    dependency: transitive
+    description:
+      name: web
+      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   xdg_directories:
     dependency: transitive
     description:
