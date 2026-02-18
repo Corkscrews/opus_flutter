@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:math' show min;
 import 'dart:typed_data';
 
@@ -10,7 +11,7 @@ import 'package:platform_info/platform_info.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initOpus(await opus_flutter.load());
+  initOpus(await opus_flutter.load() as DynamicLibrary);
   runApp(const OpusFlutter());
 }
 
