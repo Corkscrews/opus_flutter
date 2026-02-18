@@ -8,8 +8,8 @@ import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.
 /// so it is safe to cast it.
 ///
 /// On the web, where there is no [dart:ffi], the returned object is a
-/// [web_ffi DynamicLibrary](https://pub.dev/documentation/web_ffi/latest/web_ffi/DynamicLibrary-class.html),
+/// [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html),
 /// so it is safe to cast it.
-Future<dynamic> load() {
+Future<Object> load() {
   return OpusFlutterPlatform.instance.load();
 }

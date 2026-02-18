@@ -1,9 +1,7 @@
 import Flutter
-import UIKit
 
-public class SwiftOpusFlutterIosPlugin: NSObject, FlutterPlugin {
+public class OpusFlutterIosPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
-    
-  }
 
+  }
 }

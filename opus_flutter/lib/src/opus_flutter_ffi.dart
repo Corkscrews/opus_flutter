@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:opus_flutter_android/opus_flutter_android.dart';
 import 'package:opus_flutter_ios/opus_flutter_ios.dart';
+import 'package:opus_flutter_linux/opus_flutter_linux.dart';
 import 'package:opus_flutter_macos/opus_flutter_macos.dart';
 import 'package:opus_flutter_windows/opus_flutter_windows.dart';
 import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
@@ -11,15 +12,19 @@ import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.
 void _flutterIssue52267Workaround() {
   if (Platform.isAndroid) {
     if (!(OpusFlutterPlatform.instance is OpusFlutterAndroid)) {
-      OpusFlutterPlatform.instance = new OpusFlutterAndroid();
+      OpusFlutterPlatform.instance = OpusFlutterAndroid();
     }
   } else if (Platform.isIOS) {
     if (!(OpusFlutterPlatform.instance is OpusFlutterIOS)) {
-      OpusFlutterPlatform.instance = new OpusFlutterIOS();
+      OpusFlutterPlatform.instance = OpusFlutterIOS();
+    }
+  } else if (Platform.isLinux) {
+    if (!(OpusFlutterPlatform.instance is OpusFlutterLinux)) {
+      OpusFlutterPlatform.instance = OpusFlutterLinux();
     }
   } else if (Platform.isMacOS) {
     if (!(OpusFlutterPlatform.instance is OpusFlutterMacOS)) {
-      OpusFlutterPlatform.instance = new OpusFlutterMacOS();
+      OpusFlutterPlatform.instance = OpusFlutterMacOS();
     }
   }
 }
@@ -42,9 +47,9 @@ void _flutterIssue81421Workaround() {
 /// so it is safe to cast it.
 ///
 /// On the web, where there is no [dart:ffi], the returned object is a
-/// [web_ffi DynamicLibrary](https://pub.dev/documentation/web_ffi/latest/web_ffi/DynamicLibrary-class.html),
+/// [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html),
 /// so it is safe to cast it.
-Future<dynamic> load() {
+Future<Object> load() {
   _flutterIssue52267Workaround();
   _flutterIssue81421Workaround();
   return OpusFlutterPlatform.instance.load();

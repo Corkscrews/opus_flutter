@@ -5,7 +5,7 @@ RUN git clone --branch v1.5.2 https://github.com/xiph/opus.git
 WORKDIR ./opus
 
 RUN apt-get update \
-	&& DEBIAN_FRONTENTD="noninteractive" apt-get install -y --no-install-recommends \
+	&& DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
 	autoconf \
 	libtool \
 	automake

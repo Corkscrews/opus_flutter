@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'opus_flutter_ios'
-  s.version          = '0.0.2'
+  s.version          = '3.0.1'
   s.summary          = 'libopus wrappers for flutter in iOS.'
   s.description      = <<-DESC
   libopus wrappers for flutter in iOS.

@@ -14,15 +14,16 @@ This monorepo contains a federated Flutter plugin that loads libopus on each sup
 | [opus_flutter_platform_interface](./opus_flutter_platform_interface) | Common platform interface | 3.0.0 |
 | [opus_flutter_android](./opus_flutter_android) | Android implementation | 3.0.1 |
 | [opus_flutter_ios](./opus_flutter_ios) | iOS implementation | 3.0.1 |
+| [opus_flutter_linux](./opus_flutter_linux) | Linux implementation | 3.0.0 |
 | [opus_flutter_macos](./opus_flutter_macos) | macOS implementation | 3.0.0 |
 | [opus_flutter_web](./opus_flutter_web) | Web implementation | 3.0.3 |
 | [opus_flutter_windows](./opus_flutter_windows) | Windows implementation | 3.0.0 |
 
 ## Platform support
 
-| Android | iOS | macOS | Web | Windows |
-|:-------:|:---:|:-----:|:---:|:-------:|
-|    x    |  x  |   x   |  x  |    x    |
+| Android | iOS | Linux | macOS | Web | Windows |
+|:-------:|:---:|:-----:|:-----:|:---:|:-------:|
+|    x    |  x  |   x   |   x   |  x  |    x    |
 
 ## Getting started
 
@@ -49,7 +50,7 @@ Future<void> main() async {
 }
 ```
 
-The `load()` function returns a `DynamicLibrary` on native platforms (via `dart:ffi`) or a `web_ffi` `DynamicLibrary` on the web. See the [example app](./opus_flutter/example) for a complete encoding/decoding demo.
+The `load()` function returns a `DynamicLibrary` on native platforms (via `dart:ffi`) or a `wasm_ffi` `DynamicLibrary` on the web. See the [example app](./opus_flutter/example) for a complete encoding/decoding demo.
 
 ## Why are opus_dart and opus_flutter separate packages?
 
@@ -57,7 +58,7 @@ Dart is more than just Flutter. With this split, Flutter developers get a conven
 
 ## Opus version
 
-Currently, opus **1.3.1** is bundled.
+Currently, opus **1.5.2** is bundled (on Linux, the system-installed version is used).
 
 ## How opus is included per platform
 
@@ -65,6 +66,7 @@ Currently, opus **1.3.1** is bundled.
 |----------|--------|
 | Android  | Built from source via CMake ([details](./opus_flutter_android/README.md)) |
 | iOS      | Prebuilt XCFramework ([details](./opus_flutter_ios/README.md)) |
+| Linux    | System library `libopus.so.0` ([details](./opus_flutter_linux/README.md)) |
 | macOS    | Prebuilt XCFramework ([details](./opus_flutter_macos/README.md)) |
 | Web      | Compiled to WebAssembly with Emscripten ([details](./opus_flutter_web/README.md)) |
 | Windows  | Prebuilt DLLs for x86/x64 ([details](./opus_flutter_windows/README.md)) |

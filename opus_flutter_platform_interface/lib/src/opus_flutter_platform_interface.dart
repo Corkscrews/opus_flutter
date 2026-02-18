@@ -17,7 +17,7 @@ abstract class OpusFlutterPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static OpusFlutterPlatform _instance = new OpusFlutterPlatformUnsupported();
+  static OpusFlutterPlatform _instance = OpusFlutterPlatformUnsupported();
 
   /// The default instance of [OpusFlutterPlatform] to use,
   /// defaults to [OpusFlutterPlatformUnsupported].
@@ -30,6 +30,9 @@ abstract class OpusFlutterPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  /// The version of the bundled opus library.
+  static const String opusVersion = '1.5.2';
+
   /// Obtains a `DynamicLibrary` of `libopus` on the current platform.
   ///
   /// On platforms where there is [dart:ffi], the returned object is a
@@ -37,9 +40,9 @@ abstract class OpusFlutterPlatform extends PlatformInterface {
   /// so it is safe to cast it.
   ///
   /// On the web, where there is no [dart:ffi], the returned object is a
-  /// [web_ffi DynamicLibrary](https://pub.dev/documentation/web_ffi/latest/web_ffi/DynamicLibrary-class.html),
+  /// [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html),
   /// so it is safe to cast it.
-  Future<dynamic> load() {
+  Future<Object> load() {
     throw UnimplementedError('load() has not been implemented.');
   }
 }

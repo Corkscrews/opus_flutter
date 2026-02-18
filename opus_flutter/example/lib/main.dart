@@ -64,11 +64,6 @@ class _OpusExampleState extends State<OpusExample> {
   bool _processing = false;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     if (_processing) {
       return const Column(
@@ -161,15 +156,10 @@ Uint8List wavHeader(
   return bytes;
 }
 
-void _share(Uint8List data) async {
-  String mimeType = 'audio/wav';
-  if (Platform.instance.isAndroid) {
-    // due to a bug in the share_plus plugin we need only wav
-    mimeType = 'wav';
-  }
+Future<void> _share(Uint8List data) async {
   XFile file = XFile.fromData(
     data,
-    mimeType: mimeType,
+    mimeType: 'audio/wav',
     name: 'output.wav',
     length: data.length,
   );

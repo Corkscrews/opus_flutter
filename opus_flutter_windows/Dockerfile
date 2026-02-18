@@ -2,7 +2,7 @@ FROM ubuntu:bionic
 
 # Install dependencies
 RUN apt-get update \
-	&& DEBIAN_FRONTENTD="noninteractive" apt-get install -y --no-install-recommends \
+	&& DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
 	apt-transport-https \
 	wget \
 	gnupg \

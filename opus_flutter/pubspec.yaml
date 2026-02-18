@@ -13,9 +13,13 @@ dependencies:
   opus_flutter_platform_interface: ^3.0.0
   opus_flutter_android: ^3.0.1
   opus_flutter_ios: ^3.0.1
+  opus_flutter_linux: ^3.0.0
   opus_flutter_macos: ^3.0.0
   opus_flutter_windows: ^3.0.0
   opus_flutter_web: ^3.0.3
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
 
 flutter:
   plugin:
@@ -24,6 +28,8 @@ flutter:
         default_package: opus_flutter_android
       ios:
         default_package: opus_flutter_ios
+      linux:
+        default_package: opus_flutter_linux
       macos:
         default_package: opus_flutter_macos
       windows:
