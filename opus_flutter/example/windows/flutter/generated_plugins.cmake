@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  opus_flutter_windows
   share_plus
   url_launcher_windows
 )

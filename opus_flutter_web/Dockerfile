@@ -1,7 +1,7 @@
 #Current version: 2.0.21
 FROM emscripten/emsdk
 
-RUN git clone --branch v1.3.1 https://github.com/xiph/opus.git
+RUN git clone --branch v1.5.2 https://github.com/xiph/opus.git
 WORKDIR ./opus
 
 RUN apt-get update \

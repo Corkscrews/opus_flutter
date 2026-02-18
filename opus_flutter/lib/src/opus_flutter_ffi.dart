@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:opus_flutter_android/opus_flutter_android.dart';
 import 'package:opus_flutter_ios/opus_flutter_ios.dart';
+import 'package:opus_flutter_macos/opus_flutter_macos.dart';
 import 'package:opus_flutter_windows/opus_flutter_windows.dart';
 import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
 
@@ -15,6 +16,10 @@ void _flutterIssue52267Workaround() {
   } else if (Platform.isIOS) {
     if (!(OpusFlutterPlatform.instance is OpusFlutterIOS)) {
       OpusFlutterPlatform.instance = new OpusFlutterIOS();
+    }
+  } else if (Platform.isMacOS) {
+    if (!(OpusFlutterPlatform.instance is OpusFlutterMacOS)) {
+      OpusFlutterPlatform.instance = new OpusFlutterMacOS();
     }
   }
 }

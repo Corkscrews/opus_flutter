@@ -17,7 +17,7 @@ RUN apt-get update \
 
 # Clone opus
 WORKDIR /app
-RUN git clone --branch v1.3.1 https://github.com/xiph/opus.git
+RUN git clone --branch v1.5.2 https://github.com/xiph/opus.git
 WORKDIR /app/opus
 
 # Build opus using Windows cross compile

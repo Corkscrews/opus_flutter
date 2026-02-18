@@ -1,7 +1,7 @@
-name: opus_flutter_ios
-description: iOS implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_ios
-version: 3.0.1
+name: opus_flutter_macos
+description: macOS implementation of the opus_flutter plugin.
+repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_macos
+version: 3.0.0
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -17,8 +17,8 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
- plugin:
+  plugin:
     implements: opus_flutter
     platforms:
-      ios:
-        pluginClass: OpusFlutterIosPlugin
+      macos:
+        pluginClass: OpusFlutterMacosPlugin
