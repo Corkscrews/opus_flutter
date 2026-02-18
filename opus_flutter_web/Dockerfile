@@ -18,6 +18,7 @@ RUN mkdir -p out && emcc -O3 \
       -s MODULARIZE=1 \
       -s EXPORT_NAME=libopus \
       -s ALLOW_MEMORY_GROWTH=1 \
+      -s EXPORTED_RUNTIME_METHODS='["HEAPU8"]' \
       -s EXPORTED_FUNCTIONS='[ \
         "_malloc", "_free", \
         "_opus_get_version_string", "_opus_strerror", \
