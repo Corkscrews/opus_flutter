@@ -15,11 +15,10 @@ abstract class OpusPacketUtils {
     try {
       int sampleCount = opus.decoder
           .opus_packet_get_nb_samples(data, packet.length, sampleRate);
-      if (sampleCount >= opus_defines.OPUS_OK) {
-        return sampleCount;
-      } else {
+      if (sampleCount < opus_defines.OPUS_OK) {
         throw OpusException(sampleCount);
       }
+      return sampleCount;
     } finally {
       opus.allocator.free(data);
     }
@@ -32,11 +31,10 @@ abstract class OpusPacketUtils {
     try {
       int frameCount =
           opus.decoder.opus_packet_get_nb_frames(data, packet.length);
-      if (frameCount >= opus_defines.OPUS_OK) {
-        return frameCount;
-      } else {
+      if (frameCount < opus_defines.OPUS_OK) {
         throw OpusException(frameCount);
       }
+      return frameCount;
     } finally {
       opus.allocator.free(data);
     }
@@ -50,11 +48,10 @@ abstract class OpusPacketUtils {
     try {
       int samplesPerFrame =
           opus.decoder.opus_packet_get_samples_per_frame(data, sampleRate);
-      if (samplesPerFrame >= opus_defines.OPUS_OK) {
-        return samplesPerFrame;
-      } else {
+      if (samplesPerFrame < opus_defines.OPUS_OK) {
         throw OpusException(samplesPerFrame);
       }
+      return samplesPerFrame;
     } finally {
       opus.allocator.free(data);
     }
@@ -66,11 +63,10 @@ abstract class OpusPacketUtils {
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int channelCount = opus.decoder.opus_packet_get_nb_channels(data);
-      if (channelCount >= opus_defines.OPUS_OK) {
-        return channelCount;
-      } else {
+      if (channelCount < opus_defines.OPUS_OK) {
         throw OpusException(channelCount);
       }
+      return channelCount;
     } finally {
       opus.allocator.free(data);
     }
@@ -82,11 +78,10 @@ abstract class OpusPacketUtils {
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int bandwidth = opus.decoder.opus_packet_get_bandwidth(data);
-      if (bandwidth >= opus_defines.OPUS_OK) {
-        return bandwidth;
-      } else {
+      if (bandwidth < opus_defines.OPUS_OK) {
         throw OpusException(bandwidth);
       }
+      return bandwidth;
     } finally {
       opus.allocator.free(data);
     }

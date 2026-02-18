@@ -160,21 +160,20 @@ class StreamOpusEncoder<T>
         }
       }
       if (_encoder.maxInputBufferSizeBytes != 0) {
-        if (fillUpLastFrame) {
-          _encoder.inputBuffer.setAll(
-              _encoder.inputBufferIndex,
-              Uint8List(_encoder.maxInputBufferSizeBytes -
-                  _encoder.inputBufferIndex));
-          _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
-          Uint8List bytes =
-              floats ? _encoder.encodeFloat() : _encoder.encode();
-          yield copyOutput ? Uint8List.fromList(bytes) : bytes;
-        } else {
+        if (!fillUpLastFrame) {
           int missingSamples =
               (_encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex) ~/
                   (floats ? 4 : 2);
           throw UnfinishedFrameException._(missingSamples: missingSamples);
         }
+        _encoder.inputBuffer.setAll(
+            _encoder.inputBufferIndex,
+            Uint8List(_encoder.maxInputBufferSizeBytes -
+                _encoder.inputBufferIndex));
+        _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
+        Uint8List bytes =
+            floats ? _encoder.encodeFloat() : _encoder.encode();
+        yield copyOutput ? Uint8List.fromList(bytes) : bytes;
       }
     } finally {
       destroy();
@@ -278,14 +277,16 @@ class StreamOpusDecoder
                 (floats ? 2 : 4) * maxSamplesPerPacket(sampleRate, channels));
 
   void _reportPacketLoss() {
+    _decodeFec(false, loss: _decoder.lastPacketDurationMs);
+  }
+
+  void _decodeFec(bool fec, {int? loss}) {
     if (floats) {
       _decoder.decodeFloat(
-          fec: false,
-          loss: _decoder.lastPacketDurationMs,
-          autoSoftClip: autoSoftClip);
-    } else {
-      _decoder.decode(fec: false, loss: _decoder.lastPacketDurationMs);
-    }
+          fec: fec, loss: loss, autoSoftClip: autoSoftClip);
+      return;
+    } 
+    _decoder.decode(fec: fec, loss: loss);
   }
 
   List<num> _output() {
@@ -296,12 +297,12 @@ class StreamOpusDecoder
     if (_outputType == Float32List) {
       return output.buffer
           .asFloat32List(output.offsetInBytes, output.lengthInBytes ~/ 4);
-    } else if (_outputType == Int16List) {
+    }
+    if (_outputType == Int16List) {
       return output.buffer
           .asInt16List(output.offsetInBytes, output.lengthInBytes ~/ 2);
-    } else {
-      return output;
     }
+    return output;
   }
 
   @override
@@ -317,26 +318,17 @@ class StreamOpusDecoder
           _reportPacketLoss();
         }
         _lastPacketLost = true;
-      } else {
-        _decoder.inputBuffer.setAll(0, packet);
-        _decoder.inputBufferIndex = packet.length;
-        if (_lastPacketLost && forwardErrorCorrection) {
-          if (floats) {
-            _decoder.decodeFloat(
-                fec: true, loss: _decoder.lastPacketDurationMs);
-          } else {
-            _decoder.decode(fec: true, loss: _decoder.lastPacketDurationMs);
-          }
-          yield _output();
-        }
-        _lastPacketLost = false;
-        if (floats) {
-          _decoder.decodeFloat(fec: false);
-        } else {
-          _decoder.decode(fec: false);
-        }
+        continue;
+      }
+      _decoder.inputBuffer.setAll(0, packet);
+      _decoder.inputBufferIndex = packet.length;
+      if (_lastPacketLost && forwardErrorCorrection) {
+        _decodeFec(true);
         yield _output();
       }
+      _lastPacketLost = false;
+      _decodeFec(false);
+      yield _output();
     }
   }
 }

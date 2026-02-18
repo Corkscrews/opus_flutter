@@ -36,11 +36,10 @@ class SimpleOpusEncoder extends OpusEncoder {
         .opus_encoder_create(
             sampleRate, channels, _applicationCodes[application]!, error);
     try {
-      if (error.value == opus_defines.OPUS_OK) {
-        return SimpleOpusEncoder._(encoder, sampleRate, channels, application);
-      } else {
+      if (error.value != opus_defines.OPUS_OK) {
         throw OpusException(error.value);
       }
+      return SimpleOpusEncoder._(encoder, sampleRate, channels, application);
     } finally {
       opus.allocator.free(error);
     }
@@ -71,13 +70,10 @@ class SimpleOpusEncoder extends OpusEncoder {
     int outputLength = opus.encoder.opus_encode(_opusEncoder, inputNative,
         sampleCountPerChannel, outputNative, maxOutputSizeBytes);
     try {
-      if (outputLength >= opus_defines.OPUS_OK) {
-        Uint8List output =
-            Uint8List.fromList(outputNative.asTypedList(outputLength));
-        return output;
-      } else {
+      if (outputLength < opus_defines.OPUS_OK) {
         throw OpusException(outputLength);
       }
+      return Uint8List.fromList(outputNative.asTypedList(outputLength));
     } finally {
       opus.allocator.free(inputNative);
       opus.allocator.free(outputNative);
@@ -97,13 +93,10 @@ class SimpleOpusEncoder extends OpusEncoder {
     int outputLength = opus.encoder.opus_encode_float(_opusEncoder, inputNative,
         sampleCountPerChannel, outputNative, maxOutputSizeBytes);
     try {
-      if (outputLength >= opus_defines.OPUS_OK) {
-        Uint8List output =
-            Uint8List.fromList(outputNative.asTypedList(outputLength));
-        return output;
-      } else {
+      if (outputLength < opus_defines.OPUS_OK) {
         throw OpusException(outputLength);
       }
+      return Uint8List.fromList(outputNative.asTypedList(outputLength));
     } finally {
       opus.allocator.free(inputNative);
       opus.allocator.free(outputNative);
@@ -224,12 +217,8 @@ class BufferedOpusEncoder extends OpusEncoder {
       required Application application,
       int? maxInputBufferSizeBytes,
       int? maxOutputBufferSizeBytes}) {
-    if (maxInputBufferSizeBytes == null) {
-      maxInputBufferSizeBytes = 4 * maxSamplesPerPacket(sampleRate, channels);
-    }
-    if (maxOutputBufferSizeBytes == null) {
-      maxOutputBufferSizeBytes = maxDataBytes;
-    }
+    maxInputBufferSizeBytes ??= 4 * maxSamplesPerPacket(sampleRate, channels);
+    maxOutputBufferSizeBytes ??= maxDataBytes;
     Pointer<Int32> error = opus.allocator.call<Int32>(1);
     Pointer<Uint8> input = opus.allocator.call<Uint8>(maxInputBufferSizeBytes);
     Pointer<Uint8> output =
@@ -238,14 +227,13 @@ class BufferedOpusEncoder extends OpusEncoder {
         .opus_encoder_create(
             sampleRate, channels, _applicationCodes[application]!, error);
     try {
-      if (error.value == opus_defines.OPUS_OK) {
-        return BufferedOpusEncoder._(encoder, sampleRate, channels, application,
-            input, maxInputBufferSizeBytes, output, maxOutputBufferSizeBytes);
-      } else {
+      if (error.value != opus_defines.OPUS_OK) {
         opus.allocator.free(input);
         opus.allocator.free(output);
         throw OpusException(error.value);
       }
+      return BufferedOpusEncoder._(encoder, sampleRate, channels, application,
+          input, maxInputBufferSizeBytes, output, maxOutputBufferSizeBytes);
     } finally {
       opus.allocator.free(error);
     }
@@ -270,11 +258,10 @@ class BufferedOpusEncoder extends OpusEncoder {
         sampleCountPerChannel,
         _outputBuffer,
         maxOutputBufferSizeBytes);
-    if (_outputBufferIndex >= opus_defines.OPUS_OK) {
-      return outputBuffer;
-    } else {
+    if (_outputBufferIndex < opus_defines.OPUS_OK) {
       throw OpusException(_outputBufferIndex);
     }
+    return outputBuffer;
   }
 
   /// Interpets [inputBufferIndex] bytes of the [inputBuffer] as float pcm data, and encodes them to the [outputBuffer].
@@ -291,11 +278,10 @@ class BufferedOpusEncoder extends OpusEncoder {
         sampleCountPerChannel,
         _outputBuffer,
         maxOutputBufferSizeBytes);
-    if (_outputBufferIndex >= opus_defines.OPUS_OK) {
-      return outputBuffer;
-    } else {
+    if (_outputBufferIndex < opus_defines.OPUS_OK) {
       throw OpusException(_outputBufferIndex);
     }
+    return outputBuffer;
   }
 
   @override

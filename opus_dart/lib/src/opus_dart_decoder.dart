@@ -65,13 +65,12 @@ class SimpleOpusDecoder extends OpusDecoder {
     Pointer<opus_decoder.OpusDecoder> decoder =
         opus.decoder.opus_decoder_create(sampleRate, channels, error);
     try {
-      if (error.value == opus_defines.OPUS_OK) {
-        return SimpleOpusDecoder._(
-            decoder, sampleRate, channels, softClipBuffer);
-      } else {
+      if (error.value != opus_defines.OPUS_OK) {
         opus.allocator.free(softClipBuffer);
         throw OpusException(error.value);
       }
+      return SimpleOpusDecoder._(
+          decoder, sampleRate, channels, softClipBuffer);
     } finally {
       opus.allocator.free(error);
     }
@@ -109,23 +108,19 @@ class SimpleOpusDecoder extends OpusDecoder {
     } else {
       inputNative = nullptr;
     }
-    int frameSize;
-    if (input == null || fec) {
-      frameSize = _estimateLoss(loss, lastPacketDurationMs);
-    } else {
-      frameSize = _maxSamplesPerPacket;
-    }
+    int frameSize = (input == null || fec)
+        ? _estimateLoss(loss, lastPacketDurationMs)
+        : _maxSamplesPerPacket;
     int outputSamplesPerChannel = opus.decoder.opus_decode(_opusDecoder,
         inputNative, input?.length ?? 0, outputNative, frameSize, fec ? 1 : 0);
     try {
-      if (outputSamplesPerChannel >= opus_defines.OPUS_OK) {
-        _lastPacketDurationMs =
-            _packetDuration(outputSamplesPerChannel, channels, sampleRate);
-        return Int16List.fromList(
-            outputNative.asTypedList(outputSamplesPerChannel * channels));
-      } else {
+      if (outputSamplesPerChannel < opus_defines.OPUS_OK) {
         throw OpusException(outputSamplesPerChannel);
       }
+      _lastPacketDurationMs =
+          _packetDuration(outputSamplesPerChannel, channels, sampleRate);
+      return Int16List.fromList(
+          outputNative.asTypedList(outputSamplesPerChannel * channels));
     } finally {
       opus.allocator.free(inputNative);
       opus.allocator.free(outputNative);
@@ -156,27 +151,23 @@ class SimpleOpusDecoder extends OpusDecoder {
     } else {
       inputNative = nullptr;
     }
-    int frameSize;
-    if (input == null || fec) {
-      frameSize = _estimateLoss(loss, lastPacketDurationMs);
-    } else {
-      frameSize = _maxSamplesPerPacket;
-    }
+    int frameSize = (input == null || fec)
+        ? _estimateLoss(loss, lastPacketDurationMs)
+        : _maxSamplesPerPacket;
     int outputSamplesPerChannel = opus.decoder.opus_decode_float(_opusDecoder,
         inputNative, input?.length ?? 0, outputNative, frameSize, fec ? 1 : 0);
     try {
-      if (outputSamplesPerChannel >= opus_defines.OPUS_OK) {
-        _lastPacketDurationMs =
-            _packetDuration(outputSamplesPerChannel, channels, sampleRate);
-        if (autoSoftClip) {
-          opus.decoder.opus_pcm_soft_clip(outputNative,
-              outputSamplesPerChannel ~/ channels, channels, _softClipBuffer);
-        }
-        return Float32List.fromList(
-            outputNative.asTypedList(outputSamplesPerChannel * channels));
-      } else {
+      if (outputSamplesPerChannel < opus_defines.OPUS_OK) {
         throw OpusException(outputSamplesPerChannel);
       }
+      _lastPacketDurationMs =
+          _packetDuration(outputSamplesPerChannel, channels, sampleRate);
+      if (autoSoftClip) {
+        opus.decoder.opus_pcm_soft_clip(outputNative,
+            outputSamplesPerChannel ~/ channels, channels, _softClipBuffer);
+      }
+      return Float32List.fromList(
+          outputNative.asTypedList(outputSamplesPerChannel * channels));
     } finally {
       opus.allocator.free(inputNative);
       opus.allocator.free(outputNative);
@@ -315,12 +306,8 @@ class BufferedOpusDecoder extends OpusDecoder {
       required int channels,
       int? maxInputBufferSizeBytes,
       int? maxOutputBufferSizeBytes}) {
-    if (maxInputBufferSizeBytes == null) {
-      maxInputBufferSizeBytes = maxDataBytes;
-    }
-    if (maxOutputBufferSizeBytes == null) {
-      maxOutputBufferSizeBytes = maxSamplesPerPacket(sampleRate, channels);
-    }
+    maxInputBufferSizeBytes ??= maxDataBytes;
+    maxOutputBufferSizeBytes ??= maxSamplesPerPacket(sampleRate, channels);
     Pointer<Int32> error = opus.allocator.call<Int32>(1);
     Pointer<Uint8> input = opus.allocator.call<Uint8>(maxInputBufferSizeBytes);
     Pointer<Uint8> output =
@@ -329,22 +316,21 @@ class BufferedOpusDecoder extends OpusDecoder {
     Pointer<opus_decoder.OpusDecoder> encoder =
         opus.decoder.opus_decoder_create(sampleRate, channels, error);
     try {
-      if (error.value == opus_defines.OPUS_OK) {
-        return BufferedOpusDecoder._(
-            encoder,
-            sampleRate,
-            channels,
-            input,
-            maxInputBufferSizeBytes,
-            output,
-            maxOutputBufferSizeBytes,
-            softClipBuffer);
-      } else {
+      if (error.value != opus_defines.OPUS_OK) {
         opus.allocator.free(input);
         opus.allocator.free(output);
         opus.allocator.free(softClipBuffer);
         throw OpusException(error.value);
       }
+      return BufferedOpusDecoder._(
+          encoder,
+          sampleRate,
+          channels,
+          input,
+          maxInputBufferSizeBytes,
+          output,
+          maxOutputBufferSizeBytes,
+          softClipBuffer);
     } finally {
       opus.allocator.free(error);
     }
@@ -393,14 +379,13 @@ class BufferedOpusDecoder extends OpusDecoder {
         _outputBuffer.cast<Int16>(),
         frameSize,
         fec ? 1 : 0);
-    if (outputSamplesPerChannel >= opus_defines.OPUS_OK) {
-      _lastPacketDurationMs =
-          _packetDuration(outputSamplesPerChannel, channels, sampleRate);
-      _outputBufferIndex = 2 * outputSamplesPerChannel * channels;
-      return outputBufferAsInt16List;
-    } else {
+    if (outputSamplesPerChannel < opus_defines.OPUS_OK) {
       throw OpusException(outputSamplesPerChannel);
     }
+    _lastPacketDurationMs =
+        _packetDuration(outputSamplesPerChannel, channels, sampleRate);
+    _outputBufferIndex = 2 * outputSamplesPerChannel * channels;
+    return outputBufferAsInt16List;
   }
 
   /// Interpretes [inputBufferIndex] bytes from the [inputBuffer] as a whole
@@ -429,18 +414,16 @@ class BufferedOpusDecoder extends OpusDecoder {
         _outputBuffer.cast<Float>(),
         frameSize,
         fec ? 1 : 0);
-    if (outputSamplesPerChannel >= opus_defines.OPUS_OK) {
-      _lastPacketDurationMs =
-          _packetDuration(outputSamplesPerChannel, channels, sampleRate);
-      _outputBufferIndex = 4 * outputSamplesPerChannel * channels;
-      if (autoSoftClip) {
-        return pcmSoftClipOutputBuffer();
-      } else {
-        return outputBufferAsFloat32List;
-      }
-    } else {
+    if (outputSamplesPerChannel < opus_defines.OPUS_OK) {
       throw OpusException(outputSamplesPerChannel);
     }
+    _lastPacketDurationMs =
+        _packetDuration(outputSamplesPerChannel, channels, sampleRate);
+    _outputBufferIndex = 4 * outputSamplesPerChannel * channels;
+    if (autoSoftClip) {
+      return pcmSoftClipOutputBuffer();
+    }
+    return outputBufferAsFloat32List;
   }
 
   @override
@@ -489,14 +472,10 @@ abstract class OpusDecoder {
 }
 
 int _estimateLoss(int? loss, int? lastPacketDurationMs) {
-  if (loss != null) {
-    return loss;
-  } else if (lastPacketDurationMs != null) {
-    return lastPacketDurationMs;
-  } else {
-    throw new StateError(
-        'Tried to estimate the loss based on the last packets duration, but there was no last packet!\n' +
-            'This happend because you called a decode function with no input (null as input in SimpleOpusDecoder or 0 as inputBufferIndex in BufferedOpusDecoder), but failed to specify how many milliseconds were lost.\n' +
-            'And since there was no previous sucessfull decoded packet, the decoder could not estimate how many milliseconds are missing.');
-  }
+  if (loss != null) return loss;
+  if (lastPacketDurationMs != null) return lastPacketDurationMs;
+  throw StateError(
+      'Tried to estimate the loss based on the last packets duration, but there was no last packet!\n' +
+          'This happend because you called a decode function with no input (null as input in SimpleOpusDecoder or 0 as inputBufferIndex in BufferedOpusDecoder), but failed to specify how many milliseconds were lost.\n' +
+          'And since there was no previous sucessfull decoded packet, the decoder could not estimate how many milliseconds are missing.');
 }
