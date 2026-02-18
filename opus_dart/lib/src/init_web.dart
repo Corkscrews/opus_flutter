@@ -1,7 +1,7 @@
 // This file is only loaded on web via the conditional export in proxy_ffi.dart.
 // The analyzer on native cannot fully resolve wasm_ffi types against dart:ffi
 // types from the wrapper files, so we suppress the resulting false positives.
-// ignore_for_file: type_argument_not_matching_bounds
+// ignore_for_file: type_argument_not_matching_bounds, argument_type_not_assignable
 
 import 'package:wasm_ffi/ffi.dart';
 

@@ -4,5 +4,5 @@ import 'opus_dart_misc.dart' show ApiObject;
 
 ApiObject createApiObject(Object lib) {
   final library = lib as DynamicLibrary;
-  return new ApiObject(library as dynamic, ffipackage.malloc as dynamic);
+  return ApiObject(library, ffipackage.malloc);
 }

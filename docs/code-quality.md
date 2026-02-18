@@ -120,9 +120,31 @@ The Windows implementation has the most runtime logic: copying DLLs from assets 
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `main.dart` | 168 | Good | Clean demo of encoding/decoding with share functionality |
+| `main.dart` | 171 | Good | Clean demo of encoding/decoding with share functionality |
 
-The example app demonstrates a complete encode/decode pipeline with file sharing. Code style is clean with proper return types and no unnecessary overrides.
+The example app demonstrates a complete encode/decode pipeline with file sharing. Code style is clean with proper return types and no unnecessary overrides. Uses vendored `opus_dart` via path dependency.
+
+### Vendored opus_dart (`opus_dart`)
+
+| File | Lines | Quality | Notes |
+|------|-------|---------|-------|
+| `opus_dart.dart` | 10 | Good | Clean barrel export |
+| `proxy_ffi.dart` | 3 | Good | Conditional export: `dart:ffi` on native, `wasm_ffi/ffi.dart` on web |
+| `init_ffi.dart` | 9 | Good | Native init: casts `Object` to `DynamicLibrary`, passes `malloc` as allocator |
+| `init_web.dart` | 31 | Good | Web init: registers opaque types, uses `wasm_ffi` allocator. Cross-platform analysis artifacts suppressed via `ignore_for_file` |
+| `opus_dart_misc.dart` | 78 | Good | Core types and `initOpus()` entry point. All fields statically typed |
+| `opus_dart_encoder.dart` | 344 | Good | Simple and buffered encoder implementations |
+| `opus_dart_decoder.dart` | 503 | Good | Simple and buffered decoder implementations |
+| `opus_dart_packet.dart` | 95 | Good | Packet inspection utilities |
+| `opus_dart_streaming.dart` | 343 | Good | Stream transformers for encode/decode pipelines |
+| `wrappers/*.dart` | ~600 | Good | FFI bindings. `final` class modifier added for Dart 3 |
+
+The vendored package required several fixes for modern Dart compatibility:
+
+- **`dynamic` elimination:** The original code used `dynamic` for `ApiObject.allocator`, `ApiObject` constructor parameter, and the `_asString` helper. This caused `NoSuchMethodError` at runtime because `dart:ffi` extension methods (`Allocator.call<T>()`, `Pointer<Uint8>.operator []`, `Pointer<T>.asTypedList()`) cannot be dispatched through `dynamic`. All are now statically typed via `proxy_ffi.dart`.
+- **`Pointer.elementAt()` removed:** Replaced with `Pointer<Uint8>` extension's `operator []` (deprecated in Dart 3.3, removed in later SDKs).
+- **`wasm_ffi` 2.x API:** Corrected import paths (`ffi.dart` not `wasm_ffi.dart`), replaced `boundMemory` with `allocator`.
+- **Dart 3 class modifiers:** All `Opaque` subclasses marked `final`.
 
 ---
 
@@ -144,6 +166,10 @@ The example app demonstrates a complete encode/decode pipeline with file sharing
 | ~~Empty `initState()` override~~ | `example/main.dart` | Resolved |
 | ~~Missing `@override` on `load()`~~ | Platform implementations | Resolved |
 | ~~Inconsistent quote style (double vs single)~~ | `example/pubspec.yaml` | Resolved |
+| ~~`dynamic` causing runtime extension method failures~~ | `opus_dart` (vendored) | Resolved |
+| ~~Removed `dart:ffi` API (`Pointer.elementAt`)~~ | `opus_dart` (vendored) | Resolved |
+| ~~Wrong `wasm_ffi` import paths~~ | `opus_dart` (vendored) | Resolved |
+| ~~Missing `final` on `Opaque` subclasses~~ | `opus_dart` (vendored) | Resolved |
 
 ---
 
@@ -157,15 +183,16 @@ graph LR
         C[path_provider<br>^2.1.5 &#x2022; Active]
         D[share_plus<br>^10.0.0 &#x2022; Active]
         E[platform_info<br>^5.0.0 &#x2022; Active]
+        H[wasm_ffi<br>^2.1.0 &#x2022; Active]
+        I[ffi<br>^2.1.0 &#x2022; Active]
     end
 
     subgraph Medium Risk
         F[inject_js<br>^2.1.0 &#x2022; 15 months ago]
-        G[opus_dart<br>^3.0.1 &#x2022; 2 years ago]
     end
 
-    subgraph Low Risk
-        H[wasm_ffi<br>^2.2.0 &#x2022; active]
+    subgraph Vendored
+        G[opus_dart<br>v3.0.1 &#x2022; in-repo]
     end
 
     style A fill:#c8e6c9,color:#000
@@ -174,8 +201,9 @@ graph LR
     style D fill:#c8e6c9,color:#000
     style E fill:#c8e6c9,color:#000
     style F fill:#fff9c4,color:#000
-    style G fill:#fff9c4,color:#000
+    style G fill:#ce93d8,color:#000
     style H fill:#c8e6c9,color:#000
+    style I fill:#c8e6c9,color:#000
 ```
 
 | Dependency | Version | Last Updated | Risk |
@@ -184,12 +212,13 @@ graph LR
 | `flutter_lints` | ^5.0.0 | Active | Low |
 | `path_provider` | ^2.1.5 | Active | Low |
 | `inject_js` | ^2.1.0 | 15 months ago | Medium |
-| `wasm_ffi` | ^2.2.0 | Active | Low |
-| `opus_dart` | ^3.0.1 | 2 years ago | Medium |
+| `wasm_ffi` | ^2.1.0 | Active | Low |
+| `ffi` | ^2.1.0 | Active | Low |
+| `opus_dart` | v3.0.1 | Vendored | None |
 | `share_plus` | ^10.0.0 | Active | Low |
 | `platform_info` | ^5.0.0 | Active | Low |
 
-The migration from `web_ffi` to `wasm_ffi` has eliminated the previously highest-risk dependency.
+`opus_dart` has been vendored into the repository, eliminating it as an external dependency risk. The migration from `web_ffi` to `wasm_ffi` previously eliminated the highest-risk dependency.
 
 ---
 
@@ -239,9 +268,10 @@ The migration from `web_ffi` to `wasm_ffi` has eliminated the previously highest
 | opus_flutter_macos | Yes | flutter_lints |
 | opus_flutter_web | Yes | flutter_lints |
 | opus_flutter_windows | Yes | flutter_lints |
+| opus_dart | No | N/A (pure Dart package, no Flutter dependency) |
 | example | Yes | flutter_lints |
 
-All 9 packages have lint configuration referencing `package:flutter_lints/flutter.yaml`.
+All Flutter packages have lint configuration referencing `package:flutter_lints/flutter.yaml`. The vendored `opus_dart` is a pure Dart package and does not include `flutter_lints`, but passes analysis cleanly.
 
 ---
 
@@ -284,3 +314,8 @@ Unit tests cover the platform interface contract (singleton, token verification,
 - ~~**Remove `new` keyword**~~ -- Cleaned up across codebase.
 - ~~**Align podspec versions**~~ -- Matched to pubspec versions.
 - ~~**Add Linux support**~~ -- `opus_flutter_linux` package added.
+- ~~**Vendor opus_dart**~~ -- Copied into repository, updated for Dart 3 and `wasm_ffi` 2.x.
+- ~~**Fix `dynamic` dispatch crashes**~~ -- Eliminated all `dynamic` usage in `opus_dart` that caused `NoSuchMethodError` at runtime when `dart:ffi` extension methods were called through dynamic dispatch.
+- ~~**Fix removed `dart:ffi` APIs**~~ -- Replaced `Pointer.elementAt()` with modern `operator []`.
+- ~~**Fix `wasm_ffi` import paths**~~ -- Corrected from `wasm_ffi.dart` / `wasm_ffi_modules.dart` to `ffi.dart`.
+- ~~**Dart 3 class modifier compliance**~~ -- Added `final` to all `Opaque` subclasses in wrapper files.

@@ -12,7 +12,7 @@ graph LR
     subgraph Moderate
         I3[Stale platform workarounds ✅]
         I4[web_ffi unmaintained ✅]
-        I5[opus_dart unmaintained]
+        I5[opus_dart unmaintained ✅]
         I6[Dockerfile typos ✅]
         I7[Missing lint configs ✅]
     end
@@ -78,15 +78,19 @@ graph LR
 
 `wasm_ffi` is a drop-in replacement for `dart:ffi` on the web, built on top of `web_ffi` with active maintenance and modern Dart support. The API change was minimal -- `EmscriptenModule.compile` now takes a `Map<String, dynamic>` with a `'wasmBinary'` key instead of raw bytes.
 
-### 5. `opus_dart` is not actively maintained
+### 5. ~~`opus_dart` is not actively maintained~~ RESOLVED
 
-The `opus_dart` package (v3.0.1) has not been updated in over 2 years. Since opus_flutter exists primarily to serve opus_dart, this is a concern for the overall ecosystem.
+**Status:** Fixed. Vendored `opus_dart` (v3.0.1) from [EPNW/opus_dart](https://github.com/EPNW/opus_dart) directly into the repository at `opus_dart/`. This eliminates the external dependency and allows direct maintenance. The example app now uses a path dependency instead of pulling from pub.dev.
 
-**Impact:** Users depend on a stale package for the actual codec functionality.
+Additionally, the vendored package required several fixes to work with modern Dart and the correct `wasm_ffi` version:
 
-**Recommendation:**
-- If this is now your project, consider forking or taking over opus_dart as well.
-- Ensure opus_dart works with Dart 3.4+ and test it.
+- **Dart 3 class modifiers:** All `Opaque` subclasses in wrapper files now use the `final` modifier, required because `dart:ffi`'s `Opaque` is a `base` class.
+- **`wasm_ffi` 2.x import paths:** The package exports `ffi.dart`, not `wasm_ffi.dart`. The non-existent `wasm_ffi_modules.dart` import was removed (`registerOpaqueType` is exported from `ffi.dart` directly).
+- **Deprecated `boundMemory`:** Replaced with `allocator` on `wasm_ffi`'s `DynamicLibrary`.
+- **Removed `Pointer.elementAt()`:** Deprecated in Dart 3.3 and removed in later SDKs. Replaced with `Pointer<Uint8>` extension's `operator []`.
+- **Eliminated `dynamic` dispatch:** The original code used `dynamic` for several fields and parameters to bridge `dart:ffi` and `web_ffi` types. This caused runtime `NoSuchMethodError` crashes because many `dart:ffi` APIs (`Allocator.call<T>()`, `Pointer[].operator []`, `Pointer.asTypedList()`, `DynamicLibrary.lookupFunction<>()`) are **extension methods** that cannot be dispatched through `dynamic`. All fields are now statically typed via `proxy_ffi.dart`.
+- **`initOpus()` accepts `Object`:** Callers no longer need to cast from `opus_flutter.load()`'s `Future<Object>` return type; the platform-specific `createApiObject()` handles the cast internally.
+- **Cleaned up stale headers:** Replaced "AUTOMATICALLY GENERATED FILE. DO NOT MODIFY." with "Vendored from" attribution, removed dead `subtype_of_sealed_class` lint suppressions.
 
 ### 6. ~~Dockerfile typos~~ RESOLVED
 

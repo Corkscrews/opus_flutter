@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'proxy_ffi.dart' show createApiObject;
+import 'proxy_ffi.dart';
 
 import '../wrappers/opus_libinfo.dart' as opus_libinfo;
 import '../wrappers/opus_encoder.dart' as opus_encoder;
@@ -23,9 +23,9 @@ String getOpusVersion() {
   return _asString(opus.libinfo.opus_get_version_string());
 }
 
-String _asString(dynamic pointer) {
+String _asString(Pointer<Uint8> pointer) {
   int i = 0;
-  while (pointer.elementAt(i).value != 0) {
+  while (pointer[i] != 0) {
     i++;
   }
   return utf8.decode(pointer.asTypedList(i));
@@ -58,9 +58,9 @@ class ApiObject {
   final opus_libinfo.FunctionsAndGlobals libinfo;
   final opus_encoder.FunctionsAndGlobals encoder;
   final opus_decoder.FunctionsAndGlobals decoder;
-  final dynamic allocator;
+  final Allocator allocator;
 
-  ApiObject(dynamic opus, this.allocator)
+  ApiObject(DynamicLibrary opus, this.allocator)
       : libinfo = opus_libinfo.FunctionsAndGlobals(opus),
         encoder = opus_encoder.FunctionsAndGlobals(opus),
         decoder = opus_decoder.FunctionsAndGlobals(opus);
