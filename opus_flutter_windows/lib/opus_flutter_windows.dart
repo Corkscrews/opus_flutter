@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:ffi';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'package:flutter/services.dart';
 import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';

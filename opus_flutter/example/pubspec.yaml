@@ -7,7 +7,8 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
-  opus_dart: ^3.0.1
+  opus_dart:
+    path: ../../opus_dart
   flutter:
     sdk: flutter
   share_plus: ^10.0.0

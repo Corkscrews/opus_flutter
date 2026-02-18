@@ -1,0 +1,14 @@
+name: opus_dart
+version: 3.0.1
+description: >
+  Wraps libopus in dart, and additionally provides a dart friendly API for
+  encoding and decoding. Originally from https://github.com/EPNW/opus_dart,
+  vendored into this repository to reduce external dependency complexity.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  ffi: ^2.1.0
+  wasm_ffi: ^2.1.0
