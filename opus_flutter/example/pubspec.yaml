@@ -1,7 +1,7 @@
 name: opus_flutter_example
 description: Demonstrates how to use the opus_flutter plugin.
 version: 2.0.0+2
-publish_to: "none"
+publish_to: 'none'
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

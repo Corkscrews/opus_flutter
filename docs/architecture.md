@@ -62,42 +62,30 @@ Key design points:
 - Extends `PlatformInterface` from `plugin_platform_interface` to enforce that implementations extend (not implement) the class.
 - Holds a static singleton `instance` that each platform package replaces at registration time.
 - The default instance is `OpusFlutterPlatformUnsupported`, which throws `UnsupportedError`.
-- The single API surface is `Future<dynamic> load()`, which returns a `DynamicLibrary`.
+- The single API surface is `Future<Object> load()`, which returns a `DynamicLibrary`.
 
-The return type is `dynamic` rather than `DynamicLibrary` because the web uses `wasm_ffi`'s `DynamicLibrary` class (a separate type from `dart:ffi`'s `DynamicLibrary`).
+The return type is `Object` rather than `DynamicLibrary` because the web uses `wasm_ffi`'s `DynamicLibrary` class (a separate type from `dart:ffi`'s `DynamicLibrary`).
 
-## Conditional Exports
+## Plugin Registration
 
-The main package uses Dart's conditional exports to provide different entry points for FFI-capable platforms vs. the web:
-
-```dart
-// opus_flutter.dart
-export 'src/opus_flutter_web.dart'
-    if (dart.library.ffi) 'src/opus_flutter_ffi.dart';
-```
+Each platform package declares a `dartPluginClass` in its `pubspec.yaml`. Flutter automatically calls the static `registerWith()` method during app initialization, which sets `OpusFlutterPlatform.instance` to the platform-specific implementation.
 
 ```mermaid
 flowchart LR
-    entry[opus_flutter.dart] -->|dart.library.ffi available| ffi[opus_flutter_ffi.dart<br><i>Android, iOS, Linux, macOS, Windows</i>]
-    entry -->|web| web[opus_flutter_web.dart<br><i>Browser</i>]
+    entry[opus_flutter.dart] --> load[opus_flutter_load.dart]
+    load --> pi[OpusFlutterPlatform.instance.load]
 
-    ffi --> workarounds[Apply registration<br>workarounds]
-    workarounds --> load[OpusFlutterPlatform.instance.load]
-
-    web --> load
+    subgraph Auto-registered by Flutter
+        android[OpusFlutterAndroid.registerWith]
+        ios[OpusFlutterIOS.registerWith]
+        linux[OpusFlutterLinux.registerWith]
+        macos[OpusFlutterMacOS.registerWith]
+        windows[OpusFlutterWindows.registerWith]
+        web[OpusFlutterWeb.registerWith]
+    end
 ```
 
-- **`opus_flutter_ffi.dart`** (native platforms): imports all native platform packages and applies registration workarounds before calling `OpusFlutterPlatform.instance.load()`.
-- **`opus_flutter_web.dart`** (web): delegates directly to `OpusFlutterPlatform.instance.load()` without workarounds.
-
-## Platform Registration Workarounds
-
-Due to open Flutter issues, platform plugins may not auto-register correctly. The FFI entry point contains two workaround functions:
-
-1. **`_flutterIssue52267Workaround()`** -- manually sets `OpusFlutterPlatform.instance` for Android, iOS, Linux, and macOS if the framework has not already done so.
-2. **`_flutterIssue81421Workaround()`** -- calls `OpusFlutterWindows.registerWith()` for Windows.
-
-These are invoked every time `load()` is called.
+The main package has a single entry point (`opus_flutter_load.dart`) that delegates to `OpusFlutterPlatform.instance.load()`. No platform-specific imports or conditional exports are needed.
 
 ## Platform Implementations
 
@@ -229,7 +217,6 @@ sequenceDiagram
     participant OD as opus_dart
 
     App->>OF: load()
-    OF->>OF: Apply registration workarounds
     OF->>PI: instance.load()
     PI->>Impl: load()
 

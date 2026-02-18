@@ -5,12 +5,12 @@ This document lists known issues, potential risks, and suggested improvements fo
 ```mermaid
 graph LR
     subgraph Critical
-        I1[No test coverage]
+        I1[No test coverage ✅]
         I2[No CI/CD pipeline ✅]
     end
 
     subgraph Moderate
-        I3[Stale platform workarounds]
+        I3[Stale platform workarounds ✅]
         I4[web_ffi unmaintained ✅]
         I5[opus_dart unmaintained]
         I6[Dockerfile typos ✅]
@@ -52,16 +52,13 @@ graph LR
 
 ## Critical Issues
 
-### 1. No test coverage
+### 1. ~~No test coverage~~ RESOLVED
 
-There are zero tests across all seven packages. No unit tests, no widget tests, no integration tests. This is the single largest risk in the project.
-
-**Impact:** Any change to platform loading logic, the platform interface, or the workaround code could silently break without detection.
-
-**Recommendation:**
-- Add unit tests for each platform implementation (mock `DynamicLibrary` calls).
-- Add a platform interface test that verifies the singleton pattern and token verification.
-- Add integration tests in the example app that verify `load()` returns a valid library.
+**Status:** Fixed. Added 20 unit tests across 8 packages covering:
+- Platform interface contract (singleton pattern, token verification, version constant, error handling).
+- Registration logic (`registerWith()`, class hierarchy) for all 6 platform implementations.
+- Main package delegation (`load()` delegates to platform instance, throws on unsupported platform).
+- CI workflow updated to run `flutter test` for all packages on every push.
 
 ### 2. ~~No CI/CD pipeline~~ RESOLVED
 
@@ -71,20 +68,9 @@ There are zero tests across all seven packages. No unit tests, no widget tests, 
 
 ## Moderate Issues
 
-### 3. Platform workarounds may be stale
+### 3. ~~Platform workarounds may be stale~~ RESOLVED
 
-`opus_flutter_ffi.dart` contains workarounds for two Flutter issues:
-- [flutter/flutter#52267](https://github.com/flutter/flutter/issues/52267) (platform auto-registration)
-- [flutter/flutter#81421](https://github.com/flutter/flutter/issues/81421) (Windows dartPluginClass)
-
-These workarounds import all platform packages on every platform, which means the Android implementation code is compiled into iOS builds and vice versa. The issues may have been resolved in newer Flutter versions.
-
-**Impact:** Increased binary size. Unnecessary complexity. Imports may cause issues on some platforms.
-
-**Recommendation:**
-- Check whether these Flutter issues have been fixed in Flutter 3.22+.
-- If fixed, remove the workarounds and let the framework handle registration.
-- If not fixed, document clearly why they are still needed.
+**Status:** Fixed. Removed all registration workarounds and cross-platform imports. All platform packages now declare `dartPluginClass` in their `pubspec.yaml` and provide a static `registerWith()` method, letting Flutter handle registration automatically. The conditional export (`opus_flutter_ffi.dart` vs `opus_flutter_web.dart`) has been replaced by a single entry point (`opus_flutter_load.dart`).
 
 ### 4. ~~`web_ffi` is unmaintained~~ RESOLVED
 

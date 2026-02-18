@@ -1,0 +1,13 @@
+dependency_overrides:
+  opus_flutter_android:
+    path: ../opus_flutter_android
+  opus_flutter_ios:
+    path: ../opus_flutter_ios
+  opus_flutter_linux:
+    path: ../opus_flutter_linux
+  opus_flutter_macos:
+    path: ../opus_flutter_macos
+  opus_flutter_platform_interface:
+    path: ../opus_flutter_platform_interface
+  opus_flutter_windows:
+    path: ../opus_flutter_windows

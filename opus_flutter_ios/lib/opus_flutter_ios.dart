@@ -5,7 +5,12 @@ import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.
 
 /// An implementation of [OpusFlutterPlatform] for iOS.
 class OpusFlutterIOS extends OpusFlutterPlatform {
-  /// Opens the static opus library build into this plugin.
+  /// Registers this class as the default instance of [OpusFlutterPlatform].
+  static void registerWith() {
+    OpusFlutterPlatform.instance = OpusFlutterIOS();
+  }
+
+  /// Opens the static opus library built into this plugin.
   @override
   Future<Object> load() async {
     return DynamicLibrary.process();

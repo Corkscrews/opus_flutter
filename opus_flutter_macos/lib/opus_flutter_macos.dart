@@ -5,6 +5,11 @@ import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.
 
 /// An implementation of [OpusFlutterPlatform] for macOS.
 class OpusFlutterMacOS extends OpusFlutterPlatform {
+  /// Registers this class as the default instance of [OpusFlutterPlatform].
+  static void registerWith() {
+    OpusFlutterPlatform.instance = OpusFlutterMacOS();
+  }
+
   /// Opens the opus library linked into this plugin.
   @override
   Future<Object> load() async {

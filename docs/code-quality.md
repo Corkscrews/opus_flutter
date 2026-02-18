@@ -16,10 +16,10 @@ quadrantChart
     Architecture: [0.85, 0.85]
     Code clarity: [0.6, 0.8]
     Documentation: [0.5, 0.55]
-    Test coverage: [0.9, 0.1]
-    Consistency: [0.4, 0.5]
-    Maintainability: [0.75, 0.45]
-    Build system: [0.7, 0.5]
+    Test coverage: [0.9, 0.4]
+    Consistency: [0.4, 0.75]
+    Maintainability: [0.75, 0.75]
+    Build system: [0.7, 0.7]
 ```
 
 | Dimension | Rating | Notes |
@@ -27,10 +27,10 @@ quadrantChart
 | Architecture | Good | Clean federated plugin structure |
 | Code clarity | Good | Small, focused files with clear intent |
 | Documentation | Fair | Public APIs documented, some packages lack detail |
-| Test coverage | Poor | No tests in any package |
-| Consistency | Fair | Mixed patterns across packages |
-| Maintainability | Fair | Stale workarounds and dependencies |
-| Build system | Fair | Works but fragile in places |
+| Test coverage | Fair | Unit tests for platform interface and registration logic |
+| Consistency | Good | Uniform patterns across all packages |
+| Maintainability | Good | Clean architecture, proper plugin registration |
+| Build system | Good | Modern AGP, deterministic native builds |
 
 ---
 
@@ -43,9 +43,8 @@ The project follows Flutter's recommended federated plugin pattern correctly:
 - Clear separation between the app-facing package, platform interface, and platform implementations.
 - Each package has a single responsibility.
 - The platform interface uses `PlatformInterface` from `plugin_platform_interface` with proper token verification.
-- Conditional exports cleanly separate web and native code paths.
-
-**Weakness:** The FFI entry point (`opus_flutter_ffi.dart`) imports all platform packages regardless of which platform is running. This cross-imports Android code into iOS builds and vice versa. It is done as a workaround but has architectural implications.
+- All platform packages self-register via `dartPluginClass` and `registerWith()`.
+- A single entry point (`opus_flutter_load.dart`) delegates to the platform interface without platform-specific imports.
 
 ---
 
@@ -65,40 +64,37 @@ No issues. Well-structured.
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `opus_flutter.dart` | 8 | Good | Clean conditional export |
-| `opus_flutter_ffi.dart` | 52 | Fair | Workarounds add complexity; all platforms imported |
-| `opus_flutter_web.dart` | 16 | Good | Simple delegation |
+| `opus_flutter.dart` | 4 | Good | Single clean export |
+| `opus_flutter_load.dart` | 15 | Good | Simple delegation to platform interface |
 
-`opus_flutter_ffi.dart` is the most complex file in the project. The workaround functions are documented with issue links, which is good practice. However, the file imports platform packages that are irrelevant on the running platform.
+The main package is minimal by design -- it exports a single `load()` function that delegates to `OpusFlutterPlatform.instance.load()`. Platform registration is handled automatically by Flutter via `dartPluginClass`.
 
 ### Android (`opus_flutter_android`)
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `opus_flutter_android.dart` | 13 | Good | Clean, minimal |
+| `opus_flutter_android.dart` | 19 | Good | Clean, self-registering via `dartPluginClass` |
 | `OpusFlutterAndroidPlugin.java` | 14 | Good | Empty stub, expected for FFI-only plugins |
 | `CMakeLists.txt` | 16 | Good | Modern FetchContent approach |
-| `build.gradle` | 59 | Fair | Legacy build syntax |
+| `build.gradle` | 59 | Good | AGP 8.7.0, compileSdk 35, Java 17 |
 
-The CMakeLists.txt is well-written and concise. The build.gradle uses legacy syntax (`apply plugin` instead of `plugins {}` DSL) and includes test dependencies (`junit`, `mockito`) but has no actual tests.
+The CMakeLists.txt is well-written and concise. The build.gradle uses AGP 8.7.0 with Java 17 compatibility. Test dependencies (`junit`, `mockito`) are included but no actual tests exist yet.
 
 ### iOS (`opus_flutter_ios`)
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `opus_flutter_ios.dart` | 13 | Good | Clean, minimal |
-| `SwiftOpusFlutterIosPlugin.swift` | 10 | Fair | Empty stub |
-| `OpusFlutterIosPlugin.m` | 16 | Fair | ObjC bridge to Swift, unnecessary complexity |
-| `OpusFlutterIosPlugin.h` | 5 | Fair | Part of unnecessary ObjC bridge |
+| `opus_flutter_ios.dart` | 19 | Good | Clean, self-registering via `dartPluginClass` |
+| `OpusFlutterIosPlugin.swift` | 8 | Good | Minimal Swift-only stub |
 | `build_xcframework.sh` | 239 | Good | Well-structured, documented, error handling |
 
-The ObjC-to-Swift bridge pattern is inherited from older Flutter plugin templates. Modern plugins can use Swift-only registration. The build script is well-written with clear sections, error checking, and cleanup.
+Uses Swift-only registration (no ObjC bridge). The build script is well-written with clear sections, error checking, and cleanup.
 
 ### macOS (`opus_flutter_macos`)
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `opus_flutter_macos.dart` | 14 | Good | Clean, uses `@override` |
+| `opus_flutter_macos.dart` | 19 | Good | Clean, self-registering via `dartPluginClass` |
 | `OpusFlutterMacosPlugin.swift` | 8 | Good | Minimal Swift-only stub |
 | `build_xcframework.sh` | 222 | Good | Adapted from iOS script, well-structured |
 
@@ -116,20 +112,17 @@ The web implementation is the most involved platform package. It has to inject J
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `opus_flutter_windows.dart` | 58 | Fair | Asset copying logic, fragile arch detection |
+| `opus_flutter_windows.dart` | 57 | Good | Asset copying logic, proper arch detection via `Abi.current()` |
 
-The Windows implementation has the most runtime logic: copying DLLs from assets to a temp directory, detecting architecture via string parsing, and loading dynamically. The `Platform.version.contains('x64')` check is fragile.
+The Windows implementation has the most runtime logic: copying DLLs from assets to a temp directory, detecting architecture via `Abi.current()`, and loading dynamically.
 
 ### Example App
 
 | File | Lines | Quality | Notes |
 |------|-------|---------|-------|
-| `main.dart` | 179 | Fair | Functional demo, some style issues |
+| `main.dart` | 168 | Good | Clean demo of encoding/decoding with share functionality |
 
-Style issues:
-- `void _share(Uint8List data) async` should be `Future<void> _share(...)`.
-- Empty `initState()` override should be removed.
-- Uses `new` keyword inconsistently (e.g., `new OpusFlutterAndroid()` in ffi.dart).
+The example app demonstrates a complete encode/decode pipeline with file sharing. Code style is clean with proper return types and no unnecessary overrides.
 
 ---
 
@@ -139,19 +132,18 @@ Style issues:
 
 - Doc comments on all public APIs using `///` syntax.
 - `@override` annotations used (macOS package).
-- Conditional exports used correctly.
-- Issue references in workaround comments.
+- All platform packages use `dartPluginClass` for self-registration.
 - Clear package naming following Flutter conventions.
 
 ### Issues Found
 
-| Issue | Location | Severity |
-|-------|----------|----------|
-| `new` keyword used in Dart 3 codebase | `opus_flutter_ffi.dart` | Low |
-| `void` return with `async` | `example/main.dart` | Low |
-| Empty `initState()` override | `example/main.dart` | Low |
-| Missing `@override` on `load()` | `opus_flutter_ios.dart`, `opus_flutter_android.dart` | Low |
-| Inconsistent quote style (double vs single) | Various `pubspec.yaml` files | Low |
+| Issue | Location | Status |
+|-------|----------|--------|
+| ~~`new` keyword used in Dart 3 codebase~~ | Various files | Resolved |
+| ~~`void` return with `async`~~ | `example/main.dart` | Resolved |
+| ~~Empty `initState()` override~~ | `example/main.dart` | Resolved |
+| ~~Missing `@override` on `load()`~~ | Platform implementations | Resolved |
+| ~~Inconsistent quote style (double vs single)~~ | `example/pubspec.yaml` | Resolved |
 
 ---
 
@@ -183,7 +175,7 @@ graph LR
     style E fill:#c8e6c9,color:#000
     style F fill:#fff9c4,color:#000
     style G fill:#fff9c4,color:#000
-    style H fill:#ffcdd2,color:#000
+    style H fill:#c8e6c9,color:#000
 ```
 
 | Dependency | Version | Last Updated | Risk |
@@ -207,12 +199,17 @@ The migration from `web_ffi` to `wasm_ffi` has eliminated the previously highest
 - **Approach:** CMake FetchContent (downloads opus at build time).
 - **Strength:** No vendored sources; always builds from a pinned tag.
 - **Risk:** Requires internet during build; network issues or removed GitHub tags will break builds.
-- **AGP:** Uses legacy 7.3.0 with `apply plugin` syntax.
+- **AGP:** 8.7.0 with Java 17, compileSdk 35.
 
 ### iOS
 - **Approach:** Pre-built xcframework via shell script.
 - **Strength:** Deterministic; no network needed at app build time.
 - **Risk:** Script must be re-run manually to update opus.
+
+### Linux
+- **Approach:** System library (`libopus.so.0`).
+- **Strength:** No build step; minimal package.
+- **Risk:** Requires user to have opus installed on their system.
 
 ### macOS
 - **Approach:** Same as iOS.
@@ -221,12 +218,12 @@ The migration from `web_ffi` to `wasm_ffi` has eliminated the previously highest
 ### Windows
 - **Approach:** Cross-compiled via Docker, DLLs stored as assets.
 - **Strength:** Deterministic; no network needed at app build time.
-- **Risk:** Docker build uses `ubuntu:bionic` (Ubuntu 18.04, EOL). Typo in Dockerfile (`DEBIAN_FRONTENTD`).
+- **Risk:** None significant. Uses `ubuntu:24.04` as base image.
 
 ### Web
 - **Approach:** Compiled via Emscripten in Docker.
 - **Strength:** Deterministic output.
-- **Risk:** Same Docker/typo issues as Windows.
+- **Risk:** Same Docker base image concern as Windows.
 
 ---
 
@@ -234,16 +231,17 @@ The migration from `web_ffi` to `wasm_ffi` has eliminated the previously highest
 
 | Package | Has `analysis_options.yaml` | Lint package |
 |---------|----------------------------|-------------|
-| opus_flutter | No | -- |
-| opus_flutter_platform_interface | No | -- |
+| opus_flutter | Yes | flutter_lints |
+| opus_flutter_platform_interface | Yes | flutter_lints |
 | opus_flutter_android | Yes | flutter_lints |
-| opus_flutter_ios | No | -- |
-| opus_flutter_macos | No | -- |
-| opus_flutter_web | No | -- |
-| opus_flutter_windows | No | -- |
+| opus_flutter_ios | Yes | flutter_lints |
+| opus_flutter_linux | Yes | flutter_lints |
+| opus_flutter_macos | Yes | flutter_lints |
+| opus_flutter_web | Yes | flutter_lints |
+| opus_flutter_windows | Yes | flutter_lints |
 | example | Yes | flutter_lints |
 
-Only 2 out of 8 packages have lint configuration. The rest use Dart's minimal defaults, meaning many common issues go undetected.
+All 9 packages have lint configuration referencing `package:flutter_lints/flutter.yaml`.
 
 ---
 
@@ -251,16 +249,17 @@ Only 2 out of 8 packages have lint configuration. The rest use Dart's minimal de
 
 | Package | Unit Tests | Widget Tests | Integration Tests |
 |---------|-----------|-------------|-------------------|
-| opus_flutter | None | None | None |
-| opus_flutter_platform_interface | None | None | None |
-| opus_flutter_android | None | None | None |
-| opus_flutter_ios | None | None | None |
-| opus_flutter_macos | None | None | None |
-| opus_flutter_web | None | None | None |
-| opus_flutter_windows | None | None | None |
+| opus_flutter | 2 tests | None | None |
+| opus_flutter_platform_interface | 6 tests | None | None |
+| opus_flutter_android | 3 tests | None | None |
+| opus_flutter_ios | 2 tests | None | None |
+| opus_flutter_linux | 2 tests | None | None |
+| opus_flutter_macos | 2 tests | None | None |
+| opus_flutter_web | 1 test | None | None |
+| opus_flutter_windows | 2 tests | None | None |
 | example | None | None | None |
 
-**Test coverage is 0% across the entire project.** This is the single biggest code quality gap. The Android build.gradle includes JUnit and Mockito as test dependencies, suggesting tests were planned but never implemented.
+Unit tests cover the platform interface contract (singleton, token verification, version constant, error handling) and registration logic (`registerWith()`, class hierarchy) for each platform. Native library loading (`DynamicLibrary.open()`, `DynamicLibrary.process()`) cannot be unit tested as it requires the actual opus binary. CI runs all tests on every push.
 
 ---
 
@@ -268,20 +267,20 @@ Only 2 out of 8 packages have lint configuration. The rest use Dart's minimal de
 
 ### High Priority
 
-1. **Add tests** -- at minimum, unit tests for the platform interface and each platform implementation's `load()` logic.
-2. **Add CI/CD** -- GitHub Actions to run `flutter analyze` and `flutter test` on every push.
-3. **Add `analysis_options.yaml`** to all packages with consistent lint rules.
+1. ~~**Add tests**~~ -- Resolved: unit tests added for platform interface and all platform implementations.
 
 ### Medium Priority
 
-4. ~~**Evaluate web_ffi alternatives**~~ -- Resolved: migrated to `wasm_ffi` ^2.2.0.
-5. **Check if Flutter workarounds are still needed** for issues #52267 and #81421.
-6. **Fix Dockerfile typos** (`DEBIAN_FRONTENTD` -> `DEBIAN_FRONTEND`).
-7. **Update Docker base images** -- `ubuntu:bionic` is EOL.
+2. ~~**Update Docker base images**~~ -- Resolved: Windows Dockerfile updated from `ubuntu:bionic` (18.04, EOL) to `ubuntu:24.04`.
 
-### Low Priority
+### Resolved
 
-8. **Simplify iOS plugin** to Swift-only (remove ObjC bridge).
-9. **Remove `new` keyword** usage throughout codebase.
-10. **Align podspec versions** with pubspec versions.
-11. **Add Linux support**.
+- ~~**Add CI/CD**~~ -- GitHub Actions workflow added.
+- ~~**Add `analysis_options.yaml`**~~ -- All packages have consistent lint rules.
+- ~~**Evaluate web_ffi alternatives**~~ -- Migrated to `wasm_ffi` ^2.2.0.
+- ~~**Check if Flutter workarounds are still needed**~~ -- Removed; all platforms use `dartPluginClass`.
+- ~~**Fix Dockerfile typos**~~ -- `DEBIAN_FRONTEND` corrected.
+- ~~**Simplify iOS plugin**~~ -- Swift-only, ObjC bridge removed.
+- ~~**Remove `new` keyword**~~ -- Cleaned up across codebase.
+- ~~**Align podspec versions**~~ -- Matched to pubspec versions.
+- ~~**Add Linux support**~~ -- `opus_flutter_linux` package added.
