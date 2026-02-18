@@ -12,8 +12,7 @@ class OpusFlutterWindows extends OpusFlutterPlatform {
 
   static Future<String> _copyFiles() async {
     String tmpPath = (await getTemporaryDirectory()).absolute.path;
-    Directory dir =
-        Directory('$tmpPath/opus_flutter_windows/opus').absolute;
+    Directory dir = Directory('$tmpPath/opus_flutter_windows/opus').absolute;
     await dir.create(recursive: true);
 
     ByteData data;
