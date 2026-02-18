@@ -160,14 +160,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  inject_js:
-    dependency: transitive
-    description:
-      name: inject_js
-      sha256: "849eacfd4b7e9182a7e743843a820d74bf1abcb692bdbe09e34ef0f753ad7227"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
   leak_tracker:
     dependency: transitive
     description:

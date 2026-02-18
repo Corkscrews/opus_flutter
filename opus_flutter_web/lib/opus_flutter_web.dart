@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
-import 'package:inject_js/inject_js.dart' as InjectJs;
-import 'package:wasm_ffi/wasm_ffi.dart';
-import 'package:wasm_ffi/wasm_ffi_modules.dart';
+import 'package:wasm_ffi/ffi.dart';
 
 /// An implementation of [OpusFlutterPlatform] for web.
 class OpusFlutterWeb extends OpusFlutterPlatform {
@@ -13,32 +10,20 @@ class OpusFlutterWeb extends OpusFlutterPlatform {
     OpusFlutterPlatform.instance = OpusFlutterWeb();
   }
 
-  bool _injected = false;
-  Module? _module;
+  DynamicLibrary? _library;
 
-  /// Opens the WebAssembly opus library contained in this plugin and
-  /// injects the JavaScript glue if necessary.
+  /// Opens the WebAssembly opus library contained in this plugin.
   ///
-  /// Registers the memory of the created [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html)
-  /// as [Memory.global] if there is no global memory yet.
+  /// Uses [DynamicLibrary.open] which handles JS injection, Emscripten module
+  /// compilation, and memory setup. Registers the created memory as global if
+  /// none is set yet.
   @override
   Future<Object> load() async {
-    if (!_injected) {
-      await InjectJs.importLibrary(
-          './assets/packages/opus_flutter_web/assets/libopus.js');
-      _injected = true;
-    }
-    if (_module == null) {
-      Memory.init();
-      ByteData wasmBinary = await rootBundle
-          .load('packages/opus_flutter_web/assets/libopus.wasm');
-      _module = await EmscriptenModule.compile(
-          {
-            'wasmBinary': wasmBinary.buffer.asUint8List(
-                wasmBinary.offsetInBytes, wasmBinary.lengthInBytes),
-          },
-          'libopus');
-    }
-    return DynamicLibrary.fromModule(_module!);
+    _library ??= await DynamicLibrary.open(
+      './assets/packages/opus_flutter_web/assets/libopus.js',
+      moduleName: 'libopus',
+      useAsGlobal: GlobalMemory.ifNotSet,
+    );
+    return _library!;
   }
 }
