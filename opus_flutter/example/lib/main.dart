@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:opus_flutter/opus_flutter.dart' as opus_flutter;
 import 'package:opus_dart/opus_dart.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:platform_info/platform_info.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,20 +15,18 @@ Future<void> main() async {
   runApp(const OpusFlutter());
 }
 
-/// Even if we could load the file as whole, we create a stream out of it
-/// to simulate streaming behaviour (e.g. if the stream comes over the network).
-Stream<List<int>> exampleRawStream(BuildContext context) async* {
-  const int portionSize =
-      65535; //equals the usual size you get per list in a network stream
-  ByteData data = await DefaultAssetBundle.of(context)
+/// Simulates a chunked byte stream from a bundled raw PCM asset,
+/// mimicking the behaviour of a network stream.
+Stream<List<int>> _loadRawAudioStream(BuildContext context) async* {
+  const portionSize = 65535;
+  final data = await DefaultAssetBundle.of(context)
       .load('assets/s16le_16000hz_mono.raw');
-  int i = 0;
-  while (i != data.lengthInBytes) {
-    int r = min(portionSize, data.lengthInBytes - i);
-    yield data.buffer.asUint8List(data.offsetInBytes + i, r);
-    i += r;
-    await Future.delayed(
-        const Duration(milliseconds: 10)); //Simulate network latency
+  var offset = 0;
+  while (offset < data.lengthInBytes) {
+    final chunk = min(portionSize, data.lengthInBytes - offset);
+    yield data.buffer.asUint8List(data.offsetInBytes + offset, chunk);
+    offset += chunk;
+    await Future.delayed(const Duration(milliseconds: 10));
   }
 }
 
@@ -40,16 +37,16 @@ class OpusFlutter extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('opus_flutter'),
-        ),
+        appBar: AppBar(title: const Text('opus_flutter')),
         body: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-              Text('Version: ${getOpusVersion()}\n'),
-              const OpusExample()
-            ])),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Text('Version: ${getOpusVersion()}'),
+              const OpusExample(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -63,84 +60,90 @@ class OpusExample extends StatefulWidget {
 }
 
 class _OpusExampleState extends State<OpusExample> {
-  bool _processing = false;
+  var _processing = false;
+
+  Future<void> _onPressed() async {
+    setState(() => _processing = true);
+    try {
+      final data = await _encodeDecodePcm(_loadRawAudioStream(context));
+      await _shareWav(data);
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_processing) {
       return const Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[CircularProgressIndicator(), Text('Processing...')],
-      );
-    } else {
-      return ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _processing = true;
-          });
-          example(exampleRawStream(context)).then((Uint8List data) {
-            setState(() {
-              _processing = false;
-            });
-            _share(data);
-          });
-        },
-        child: const Text('Start'),
+        children: [CircularProgressIndicator(), Text('Processing...')],
       );
     }
+    return ElevatedButton(
+      onPressed: _onPressed,
+      child: const Text('Start'),
+    );
   }
 }
 
-/// This is mostly the same example as from the opus_dart package:
-/// Get a stream, encode it and decode it, then share it.
-/// Add a wav header, so it can be played by any sound app.
-Future<Uint8List> example(Stream<List<int>> input) async {
-  const int sampleRate = 16000;
-  const int channels = 1;
-  List<Uint8List> output = [];
-  output.add(Uint8List(wavHeaderSize)); //Reserve space for the header
-  //Encode and decode using opus
+const _sampleRate = 16000;
+const _channels = 1;
+
+/// Encodes raw PCM input with Opus then immediately decodes it back,
+/// returning a complete WAV file as bytes.
+Future<Uint8List> _encodeDecodePcm(Stream<List<int>> input) async {
+  final output = <Uint8List>[Uint8List(_wavHeaderSize)];
+
   await input
       .transform(StreamOpusEncoder.bytes(
-          floatInput: false,
-          frameTime: FrameTime.ms20,
-          sampleRate: sampleRate,
-          channels: channels,
-          application: Application.audio,
-          copyOutput: true,
-          fillUpLastFrame: true))
+        floatInput: false,
+        frameTime: FrameTime.ms20,
+        sampleRate: _sampleRate,
+        channels: _channels,
+        application: Application.audio,
+        copyOutput: true,
+        fillUpLastFrame: true,
+      ))
       .cast<Uint8List?>()
       .transform(StreamOpusDecoder.bytes(
-          floatOutput: false,
-          sampleRate: sampleRate,
-          channels: channels,
-          copyOutput: true,
-          forwardErrorCorrection: false))
+        floatOutput: false,
+        sampleRate: _sampleRate,
+        channels: _channels,
+        copyOutput: true,
+        forwardErrorCorrection: false,
+      ))
       .cast<Uint8List>()
       .forEach(output.add);
-  int length = output.fold(0, (int l, Uint8List element) => l + element.length);
-  //Write the wav header
-  Uint8List header =
-      wavHeader(channels: channels, sampleRate: sampleRate, fileSize: length);
-  output[0] = header;
-  // Merge into a single Uint8List
-  Uint8List flat = Uint8List(length);
-  int index = 0;
-  for (Uint8List element in output) {
-    flat.setAll(index, element);
-    index += element.length;
+
+  final length = output.fold<int>(0, (sum, chunk) => sum + chunk.length);
+  output[0] = _buildWavHeader(
+    channels: _channels,
+    sampleRate: _sampleRate,
+    fileSize: length,
+  );
+
+  final flat = Uint8List(length);
+  var offset = 0;
+  for (final chunk in output) {
+    flat.setAll(offset, chunk);
+    offset += chunk.length;
   }
   return flat;
 }
 
-const int wavHeaderSize = 44;
+const _wavHeaderSize = 44;
+// Opus always outputs 16-bit PCM in this example.
+const _sampleBits = 16;
 
-Uint8List wavHeader(
-    {required int sampleRate, required int channels, required int fileSize}) {
-  const int sampleBits = 16; //We know this since we used opus
-  const Endian endian = Endian.little;
-  final int frameSize = ((sampleBits + 7) ~/ 8) * channels;
-  ByteData data = ByteData(wavHeaderSize);
+Uint8List _buildWavHeader({
+  required int sampleRate,
+  required int channels,
+  required int fileSize,
+}) {
+  const endian = Endian.little;
+  final frameSize = ((_sampleBits + 7) ~/ 8) * channels;
+  final data = ByteData(_wavHeaderSize);
   data.setUint32(4, fileSize - 4, endian);
   data.setUint32(16, 16, endian);
   data.setUint16(20, 1, endian);
@@ -148,9 +151,9 @@ Uint8List wavHeader(
   data.setUint32(24, sampleRate, endian);
   data.setUint32(28, sampleRate * frameSize, endian);
   data.setUint16(30, frameSize, endian);
-  data.setUint16(34, sampleBits, endian);
+  data.setUint16(34, _sampleBits, endian);
   data.setUint32(40, fileSize - 44, endian);
-  Uint8List bytes = data.buffer.asUint8List();
+  final bytes = data.buffer.asUint8List();
   bytes.setAll(0, ascii.encode('RIFF'));
   bytes.setAll(8, ascii.encode('WAVE'));
   bytes.setAll(12, ascii.encode('fmt '));
@@ -158,8 +161,8 @@ Uint8List wavHeader(
   return bytes;
 }
 
-Future<void> _share(Uint8List data) async {
-  XFile file = XFile.fromData(
+Future<void> _shareWav(Uint8List data) async {
+  final file = XFile.fromData(
     data,
     mimeType: 'audio/wav',
     name: 'output.wav',
