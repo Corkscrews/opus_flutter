@@ -10,7 +10,7 @@ abstract class OpusPacketUtils {
   /// Returns the amount of samples in a [packet] given a [sampleRate].
   static int getSampleCount(
       {required Uint8List packet, required int sampleRate}) {
-    Pointer data = opus.allocator.call(packet.length);
+    Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int sampleCount = opus.decoder
@@ -27,7 +27,7 @@ abstract class OpusPacketUtils {
 
   /// Returns the amount of frames in a [packet].
   static int getFrameCount({required Uint8List packet}) {
-    Pointer data = opus.allocator.call(packet.length);
+    Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int frameCount =
@@ -45,7 +45,7 @@ abstract class OpusPacketUtils {
   /// Returns the amount of samples per frame in a [packet] given a [sampleRate].
   static int getSamplesPerFrame(
       {required Uint8List packet, required int sampleRate}) {
-    Pointer data = opus.allocator.call(packet.length);
+    Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int samplesPerFrame =
@@ -62,7 +62,7 @@ abstract class OpusPacketUtils {
 
   /// Returns the channel count from a [packet]
   static int getChannelCount({required Uint8List packet}) {
-    Pointer data = opus.allocator.call(packet.length);
+    Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int channelCount = opus.decoder.opus_packet_get_nb_channels(data);
@@ -78,7 +78,7 @@ abstract class OpusPacketUtils {
 
   /// Returns the bandwidth from a [packet]
   static int getBandwidth({required Uint8List packet}) {
-    Pointer data = opus.allocator.call(packet.length);
+    Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
       int bandwidth = opus.decoder.opus_packet_get_bandwidth(data);

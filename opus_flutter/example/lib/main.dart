@@ -9,9 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Use dynamic to bridge dart:ffi and web_ffi DynamicLibrary types.
-  final dynamic lib = await opus_flutter.load();
-  initOpus(lib);
+  initOpus(await opus_flutter.load());
   runApp(const OpusFlutter());
 }
 

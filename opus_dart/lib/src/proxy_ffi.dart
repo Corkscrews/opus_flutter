@@ -1,2 +1,2 @@
-export 'package:wasm_ffi/wasm_ffi.dart' if (dart.library.ffi) 'dart:ffi';
-export 'init_web.dart' if (dart.library.ffi) 'init_ffi.dart';
+export 'dart:ffi' if (dart.library.js_interop) 'package:wasm_ffi/ffi.dart';
+export 'init_ffi.dart' if (dart.library.js_interop) 'init_web.dart';

@@ -1,18 +1,14 @@
 /// Contains methods and structs from the opus_encoder group of opus.h.
 /// SHOULD be imported as opus_encoder.
 ///
-/// AUTOMATICALLY GENERATED FILE. DO NOT MODIFY.
+/// Vendored from https://github.com/EPNW/opus_dart
 // ignore_for_file: camel_case_types, non_constant_identifier_names, constant_identifier_names
-
-// We are going to ignore subtype_of_sealed_class since dart analysis does not
-// get the imports right when differentiating between web_ffi and dart:ffi
-// ignore_for_file: subtype_of_sealed_class
 library opus_encoder;
 
 import '../src/proxy_ffi.dart' as ffi;
 
 /// Opus encoder state.
-class OpusEncoder extends ffi.Opaque {}
+final class OpusEncoder extends ffi.Opaque {}
 
 typedef _opus_encoder_get_size_C = ffi.Int32 Function(
   ffi.Int32 channels,

@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'proxy_ffi.dart';
+
+import 'proxy_ffi.dart' show createApiObject;
 
 import '../wrappers/opus_libinfo.dart' as opus_libinfo;
 import '../wrappers/opus_encoder.dart' as opus_encoder;
@@ -22,7 +23,7 @@ String getOpusVersion() {
   return _asString(opus.libinfo.opus_get_version_string());
 }
 
-String _asString(Pointer pointer) {
+String _asString(dynamic pointer) {
   int i = 0;
   while (pointer.elementAt(i).value != 0) {
     i++;
@@ -57,25 +58,20 @@ class ApiObject {
   final opus_libinfo.FunctionsAndGlobals libinfo;
   final opus_encoder.FunctionsAndGlobals encoder;
   final opus_decoder.FunctionsAndGlobals decoder;
-  final Allocator allocator;
+  final dynamic allocator;
 
-  ApiObject(DynamicLibrary opus, this.allocator)
-      : libinfo = new opus_libinfo.FunctionsAndGlobals(opus),
-        encoder = new opus_encoder.FunctionsAndGlobals(opus),
-        decoder = new opus_decoder.FunctionsAndGlobals(opus);
+  ApiObject(dynamic opus, this.allocator)
+      : libinfo = opus_libinfo.FunctionsAndGlobals(opus),
+        encoder = opus_encoder.FunctionsAndGlobals(opus),
+        decoder = opus_decoder.FunctionsAndGlobals(opus);
 }
 
-/// Must be called to initalize this library.
+/// Must be called to initialize this library.
 ///
-/// On platforms where dart:ffi is available, the [dart:ffi DynamicLibrary](https://api.dart.dev/stable/2.12.0/dart-ffi/DynamicLibrary-class.html) `opusLib`
-/// must point to a platform native libopus library with the appropriate version.
-///
-/// On platforms where there is no dart:ffi, most notabley on the web, `opusLib`
-/// should be a [web_ffi DynamicLibrary](https://pub.dev/documentation/web_ffi/latest/web_ffi/DynamicLibrary-class.html). The [web_ffi Memory](https://pub.dev/documentation/web_ffi/latest/web_ffi_modules/Memory/init.html) object should
-/// have been initalized before calling this function. This function registers all
-/// Opaque types for you.
-///
-/// See the README for more information about loading and versioning.
-void initOpus(DynamicLibrary opusLib) {
+/// [opusLib] must be a `DynamicLibrary` pointing to a native libopus binary.
+/// It accepts [Object] so callers don't need to cast from the platform
+/// interface's `Future<Object>` return type -- on native platforms this is a
+/// `dart:ffi` DynamicLibrary, on web a `wasm_ffi` DynamicLibrary.
+void initOpus(Object opusLib) {
   opus = createApiObject(opusLib);
 }

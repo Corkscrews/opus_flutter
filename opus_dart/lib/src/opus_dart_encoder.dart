@@ -10,7 +10,7 @@ import 'opus_dart_misc.dart';
 /// All method calls in this calls allocate their own memory everytime they are called.
 /// See the [BufferedOpusEncoder] for an implementation with less allocation calls.
 class SimpleOpusEncoder extends OpusEncoder {
-  final Pointer _opusEncoder;
+  final Pointer<opus_encoder.OpusEncoder> _opusEncoder;
   @override
   final int sampleRate;
   @override
@@ -31,13 +31,13 @@ class SimpleOpusEncoder extends OpusEncoder {
       {required int sampleRate,
       required int channels,
       required Application application}) {
-    Pointer error = opus.allocator.call(1);
-    Pointer encoder = opus.encoder.opus_encoder_create(
-        sampleRate, channels, _applicationCodes[application]!, error);
+    Pointer<Int32> error = opus.allocator.call<Int32>(1);
+    Pointer<opus_encoder.OpusEncoder> encoder = opus.encoder
+        .opus_encoder_create(
+            sampleRate, channels, _applicationCodes[application]!, error);
     try {
       if (error.value == opus_defines.OPUS_OK) {
-        return SimpleOpusEncoder._(
-            encoder, sampleRate, channels, application);
+        return SimpleOpusEncoder._(encoder, sampleRate, channels, application);
       } else {
         throw OpusException(error.value);
       }
@@ -63,9 +63,10 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// [input] and the returned list are copied to and respectively from native memory.
   Uint8List encode(
       {required Int16List input, int maxOutputSizeBytes = maxDataBytes}) {
-    Pointer inputNative = opus.allocator.call(input.length);
+    Pointer<Int16> inputNative = opus.allocator.call<Int16>(input.length);
     inputNative.asTypedList(input.length).setAll(0, input);
-    Pointer outputNative = opus.allocator.call(maxOutputSizeBytes);
+    Pointer<Uint8> outputNative =
+        opus.allocator.call<Uint8>(maxOutputSizeBytes);
     int sampleCountPerChannel = input.length ~/ channels;
     int outputLength = opus.encoder.opus_encode(_opusEncoder, inputNative,
         sampleCountPerChannel, outputNative, maxOutputSizeBytes);
@@ -88,12 +89,13 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// This method behaves just as [encode], so see there for more information.
   Uint8List encodeFloat(
       {required Float32List input, int maxOutputSizeBytes = maxDataBytes}) {
-    Pointer inputNative = opus.allocator.call(input.length);
+    Pointer<Float> inputNative = opus.allocator.call<Float>(input.length);
     inputNative.asTypedList(input.length).setAll(0, input);
-    Pointer outputNative = opus.allocator.call(maxOutputSizeBytes);
+    Pointer<Uint8> outputNative =
+        opus.allocator.call<Uint8>(maxOutputSizeBytes);
     int sampleCountPerChannel = input.length ~/ channels;
-    int outputLength = opus.encoder.opus_encode_float(_opusEncoder,
-        inputNative, sampleCountPerChannel, outputNative, maxOutputSizeBytes);
+    int outputLength = opus.encoder.opus_encode_float(_opusEncoder, inputNative,
+        sampleCountPerChannel, outputNative, maxOutputSizeBytes);
     try {
       if (outputLength >= opus_defines.OPUS_OK) {
         Uint8List output =
@@ -122,12 +124,32 @@ class SimpleOpusEncoder extends OpusEncoder {
 ///
 /// The idea behind this implementation is to reduce the amount of memory allocation calls.
 /// Instead of allocating new buffers everytime something is encoded, the buffers are
-/// allocated at initalization. Then, pcm samples is directly written into the [inputBuffer],
+/// allocated at initalization. Then, pcm  samples is directly written into the [inputBuffer],
 /// the [inputBufferIndex] is updated, based on how many data where written, and
 /// one of the encode methods is called. The encoded opus packet can then be accessed using
 /// the [outputBuffer] getter.
+///
+/// ```
+/// BufferedOpusEncoder encoder;
+///
+/// void example() {
+///   // Get some pcm samples in s16le format
+///   Int16List s16lePcm=getSomeData();
+///   // Interpret the samples as bytes
+///   Uint8List asBytes = s16lePcm.buffer
+///       .asUint8List(s16lePcm.offsetInBytes, s16lePcm.lengthInBytes);
+///   // Set the bytes to the input buffer
+///   encoder.inputBuffer.setAll(0,asBytes);
+///   // Update the inputBufferIndex with amount of bytes (not samples!) written
+///   encoder.inputBufferIndex = asBytes.length;
+///   // encode
+///   encoder.encode();
+///   // Do something with the result
+///   doSomething(encoder.outputBuffer);
+/// }
+/// ```
 class BufferedOpusEncoder extends OpusEncoder {
-  final Pointer _opusEncoder;
+  final Pointer<opus_encoder.OpusEncoder> _opusEncoder;
   @override
   final int sampleRate;
   @override
@@ -145,7 +167,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// Indicates, how many bytes of data are currently stored in the [inputBuffer].
   int inputBufferIndex;
 
-  final Pointer _inputBuffer;
+  final Pointer<Uint8> _inputBuffer;
 
   /// Returns the native input buffer backed by native memory.
   ///
@@ -162,7 +184,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// The default value of [maxDataBytes] ensures that there is enough space.
   final int maxOutputBufferSizeBytes;
   int _outputBufferIndex;
-  final Pointer _outputBuffer;
+  final Pointer<Uint8> _outputBuffer;
 
   /// The portion of the allocated output buffer that is currently filled with data.
   /// The data represents an opus packet in bytes.
@@ -202,13 +224,19 @@ class BufferedOpusEncoder extends OpusEncoder {
       required Application application,
       int? maxInputBufferSizeBytes,
       int? maxOutputBufferSizeBytes}) {
-    maxInputBufferSizeBytes ??= 4 * maxSamplesPerPacket(sampleRate, channels);
-    maxOutputBufferSizeBytes ??= maxDataBytes;
-    Pointer error = opus.allocator.call(1);
-    Pointer input = opus.allocator.call(maxInputBufferSizeBytes);
-    Pointer output = opus.allocator.call(maxOutputBufferSizeBytes);
-    Pointer encoder = opus.encoder.opus_encoder_create(
-        sampleRate, channels, _applicationCodes[application]!, error);
+    if (maxInputBufferSizeBytes == null) {
+      maxInputBufferSizeBytes = 4 * maxSamplesPerPacket(sampleRate, channels);
+    }
+    if (maxOutputBufferSizeBytes == null) {
+      maxOutputBufferSizeBytes = maxDataBytes;
+    }
+    Pointer<Int32> error = opus.allocator.call<Int32>(1);
+    Pointer<Uint8> input = opus.allocator.call<Uint8>(maxInputBufferSizeBytes);
+    Pointer<Uint8> output =
+        opus.allocator.call<Uint8>(maxOutputBufferSizeBytes);
+    Pointer<opus_encoder.OpusEncoder> encoder = opus.encoder
+        .opus_encoder_create(
+            sampleRate, channels, _applicationCodes[application]!, error);
     try {
       if (error.value == opus_defines.OPUS_OK) {
         return BufferedOpusEncoder._(encoder, sampleRate, channels, application,
@@ -224,11 +252,21 @@ class BufferedOpusEncoder extends OpusEncoder {
   }
 
   /// Interpets [inputBufferIndex] bytes of the [inputBuffer] as s16le pcm data, and encodes them to the [outputBuffer].
+  /// This means, that this method encodes `[inputBufferIndex]/2` samples, since `inputBufferIndex` is in bytes,
+  /// and s16le uses two bytes per sample.
+  ///
+  /// The sample count must be a valid count of samples for the opus codec.
+  /// This means that `sampleCount == channels * sampleRate * frameTime` has to hold true for one of
+  /// opus allowed frame times of 2.5ms, 5ms, 10ms, 20ms, 40ms and 60ms. E.g. if this encoder uses a
+  /// [sampleRate] of 48000Hz and 2 [channels] and you intend to encode 20ms (=0.02s) of audio, then:
+  /// `sampleCount = 2 * 48000Hz * 0.02s = 1920`.
+  ///
+  /// The returned list is actually just the [outputBuffer].
   Uint8List encode() {
     int sampleCountPerChannel = inputBufferIndex ~/ (channels * 2);
     _outputBufferIndex = opus.encoder.opus_encode(
         _opusEncoder,
-        _inputBuffer.cast(),
+        _inputBuffer.cast<Int16>(),
         sampleCountPerChannel,
         _outputBuffer,
         maxOutputBufferSizeBytes);
@@ -240,11 +278,16 @@ class BufferedOpusEncoder extends OpusEncoder {
   }
 
   /// Interpets [inputBufferIndex] bytes of the [inputBuffer] as float pcm data, and encodes them to the [outputBuffer].
+  /// This means, that this method encodes `[inputBufferIndex]/4` samples, since `inputBufferIndex` is in bytes,
+  /// and the float represntation uses two bytes per sample.
+  ///
+  /// Except that the sample count is calculated by dividing the [inputBufferIndex] by 4 and not by 2,
+  /// this method behaves just as [encode], so see there for more information.
   Uint8List encodeFloat() {
     int sampleCountPerChannel = inputBufferIndex ~/ (channels * 4);
     _outputBufferIndex = opus.encoder.opus_encode_float(
         _opusEncoder,
-        _inputBuffer.cast(),
+        _inputBuffer.cast<Float>(),
         sampleCountPerChannel,
         _outputBuffer,
         maxOutputBufferSizeBytes);
@@ -292,7 +335,7 @@ abstract class OpusEncoder {
 /// Setting the right apllication type when creating an encoder can improve quality.
 enum Application { voip, audio, restrictedLowdely }
 
-const Map<Application, int> _applicationCodes = {
+const Map<Application, int> _applicationCodes = const <Application, int>{
   Application.voip: opus_defines.OPUS_APPLICATION_VOIP,
   Application.audio: opus_defines.OPUS_APPLICATION_AUDIO,
   Application.restrictedLowdely:
