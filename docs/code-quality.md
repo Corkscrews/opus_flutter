@@ -236,9 +236,9 @@ graph LR
 - **Risk:** Script must be re-run manually to update opus.
 
 ### Linux
-- **Approach:** System library (`libopus.so.0`).
-- **Strength:** No build step; minimal package.
-- **Risk:** Requires user to have opus installed on their system.
+- **Approach:** Pre-built shared libraries via Docker, stored as Flutter assets.
+- **Strength:** Deterministic; no network or system dependency needed at app build time. Supports x86_64 and aarch64.
+- **Risk:** None significant. Uses `ubuntu:20.04` as base image (glibc 2.31 for broad compatibility). Falls back to system `libopus.so.0` if bundled binary fails.
 
 ### macOS
 - **Approach:** Same as iOS.

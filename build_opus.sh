@@ -5,11 +5,11 @@
 # Platforms:
 #   web      – WASM + JS glue via Docker (Emscripten)
 #   windows  – DLLs (x86, x64) via Docker (MinGW cross-compile)
+#   linux    – Shared libraries (x86_64, aarch64) via Docker
 #   ios      – XCFramework via native Xcode toolchain
 #   macos    – XCFramework via native Xcode toolchain
 #
 # Android builds from source at Gradle time (CMake FetchContent).
-# Linux uses the system libopus package.
 #
 # Usage:
 #   ./build_opus.sh              # build all platforms
@@ -18,8 +18,8 @@
 #   ./build_opus.sh ios macos    # build ios and macos
 #
 # Requirements:
-#   web/windows : Docker
-#   ios/macos   : Xcode CLI tools, CMake, Git
+#   web/windows/linux : Docker
+#   ios/macos         : Xcode CLI tools, CMake, Git
 
 set -euo pipefail
 
@@ -104,6 +104,36 @@ build_windows() {
 }
 
 # --------------------------------------------------------------------------- #
+# Linux
+# --------------------------------------------------------------------------- #
+
+build_linux() {
+  log "Building opus for ${BOLD}linux${RESET} (x86_64 + aarch64 shared libraries)..."
+  require_docker "linux"
+
+  local plugin_dir="$SCRIPT_DIR/opus_flutter_linux"
+  local assets_dir="$plugin_dir/assets"
+  local image_tag="opus-flutter-linux-builder"
+
+  docker build -t "$image_tag" -f "$plugin_dir/Dockerfile" "$plugin_dir"
+
+  local container_id
+  container_id=$(docker create "$image_tag")
+
+  mkdir -p "$assets_dir"
+  docker cp "$container_id:/build/out/libopus_x86_64.so"  "$assets_dir/libopus_x86_64.so.blob"
+  docker cp "$container_id:/build/out/libopus_aarch64.so"  "$assets_dir/libopus_aarch64.so.blob"
+  docker rm "$container_id" > /dev/null
+
+  local x86_64_size aarch64_size
+  x86_64_size=$(wc -c < "$assets_dir/libopus_x86_64.so.blob" | tr -d ' ')
+  aarch64_size=$(wc -c < "$assets_dir/libopus_aarch64.so.blob" | tr -d ' ')
+  ok "Linux build complete:"
+  ok "  $assets_dir/libopus_x86_64.so.blob  ($x86_64_size bytes)"
+  ok "  $assets_dir/libopus_aarch64.so.blob ($aarch64_size bytes)"
+}
+
+# --------------------------------------------------------------------------- #
 # iOS
 # --------------------------------------------------------------------------- #
 
@@ -143,7 +173,7 @@ build_macos() {
 # Main
 # --------------------------------------------------------------------------- #
 
-ALL_PLATFORMS=(web windows ios macos)
+ALL_PLATFORMS=(web windows linux ios macos)
 
 print_usage() {
   echo "Usage: $0 [platform ...]"
@@ -176,6 +206,7 @@ for target in "${targets[@]}"; do
   case "$target" in
     web)     build_web     ;;
     windows) build_windows ;;
+    linux)   build_linux   ;;
     ios)     build_ios     ;;
     macos)   build_macos   ;;
     *)

@@ -1,21 +1,59 @@
 import 'dart:ffi';
+import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// An implementation of [OpusFlutterPlatform] for Linux.
 ///
-/// On Linux, opus is loaded as a system library. Make sure `libopus` is
-/// installed on the system (e.g. `sudo apt install libopus0` on Debian/Ubuntu
-/// or `sudo dnf install opus` on Fedora).
+/// Loads a bundled libopus shared library from Flutter assets. If the bundled
+/// binary cannot be loaded (e.g. missing asset or unsupported architecture),
+/// falls back to the system-installed `libopus.so.0`.
 class OpusFlutterLinux extends OpusFlutterPlatform {
   /// Registers this class as the default instance of [OpusFlutterPlatform].
   static void registerWith() {
     OpusFlutterPlatform.instance = OpusFlutterLinux();
   }
 
-  /// Opens the system-installed opus shared library.
+  /// Opens the opus shared library bundled with this plugin.
+  ///
+  /// Falls back to the system library on failure.
   @override
   Future<Object> load() async {
-    return DynamicLibrary.open('libopus.so.0');
+    try {
+      final path = await _copyBundledLibrary();
+      return DynamicLibrary.open(path);
+    } catch (_) {
+      return DynamicLibrary.open('libopus.so.0');
+    }
+  }
+
+  static Future<String> _copyBundledLibrary() async {
+    final tmpPath = (await getTemporaryDirectory()).absolute.path;
+    final dir = Directory('$tmpPath/opus_flutter_linux/opus').absolute;
+    await dir.create(recursive: true);
+
+    final String src;
+    final String dst;
+    if (Abi.current() == Abi.linuxX64) {
+      src = 'libopus_x86_64.so.blob';
+      dst = 'libopus_x86_64.so';
+    } else if (Abi.current() == Abi.linuxArm64) {
+      src = 'libopus_aarch64.so.blob';
+      dst = 'libopus_aarch64.so';
+    } else {
+      throw UnsupportedError(
+          'Unsupported Linux architecture: ${Abi.current()}');
+    }
+
+    final f = File('${dir.path}/$dst');
+    if (!(await f.exists())) {
+      final data =
+          await rootBundle.load('packages/opus_flutter_linux/assets/$src');
+      await f.writeAsBytes(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    }
+    return f.path;
   }
 }

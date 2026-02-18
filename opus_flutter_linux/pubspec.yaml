@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   opus_flutter_platform_interface: ^3.0.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -18,6 +19,9 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
+  assets:
+    - assets/libopus_x86_64.so.blob
+    - assets/libopus_aarch64.so.blob
   plugin:
     implements: opus_flutter
     platforms:

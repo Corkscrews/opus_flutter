@@ -21,12 +21,14 @@ graph TD
     A[opus_flutter<br><i>app-facing package</i>] --> PI[opus_flutter_platform_interface]
     A --> AN[opus_flutter_android]
     A --> IO[opus_flutter_ios]
+    A --> LI[opus_flutter_linux]
     A --> MA[opus_flutter_macos]
     A --> WE[opus_flutter_web]
     A --> WI[opus_flutter_windows]
 
     AN --> PI
     IO --> PI
+    LI --> PI
     MA --> PI
     WE --> PI
     WI --> PI
@@ -38,6 +40,7 @@ graph TD
     style PI fill:#fff9c4,color:#000
     style AN fill:#a5d6a7,color:#000
     style IO fill:#a5d6a7,color:#000
+    style LI fill:#a5d6a7,color:#000
     style MA fill:#a5d6a7,color:#000
     style WE fill:#a5d6a7,color:#000
     style WI fill:#a5d6a7,color:#000
@@ -166,11 +169,18 @@ Since opus is linked into the process, `DynamicLibrary.process()` finds the symb
 | Aspect | Detail |
 |--------|--------|
 | Language | Dart only (no native plugin class) |
-| Library loading | `DynamicLibrary.open('libopus.so.0')` |
-| Opus distribution | System library -- not bundled with the plugin |
+| Library loading | `DynamicLibrary.open(path)` after copying `.so` to a temp directory |
+| Opus distribution | Pre-built shared libraries (`libopus_x86_64.so.blob`, `libopus_aarch64.so.blob`) stored as Flutter assets |
+| Build method | Native + cross-compiled from Docker (`Dockerfile`, Ubuntu 20.04 base for glibc 2.31 compatibility) |
+| Fallback | If bundled binary fails to load, falls back to system `libopus.so.0` |
 | Registration | Uses `dartPluginClass: OpusFlutterLinux` with `pluginClass: none` |
 
-Unlike other platforms, the Linux implementation does not bundle opus. It loads the system-installed `libopus.so.0` at runtime. Users must install `libopus` via their distribution's package manager.
+At runtime, the Linux implementation:
+
+1. Detects architecture via `Abi.current()` (`linuxX64` or `linuxArm64`).
+2. Copies the matching `.so.blob` asset from `rootBundle` to a temp directory.
+3. Opens the copied library with `DynamicLibrary.open()`.
+4. If any step fails, falls back to `DynamicLibrary.open('libopus.so.0')` (system library).
 
 ### Windows
 
@@ -229,7 +239,7 @@ flowchart TB
     end
 
     subgraph Linux
-        SYS[System package manager] -->|apt/dnf/pacman| LF[libopus.so.0<br><i>system library</i>]
+        GH -->|Dockerfile<br>native + cross-compile| LF[libopus_x86_64.so<br>libopus_aarch64.so]
     end
 
     subgraph Windows
@@ -264,7 +274,8 @@ sequenceDiagram
     else iOS / macOS
         Impl-->>PI: DynamicLibrary.process()
     else Linux
-        Impl-->>PI: DynamicLibrary.open('libopus.so.0')
+        Impl->>Impl: Copy .so to temp dir
+        Impl-->>PI: DynamicLibrary.open(path)
     else Windows
         Impl->>Impl: Copy DLL to temp dir
         Impl-->>PI: DynamicLibrary.open(path)

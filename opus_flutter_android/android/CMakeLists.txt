@@ -14,3 +14,6 @@ set(OPUS_INSTALL_PKG_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
 set(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(opus)
+
+# Ensure 16 KB ELF alignment for Android 15+ devices (safe no-op on NDK r28+)
+target_link_options(opus PRIVATE "-Wl,-z,max-page-size=16384")

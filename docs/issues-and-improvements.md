@@ -174,7 +174,7 @@ FFI-dependent code (encoding, decoding, streaming, packet inspection) requires t
 
 ### 13. ~~Add Linux support~~ RESOLVED
 
-**Status:** Fixed. Created `opus_flutter_linux` package that loads opus from the system library via `DynamicLibrary.open('libopus.so.0')`. Users must install `libopus` on their system (e.g. `sudo apt install libopus0`). This completes the Flutter desktop story -- all six platforms are now supported.
+**Status:** Fixed. Created `opus_flutter_linux` package with bundled pre-built opus shared libraries for x86_64 and aarch64. The libraries are built via Docker (Ubuntu 20.04 base for glibc 2.31 compatibility) and stored as Flutter assets (`libopus_x86_64.so.blob`, `libopus_aarch64.so.blob`). At runtime, the correct binary is detected via `Abi.current()`, copied from `rootBundle` to a temp directory, and loaded with `DynamicLibrary.open()`. Falls back to system `libopus.so.0` on failure. This completes the Flutter desktop story -- all six platforms are now supported with bundled binaries.
 
 ### 14. ~~Add version checking~~ RESOLVED
 
