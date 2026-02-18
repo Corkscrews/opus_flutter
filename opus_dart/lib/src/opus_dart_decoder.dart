@@ -55,7 +55,7 @@ class SimpleOpusDecoder extends OpusDecoder {
   SimpleOpusDecoder._(
       this._opusDecoder, this.sampleRate, this.channels, this._softClipBuffer)
       : _destroyed = false,
-        this._maxSamplesPerPacket = maxSamplesPerPacket(sampleRate, channels);
+        _maxSamplesPerPacket = maxSamplesPerPacket(sampleRate, channels);
 
   /// Creates an new [SimpleOpusDecoder] based on the [sampleRate] and [channels].
   /// See the matching fields for more information about these parameters.
@@ -69,8 +69,7 @@ class SimpleOpusDecoder extends OpusDecoder {
         opus.allocator.free(softClipBuffer);
         throw OpusException(error.value);
       }
-      return SimpleOpusDecoder._(
-          decoder, sampleRate, channels, softClipBuffer);
+      return SimpleOpusDecoder._(decoder, sampleRate, channels, softClipBuffer);
     } finally {
       opus.allocator.free(error);
     }
@@ -475,7 +474,7 @@ int _estimateLoss(int? loss, int? lastPacketDurationMs) {
   if (loss != null) return loss;
   if (lastPacketDurationMs != null) return lastPacketDurationMs;
   throw StateError(
-      'Tried to estimate the loss based on the last packets duration, but there was no last packet!\n' +
-          'This happend because you called a decode function with no input (null as input in SimpleOpusDecoder or 0 as inputBufferIndex in BufferedOpusDecoder), but failed to specify how many milliseconds were lost.\n' +
-          'And since there was no previous sucessfull decoded packet, the decoder could not estimate how many milliseconds are missing.');
+      'Tried to estimate the loss based on the last packets duration, but there was no last packet!\n'
+      'This happend because you called a decode function with no input (null as input in SimpleOpusDecoder or 0 as inputBufferIndex in BufferedOpusDecoder), but failed to specify how many milliseconds were lost.\n'
+      'And since there was no previous sucessfull decoded packet, the decoder could not estimate how many milliseconds are missing.');
 }

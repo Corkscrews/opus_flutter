@@ -23,8 +23,7 @@ enum FrameTime {
 
 /// Used to encode a stream of pcm data to opus frames of constant time.
 /// Each StreamOpusEncoder MUST ONLY be used once!
-class StreamOpusEncoder<T>
-    extends StreamTransformerBase<List<T>, Uint8List> {
+class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   static int _calculateMaxSampleSize(
       int sampleRate, int channels, FrameTime frameTime) {
     int samplesPerMs = (channels * sampleRate) ~/ 1000;
@@ -168,11 +167,10 @@ class StreamOpusEncoder<T>
         }
         _encoder.inputBuffer.setAll(
             _encoder.inputBufferIndex,
-            Uint8List(_encoder.maxInputBufferSizeBytes -
-                _encoder.inputBufferIndex));
+            Uint8List(
+                _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex));
         _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
-        Uint8List bytes =
-            floats ? _encoder.encodeFloat() : _encoder.encode();
+        Uint8List bytes = floats ? _encoder.encodeFloat() : _encoder.encode();
         yield copyOutput ? Uint8List.fromList(bytes) : bytes;
       }
     } finally {
@@ -199,8 +197,7 @@ class UnfinishedFrameException implements Exception {
 /// Used to decode a stream of opus packets to pcm data.
 /// Each element in the input stream MUST contain a whole opus packet.
 /// A `null` element in the input stream is interpreted as packet loss.
-class StreamOpusDecoder
-    extends StreamTransformerBase<Uint8List?, List<num>> {
+class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   /// If forward error correction (fec) should be enabled.
   final bool forwardErrorCorrection;
 
@@ -232,8 +229,8 @@ class StreamOpusDecoder
       bool forwardErrorCorrection = false,
       bool copyOutput = true,
       bool autoSoftClip = false})
-      : this._(true, Float32List, sampleRate, channels,
-            forwardErrorCorrection, copyOutput, autoSoftClip);
+      : this._(true, Float32List, sampleRate, channels, forwardErrorCorrection,
+            copyOutput, autoSoftClip);
 
   /// Creates a new StreamOpusDecoder that outputs [Int16List].
   StreamOpusDecoder.s16le(
@@ -241,8 +238,8 @@ class StreamOpusDecoder
       required int channels,
       bool forwardErrorCorrection = false,
       bool copyOutput = true})
-      : this._(false, Int16List, sampleRate, channels,
-            forwardErrorCorrection, copyOutput, false);
+      : this._(false, Int16List, sampleRate, channels, forwardErrorCorrection,
+            copyOutput, false);
 
   /// Creates a new StreamOpusDecoder that outputs plain bytes (in form of [Uint8List]).
   StreamOpusDecoder.bytes(
@@ -282,10 +279,9 @@ class StreamOpusDecoder
 
   void _decodeFec(bool fec, {int? loss}) {
     if (floats) {
-      _decoder.decodeFloat(
-          fec: fec, loss: loss, autoSoftClip: autoSoftClip);
+      _decoder.decodeFloat(fec: fec, loss: loss, autoSoftClip: autoSoftClip);
       return;
-    } 
+    }
     _decoder.decode(fec: fec, loss: loss);
   }
 

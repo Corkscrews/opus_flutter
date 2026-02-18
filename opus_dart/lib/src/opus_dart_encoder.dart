@@ -239,6 +239,10 @@ class BufferedOpusEncoder extends OpusEncoder {
     }
   }
 
+  int encoderCtl({required int request, required int value}) {
+    return opus.encoder.opus_encoder_ctl(_opusEncoder, request, value);
+  }
+
   /// Interpets [inputBufferIndex] bytes of the [inputBuffer] as s16le pcm data, and encodes them to the [outputBuffer].
   /// This means, that this method encodes `[inputBufferIndex]/2` samples, since `inputBufferIndex` is in bytes,
   /// and s16le uses two bytes per sample.
@@ -321,7 +325,7 @@ abstract class OpusEncoder {
 /// Setting the right apllication type when creating an encoder can improve quality.
 enum Application { voip, audio, restrictedLowdely }
 
-const Map<Application, int> _applicationCodes = const <Application, int>{
+const Map<Application, int> _applicationCodes = <Application, int>{
   Application.voip: opus_defines.OPUS_APPLICATION_VOIP,
   Application.audio: opus_defines.OPUS_APPLICATION_AUDIO,
   Application.restrictedLowdely:

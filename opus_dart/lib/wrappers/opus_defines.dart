@@ -1,6 +1,4 @@
-/// Contains methods defined contansts from opus_defines.h
-
-library opus_defines;
+// Contains methods defined contansts from opus_defines.h
 
 // These are the actual Encoder CTL ID numbers.
 // They should not be used directly by applications.

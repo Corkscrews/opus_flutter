@@ -268,10 +268,10 @@ graph LR
 | opus_flutter_macos | Yes | flutter_lints |
 | opus_flutter_web | Yes | flutter_lints |
 | opus_flutter_windows | Yes | flutter_lints |
-| opus_dart | No | N/A (pure Dart package, no Flutter dependency) |
+| opus_dart | Yes | `package:lints/recommended.yaml` (`constant_identifier_names` disabled for C API names) |
 | example | Yes | flutter_lints |
 
-All Flutter packages have lint configuration referencing `package:flutter_lints/flutter.yaml`. The vendored `opus_dart` is a pure Dart package and does not include `flutter_lints`, but passes analysis cleanly.
+All Flutter packages have lint configuration referencing `package:flutter_lints/flutter.yaml`. The vendored `opus_dart` is a pure Dart package and uses `package:lints/recommended.yaml` (the non-Flutter equivalent) with `constant_identifier_names` disabled since the FFI wrappers mirror upstream C API naming conventions. All files pass `dart analyze` and `dart format`.
 
 ---
 
@@ -287,9 +287,12 @@ All Flutter packages have lint configuration referencing `package:flutter_lints/
 | opus_flutter_macos | 2 tests | None | None |
 | opus_flutter_web | 1 test | None | None |
 | opus_flutter_windows | 2 tests | None | None |
+| opus_dart | 13 tests | None | None |
 | example | None | None | None |
 
 Unit tests cover the platform interface contract (singleton, token verification, version constant, error handling) and registration logic (`registerWith()`, class hierarchy) for each platform. Native library loading (`DynamicLibrary.open()`, `DynamicLibrary.process()`) cannot be unit tested as it requires the actual opus binary. CI runs all tests on every push.
+
+The vendored `opus_dart` has 13 unit tests covering pure-logic helpers (`maxSamplesPerPacket()`, error classes, enum completeness). FFI-dependent code (encoding/decoding) requires the actual opus library and would need integration-level tests.
 
 ---
 
@@ -302,6 +305,10 @@ Unit tests cover the platform interface contract (singleton, token verification,
 ### Medium Priority
 
 2. ~~**Update Docker base images**~~ -- Resolved: Windows Dockerfile updated from `ubuntu:bionic` (18.04, EOL) to `ubuntu:24.04`.
+3. ~~**Add `opus_dart` to CI**~~ -- Resolved: dedicated `analyze-opus-dart` and `test-opus-dart` jobs added.
+4. ~~**Add `analysis_options.yaml` to `opus_dart`**~~ -- Resolved: uses `package:lints/recommended.yaml`.
+5. ~~**Fix `opus_dart` formatting**~~ -- Resolved: all files pass `dart format`.
+6. ~~**Add unit tests for `opus_dart` pure logic**~~ -- Resolved: 13 tests added.
 
 ### Resolved
 

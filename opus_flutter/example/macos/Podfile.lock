@@ -1,0 +1,22 @@
+PODS:
+  - FlutterMacOS (1.0.0)
+  - opus_flutter_macos (3.0.0):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - opus_flutter_macos (from `Flutter/ephemeral/.symlinks/plugins/opus_flutter_macos/macos`)
+
+EXTERNAL SOURCES:
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  opus_flutter_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/opus_flutter_macos/macos
+
+SPEC CHECKSUMS:
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  opus_flutter_macos: 749514544ea96dd7215d77f512ff19301e63ca76
+
+PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
+
+COCOAPODS: 1.16.2

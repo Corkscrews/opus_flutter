@@ -1,10 +1,8 @@
-/// Contains methods and structs from the opus_decoder group of opus.h.
-/// SHOULD be imported as opus_decoder.
-///
-/// Vendored from https://github.com/EPNW/opus_dart
+// Contains methods and structs from the opus_decoder group of opus.h.
+// SHOULD be imported as opus_decoder.
+//
+// Vendored from https://github.com/EPNW/opus_dart
 // ignore_for_file: camel_case_types, non_constant_identifier_names, constant_identifier_names
-
-library opus_decoder;
 
 import '../src/proxy_ffi.dart' as ffi;
 
@@ -153,61 +151,61 @@ typedef _opus_pcm_soft_clip_Dart = void Function(
 );
 
 class FunctionsAndGlobals {
-  FunctionsAndGlobals(ffi.DynamicLibrary _dynamicLibrary)
-      : _opus_decoder_get_size = _dynamicLibrary.lookupFunction<
+  FunctionsAndGlobals(ffi.DynamicLibrary dynamicLibrary)
+      : _opus_decoder_get_size = dynamicLibrary.lookupFunction<
             _opus_decoder_get_size_C, _opus_decoder_get_size_Dart>(
           'opus_decoder_get_size',
         ),
-        _opus_decoder_create = _dynamicLibrary
+        _opus_decoder_create = dynamicLibrary
             .lookupFunction<_opus_decoder_create_C, _opus_decoder_create_Dart>(
           'opus_decoder_create',
         ),
-        _opus_decoder_init = _dynamicLibrary
+        _opus_decoder_init = dynamicLibrary
             .lookupFunction<_opus_decoder_init_C, _opus_decoder_init_Dart>(
           'opus_decoder_init',
         ),
         _opus_decode =
-            _dynamicLibrary.lookupFunction<_opus_decode_C, _opus_decode_Dart>(
+            dynamicLibrary.lookupFunction<_opus_decode_C, _opus_decode_Dart>(
           'opus_decode',
         ),
-        _opus_decode_float = _dynamicLibrary
+        _opus_decode_float = dynamicLibrary
             .lookupFunction<_opus_decode_float_C, _opus_decode_float_Dart>(
           'opus_decode_float',
         ),
-        _opus_decoder_destroy = _dynamicLibrary.lookupFunction<
+        _opus_decoder_destroy = dynamicLibrary.lookupFunction<
             _opus_decoder_destroy_C, _opus_decoder_destroy_Dart>(
           'opus_decoder_destroy',
         ),
-        _opus_packet_parse = _dynamicLibrary
+        _opus_packet_parse = dynamicLibrary
             .lookupFunction<_opus_packet_parse_C, _opus_packet_parse_Dart>(
           'opus_packet_parse',
         ),
-        _opus_packet_get_bandwidth = _dynamicLibrary.lookupFunction<
+        _opus_packet_get_bandwidth = dynamicLibrary.lookupFunction<
             _opus_packet_get_bandwidth_C, _opus_packet_get_bandwidth_Dart>(
           'opus_packet_get_bandwidth',
         ),
-        _opus_packet_get_samples_per_frame = _dynamicLibrary.lookupFunction<
+        _opus_packet_get_samples_per_frame = dynamicLibrary.lookupFunction<
             _opus_packet_get_samples_per_frame_C,
             _opus_packet_get_samples_per_frame_Dart>(
           'opus_packet_get_samples_per_frame',
         ),
-        _opus_packet_get_nb_channels = _dynamicLibrary.lookupFunction<
+        _opus_packet_get_nb_channels = dynamicLibrary.lookupFunction<
             _opus_packet_get_nb_channels_C, _opus_packet_get_nb_channels_Dart>(
           'opus_packet_get_nb_channels',
         ),
-        _opus_packet_get_nb_frames = _dynamicLibrary.lookupFunction<
+        _opus_packet_get_nb_frames = dynamicLibrary.lookupFunction<
             _opus_packet_get_nb_frames_C, _opus_packet_get_nb_frames_Dart>(
           'opus_packet_get_nb_frames',
         ),
-        _opus_packet_get_nb_samples = _dynamicLibrary.lookupFunction<
+        _opus_packet_get_nb_samples = dynamicLibrary.lookupFunction<
             _opus_packet_get_nb_samples_C, _opus_packet_get_nb_samples_Dart>(
           'opus_packet_get_nb_samples',
         ),
-        _opus_decoder_get_nb_samples = _dynamicLibrary.lookupFunction<
+        _opus_decoder_get_nb_samples = dynamicLibrary.lookupFunction<
             _opus_decoder_get_nb_samples_C, _opus_decoder_get_nb_samples_Dart>(
           'opus_decoder_get_nb_samples',
         ),
-        _opus_pcm_soft_clip = _dynamicLibrary
+        _opus_pcm_soft_clip = dynamicLibrary
             .lookupFunction<_opus_pcm_soft_clip_C, _opus_pcm_soft_clip_Dart>(
           'opus_pcm_soft_clip',
         );

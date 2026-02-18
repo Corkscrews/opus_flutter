@@ -25,10 +25,18 @@ graph LR
         I12[Podspec version mismatch ✅]
     end
 
+    subgraph opus_dart Gaps
+        I17[Not in CI ✅]
+        I18[No analysis_options.yaml ✅]
+        I19[No tests ✅]
+        I20[Formatting issues ✅]
+        I21[No README/CHANGELOG ✅]
+    end
+
     subgraph Features
-        I13[Linux support]
-        I14[Version checking]
-        I15[Modernize Android build]
+        I13[Linux support ✅]
+        I14[Version checking ✅]
+        I15[Modernize Android build ✅]
         I16[Reproducible builds]
     end
 
@@ -48,6 +56,11 @@ graph LR
     style I14 fill:#90caf9,color:#000
     style I15 fill:#90caf9,color:#000
     style I16 fill:#90caf9,color:#000
+    style I17 fill:#ffa726,color:#000
+    style I18 fill:#ffa726,color:#000
+    style I19 fill:#ffa726,color:#000
+    style I20 fill:#fff9c4,color:#000
+    style I21 fill:#fff9c4,color:#000
 ```
 
 ## Critical Issues
@@ -123,6 +136,37 @@ Additionally, the vendored package required several fixes to work with modern Da
 ### 12. ~~Podspec versions don't match pubspec versions~~ RESOLVED
 
 **Status:** Fixed. iOS podspec now matches pubspec at `3.0.1`, macOS podspec matches at `3.0.0`.
+
+---
+
+## Vendored opus_dart Gaps
+
+### 17. ~~`opus_dart` not included in CI~~ RESOLVED
+
+**Status:** Fixed. Added a dedicated `analyze-opus-dart` job (using `dart analyze` and `dart format` since it's a pure Dart package, not a Flutter package) and a `test-opus-dart` job to the CI workflow.
+
+### 18. ~~`opus_dart` missing `analysis_options.yaml`~~ RESOLVED
+
+**Status:** Fixed. Added `analysis_options.yaml` referencing `package:lints/recommended.yaml` with `constant_identifier_names` disabled (the FFI wrappers intentionally mirror C API naming like `OPUS_SET_BITRATE_REQUEST`). Added `lints` and `test` as dev dependencies.
+
+### 19. ~~`opus_dart` has no tests~~ RESOLVED
+
+**Status:** Fixed. Added 13 unit tests covering pure-logic helpers that don't require the native opus binary:
+- `maxDataBytes` constant value.
+- `maxSamplesPerPacket()` across standard sample rates and channel counts.
+- `OpusDestroyedError` encoder/decoder message content.
+- `OpusException` error code storage.
+- `Application` and `FrameTime` enum completeness.
+
+FFI-dependent code (encoding, decoding, streaming, packet inspection) requires the actual opus library and would need integration-level tests.
+
+### 20. ~~`opus_dart` has formatting issues~~ RESOLVED
+
+**Status:** Fixed. All files now pass `dart format --set-exit-if-changed`. Additionally, all 85 lint issues from `dart analyze` were resolved (library name removal, unnecessary `this`/`const`, adjacent string concatenation, local identifier naming).
+
+### 21. ~~`opus_dart` missing README and CHANGELOG~~ RESOLVED
+
+**Status:** Fixed. Added `README.md` covering the Dart-friendly API, raw bindings, initialization with `opus_flutter`, cross-platform FFI via `proxy_ffi.dart`, and encoder CTL usage. Updated from the original EPNW README to reflect the vendored state (opus 1.5.2, `wasm_ffi` instead of `web_ffi`, `publish_to: none`, no stale external links). CHANGELOG omitted since version history is tracked in git.
 
 ---
 
