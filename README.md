@@ -23,7 +23,7 @@ This monorepo contains a federated Flutter plugin that loads libopus on each sup
 
 | Android | iOS | Linux | macOS | Web | Windows |
 |:-------:|:---:|:-----:|:-----:|:---:|:-------:|
-|    x    |  x  |   x   |   x   |  x  |    x    |
+|    ✅    |  ✅  |   ✅   |   ✅   |  ✅  |    ✅    |
 
 ## Getting started
 
