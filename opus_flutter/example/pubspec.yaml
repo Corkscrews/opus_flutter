@@ -16,6 +16,12 @@ dependencies:
     path: ../
   cupertino_icons: ^1.0.8
   platform_info: ^5.0.0
+  record: ^6.2.0
+  path_provider: ^2.1.5
+  audioplayers: ^6.5.1
+  google_fonts: ^8.0.2
+  flutter_bloc: ^9.0.0
+  universal_io: ^2.3.1
 dependency_overrides:
   opus_flutter_android:
     path: ../../opus_flutter_android
