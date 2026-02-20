@@ -71,6 +71,26 @@ Currently, opus **1.5.2** is bundled (on Linux, the system-installed version is 
 | Web      | Compiled to WebAssembly with Emscripten ([details](./opus_flutter_web/README.md)) |
 | Windows  | Prebuilt DLLs for x86/x64 ([details](./opus_flutter_windows/README.md)) |
 
+## Scripts
+
+The `scripts/` directory contains helper scripts for local development.
+
+| Script | Description |
+|--------|-------------|
+| [`scripts/unit_tests.sh`](./scripts/unit_tests.sh) | Runs all unit tests across every package and collects per-package lcov coverage reports. When `lcov` is available, all reports are merged into a single `coverage/lcov.info` at the repository root and an HTML report is generated at `coverage/html/index.html`. |
+
+### Running unit tests
+
+```bash
+./scripts/unit_tests.sh
+```
+
+**Requirements:**
+
+- `flutter` (stable channel) with `dart` bundled
+- `lcov` (optional, for merged HTML coverage report) — `brew install lcov`
+- `dart pub global activate coverage` (for `opus_dart` pure-Dart coverage)
+
 ## Requirements
 
 - Dart SDK `>=3.4.0`
