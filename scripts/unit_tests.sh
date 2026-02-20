@@ -122,22 +122,25 @@ run_dart_tests() {
     return 0
   fi
 
-  if (
-    set -e
-    cd "$package_dir"
-    dart pub get
-    dart test --coverage=coverage
-    # Convert raw coverage data to lcov format
-    dart pub global run coverage:format_coverage \
-      --lcov \
-      --in=coverage \
-      --out=coverage/lcov.info \
-      --packages=.dart_tool/package_config.json \
-      --report-on=lib
-  ); then
+  # Test pass/fail is determined solely by `dart test`.
+  if (cd "$package_dir" && dart pub get && dart test --coverage=coverage); then
     log_success "$package"
-    copy_lcov "$package" "$package_dir/coverage/lcov.info"
     passed_packages+=("$package")
+
+    # Coverage formatting is best-effort: activate the package if needed, then
+    # convert the raw coverage data to lcov. A failure here does not mark the
+    # package as failed.
+    dart pub global activate coverage --no-executables 2>/dev/null || true
+    (
+      cd "$package_dir"
+      dart pub global run coverage:format_coverage \
+        --lcov \
+        --in=coverage \
+        --out=coverage/lcov.info \
+        --packages=.dart_tool/package_config.json \
+        --report-on=lib
+    ) && copy_lcov "$package" "$package_dir/coverage/lcov.info" \
+      || log_warning "Coverage formatting skipped for $package (run: dart pub global activate coverage)"
   else
     log_error "$package"
     failed_packages+=("$package")
