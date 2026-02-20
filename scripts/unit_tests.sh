@@ -73,11 +73,17 @@ mkdir -p "$COVERAGE_DIR"
 # ---------------------------------------------------------------------------
 
 # copy_lcov <package> <source_lcov>
+# Normalises SF: paths so they are relative to the repo root.
+#   Absolute:  SF:/full/repo/path/<package>/lib/… → SF:<package>/lib/…
+#   Relative:  SF:lib/…                          → SF:<package>/lib/…
 copy_lcov() {
   local package="$1"
   local source="$2"
   if [ -f "$source" ]; then
-    cp "$source" "$COVERAGE_DIR/${package}.lcov.info"
+    sed \
+      -e "s|^SF:${ROOT_DIR}/${package}/|SF:${package}/|" \
+      -e "s|^SF:lib/|SF:${package}/lib/|" \
+      "$source" > "$COVERAGE_DIR/${package}.lcov.info"
     log_info "Coverage saved → coverage/${package}.lcov.info"
   else
     log_warning "No lcov.info generated for $package"
@@ -138,7 +144,7 @@ run_dart_tests() {
         --in=coverage \
         --out=coverage/lcov.info \
         --packages=.dart_tool/package_config.json \
-        --report-on=lib
+        --report-on=lib/src
     ) && copy_lcov "$package" "$package_dir/coverage/lcov.info" \
       || log_warning "Coverage formatting skipped for $package (run: dart pub global activate coverage)"
   else
@@ -175,16 +181,20 @@ if [ ${#lcov_args[@]} -eq 0 ]; then
   log_warning "No coverage files found to merge."
 elif command -v lcov &>/dev/null && command -v genhtml &>/dev/null; then
   lcov "${lcov_args[@]}" -o "$MERGED_LCOV" 2>/dev/null
-  log_success "Merged lcov report → coverage/lcov.info"
+  lcov --remove "$MERGED_LCOV" '*/wrappers/*' -o "$MERGED_LCOV" 2>/dev/null
+  log_success "Merged lcov report → coverage/lcov.info (wrappers excluded)"
 
-  genhtml "$MERGED_LCOV" \
-    --output-directory "$HTML_REPORT_DIR" \
-    --title "opus_flutter – Unit Test Coverage" \
-    --legend \
-    --show-details \
-    2>/dev/null
+  if genhtml "$MERGED_LCOV" \
+       --output-directory "$HTML_REPORT_DIR" \
+       --prefix "$ROOT_DIR" \
+       --title "opus_flutter – Unit Test Coverage" \
+       --legend \
+       --ignore-errors source; then
+    log_success "HTML report → coverage/html/index.html"
+  else
+    log_warning "genhtml exited with errors — HTML report may be incomplete."
+  fi
 
-  log_success "HTML report → coverage/html/index.html"
   echo ""
   lcov --summary "$MERGED_LCOV" 2>/dev/null || true
 else

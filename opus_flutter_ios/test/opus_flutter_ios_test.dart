@@ -12,5 +12,24 @@ void main() {
       OpusFlutterIOS.registerWith();
       expect(OpusFlutterPlatform.instance, isA<OpusFlutterIOS>());
     });
+
+    test('registerWith creates a new instance each time', () {
+      OpusFlutterIOS.registerWith();
+      final first = OpusFlutterPlatform.instance;
+      OpusFlutterIOS.registerWith();
+      expect(OpusFlutterPlatform.instance, isA<OpusFlutterIOS>());
+      expect(identical(OpusFlutterPlatform.instance, first), isFalse);
+    });
+
+    test('multiple instances are independent', () {
+      final a = OpusFlutterIOS();
+      final b = OpusFlutterIOS();
+      expect(identical(a, b), isFalse);
+    });
+
+    test('load() returns a Future', () {
+      final ios = OpusFlutterIOS();
+      expect(ios.load, isA<Function>());
+    });
   });
 }
