@@ -190,8 +190,8 @@ class FunctionsAndGlobals {
 
   late final _opus_encoder_ctlPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int Function(ffi.Pointer<OpusEncoder>, ffi.Int,
-              ffi.VarArgs<(ffi.Int,)>)>>('opus_encoder_ctl');
+          ffi.Int Function(
+              ffi.Pointer<OpusEncoder>, ffi.Int, ffi.Int)>>('opus_encoder_ctl');
   late final _opus_encoder_ctl = _opus_encoder_ctlPtr
       .asFunction<int Function(ffi.Pointer<OpusEncoder>, int, int)>();
 }
