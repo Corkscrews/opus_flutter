@@ -70,6 +70,7 @@ run_dart_analyze() {
   (
     cd "$package_dir"
     dart pub get
+    dart run build_runner build --delete-conflicting-outputs
     dart analyze
   )
   local exit_code=$?
