@@ -42,15 +42,15 @@ class _RecordAndPlaybackView extends StatelessWidget {
                 return OpusampTransportPanel(
                   phase: state.phase,
                   statusText: state.statusText,
-                  opusFile: state.opusFile,
-                  wavFile: state.wavFile,
+                  opusStorage: state.opusStorage,
+                  wavStorage: state.wavStorage,
                   onRecord: state.phase.isIdle
                       ? () => bloc.add(const StartRecordingEvent())
                       : null,
                   onStop: state.phase.isRecording
                       ? () => bloc.add(const StopRecordingEvent())
                       : null,
-                  onDecode: state.phase.isIdle && state.opusFile != null
+                  onDecode: state.phase.isIdle && state.opusStorage != null
                       ? () => bloc.add(const DecodeFromDiskEvent())
                       : null,
                   onPlay: state.phase.isIdle && state.wavReady

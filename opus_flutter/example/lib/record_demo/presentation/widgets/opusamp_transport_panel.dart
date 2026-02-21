@@ -1,9 +1,8 @@
-import 'package:universal_io/io.dart';
-
 import 'package:flutter/material.dart';
 
 import '../../app/record_demo_app.dart';
 import '../../core/recorder_phase.dart';
+import '../../data/recording_storage.dart';
 import 'opusamp_file_info.dart';
 import 'opusamp_lcd.dart';
 import 'opusamp_speaker.dart';
@@ -15,8 +14,8 @@ class OpusampTransportPanel extends StatelessWidget {
     super.key,
     required this.phase,
     required this.statusText,
-    required this.opusFile,
-    required this.wavFile,
+    required this.opusStorage,
+    required this.wavStorage,
     required this.onRecord,
     required this.onStop,
     required this.onDecode,
@@ -25,8 +24,8 @@ class OpusampTransportPanel extends StatelessWidget {
 
   final RecorderPhase phase;
   final String statusText;
-  final File? opusFile;
-  final File? wavFile;
+  final RecordingStorage? opusStorage;
+  final RecordingStorage? wavStorage;
   final VoidCallback? onRecord;
   final VoidCallback? onStop;
   final VoidCallback? onDecode;
@@ -58,7 +57,9 @@ class OpusampTransportPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child:
-                          OpusampFileInfo(opusFile: opusFile, wavFile: wavFile),
+                          OpusampFileInfo(
+                              opusStorage: opusStorage,
+                              wavStorage: wavStorage),
                     ),
                     const SizedBox(width: 4),
                     const OpusampSpeaker(),

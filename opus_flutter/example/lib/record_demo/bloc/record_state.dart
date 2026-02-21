@@ -1,12 +1,11 @@
-import 'package:universal_io/io.dart';
-
 import '../core/recorder_phase.dart';
+import '../data/recording_storage.dart';
 
 final class RecorderState {
   const RecorderState({
     this.phase = RecorderPhase.idle,
-    this.opusFile,
-    this.wavFile,
+    this.opusStorage,
+    this.wavStorage,
     this.wavReady = false,
     this.recordingDuration = Duration.zero,
     this.playbackDuration = Duration.zero,
@@ -15,8 +14,8 @@ final class RecorderState {
   });
 
   final RecorderPhase phase;
-  final File? opusFile;
-  final File? wavFile;
+  final RecordingStorage? opusStorage;
+  final RecordingStorage? wavStorage;
 
   /// True only after a successful decode pass — gates the PLAY button.
   final bool wavReady;
@@ -53,8 +52,8 @@ final class RecorderState {
 
   RecorderState copyWith({
     RecorderPhase? phase,
-    File? Function()? opusFile,
-    File? Function()? wavFile,
+    RecordingStorage? Function()? opusStorage,
+    RecordingStorage? Function()? wavStorage,
     bool? wavReady,
     Duration? recordingDuration,
     Duration? playbackDuration,
@@ -63,8 +62,8 @@ final class RecorderState {
   }) {
     return RecorderState(
       phase: phase ?? this.phase,
-      opusFile: opusFile != null ? opusFile() : this.opusFile,
-      wavFile: wavFile != null ? wavFile() : this.wavFile,
+      opusStorage: opusStorage != null ? opusStorage() : this.opusStorage,
+      wavStorage: wavStorage != null ? wavStorage() : this.wavStorage,
       wavReady: wavReady ?? this.wavReady,
       recordingDuration: recordingDuration ?? this.recordingDuration,
       playbackDuration: playbackDuration ?? this.playbackDuration,

@@ -1,8 +1,10 @@
-import 'package:universal_io/io.dart';
 import 'dart:typed_data';
 
+import 'recording_storage.dart';
+
 class OpusPacketFile {
-  static void writeLengthPrefixedPacket(IOSink sink, Uint8List packet) {
+  static void writeLengthPrefixedPacket(
+      RecordingDataSink sink, Uint8List packet) {
     final header = ByteData(4)..setUint32(0, packet.length, Endian.little);
     sink.add(header.buffer.asUint8List());
     sink.add(packet);

@@ -2,16 +2,16 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:opus_dart/opus_dart.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
-import 'package:universal_io/io.dart';
 
 import '../core/audio_constants.dart';
 import '../core/recorder_phase.dart';
 import '../data/opus_packet_file.dart';
 import '../data/opus_wav_codec.dart';
+import '../data/recording_storage.dart';
 import 'record_event.dart';
 import 'record_state.dart';
 
@@ -30,7 +30,7 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
 
-  IOSink? _opusSink;
+  RecordingDataSink? _opusSink;
   StreamSubscription<Uint8List>? _encoderSubscription;
   Timer? _recordingTimer;
   Timer? _playbackTimer;
@@ -54,14 +54,13 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         throw StateError('Microphone permission denied.');
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final opusPath = '${directory.path}/recorded_audio.opuspack';
-      final wavPath = '${directory.path}/decoded_audio.wav';
-      final opusFile = File(opusPath);
-      final wavFile = File(wavPath);
+      final opusStorage =
+          await RecordingStorage.create('recorded_audio.opuspack');
+      final wavStorage =
+          await RecordingStorage.create('decoded_audio.wav');
 
-      if (await opusFile.exists()) await opusFile.delete();
-      if (await wavFile.exists()) await wavFile.delete();
+      if (await opusStorage.exists()) await opusStorage.delete();
+      if (await wavStorage.exists()) await wavStorage.delete();
 
       final pcmStream = await _recorder.startStream(const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
@@ -69,7 +68,7 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         numChannels: demoChannels,
       ));
 
-      final sink = opusFile.openWrite(mode: FileMode.writeOnlyAppend);
+      final sink = opusStorage.openWrite();
       final encoded = pcmStream.cast<List<int>>().transform(
             StreamOpusEncoder.bytes(
               floatInput: false,
@@ -94,8 +93,8 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
 
       emit(state.copyWith(
         phase: RecorderPhase.recording,
-        opusFile: () => opusFile,
-        wavFile: () => wavFile,
+        opusStorage: () => opusStorage,
+        wavStorage: () => wavStorage,
         wavReady: false,
         recordingDuration: Duration.zero,
       ));
@@ -152,10 +151,12 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     Emitter<RecorderState> emit,
   ) async {
     if (!state.phase.isIdle) return;
-    final opusFile = state.opusFile;
-    final wavFile = state.wavFile;
+    final opusStorage = state.opusStorage;
+    final wavStorage = state.wavStorage;
 
-    if (opusFile == null || wavFile == null || !await opusFile.exists()) {
+    if (opusStorage == null ||
+        wavStorage == null ||
+        !await opusStorage.exists()) {
       emit(state.copyWith(
         error: () => 'No Opus recording found. Record audio first.',
       ));
@@ -168,10 +169,13 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     ));
 
     try {
-      final bytes = await opusFile.readAsBytes();
+      final bytes = await opusStorage.readAsBytes();
       final packets = OpusPacketFile.readLengthPrefixedPackets(bytes);
       final decodedWav = await OpusWavCodec.decodePacketsToWav(packets);
-      await wavFile.writeAsBytes(decodedWav, flush: true);
+      final wavSink = wavStorage.openWrite();
+      wavSink.add(decodedWav);
+      await wavSink.flush();
+      await wavSink.close();
       emit(state.copyWith(phase: RecorderPhase.idle, wavReady: true));
     } catch (error) {
       emit(state.copyWith(
@@ -186,9 +190,9 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     Emitter<RecorderState> emit,
   ) async {
     if (!state.phase.isIdle) return;
-    final wavFile = state.wavFile;
+    final wavStorage = state.wavStorage;
 
-    if (wavFile == null || !await wavFile.exists()) {
+    if (wavStorage == null || !await wavStorage.exists()) {
       emit(state.copyWith(
         error: () => 'No decoded WAV found. Decode from disk first.',
       ));
@@ -216,7 +220,12 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         (_) => add(const PlaybackTickEvent()),
       );
 
-      await _player.play(DeviceFileSource(wavFile.path));
+      if (kIsWeb) {
+        final bytes = await wavStorage.readAsBytes();
+        await _player.play(BytesSource(bytes));
+      } else {
+        await _player.play(DeviceFileSource(wavStorage.label));
+      }
     } catch (error) {
       _cancelPlayback();
       emit(state.copyWith(

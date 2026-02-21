@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:universal_io/io.dart';
 
 import '../../app/record_demo_app.dart';
+import '../../data/recording_storage.dart';
 import 'opusamp_lcd_surface.dart';
 import 'opusamp_pixel_text.dart';
 
 class OpusampFileInfo extends StatelessWidget {
   const OpusampFileInfo({
     super.key,
-    required this.opusFile,
-    required this.wavFile,
+    required this.opusStorage,
+    required this.wavStorage,
   });
 
-  final File? opusFile;
-  final File? wavFile;
+  final RecordingStorage? opusStorage;
+  final RecordingStorage? wavStorage;
 
   static const double _cellSize = 1.5;
 
@@ -27,13 +27,13 @@ class OpusampFileInfo extends StatelessWidget {
           children: [
             _PixelInfoRow(
               label: 'OPUS',
-              value: opusFile?.path,
+              value: opusStorage?.label,
               cellSize: _cellSize,
             ),
             const SizedBox(height: 4),
             _PixelInfoRow(
               label: 'WAV ',
-              value: wavFile?.path,
+              value: wavStorage?.label,
               cellSize: _cellSize,
             ),
           ],
