@@ -35,8 +35,7 @@ class OpusFlutterLinux extends OpusFlutterPlatform {
       try {
         return DynamicLibrary.open('libopus.so.0');
       } catch (_) {
-        throw ArgumentError(
-            'Failed to load libopus. '
+        throw ArgumentError('Failed to load libopus. '
             'Neither the bundled library nor the system-installed '
             'libopus.so.0 could be opened. '
             'Install libopus with: sudo apt install libopus0');

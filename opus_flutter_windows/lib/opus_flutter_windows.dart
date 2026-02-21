@@ -65,8 +65,7 @@ class OpusFlutterWindows extends OpusFlutterPlatform {
       final libPath = await _copyFiles();
       return DynamicLibrary.open(libPath);
     } catch (e) {
-      throw ArgumentError(
-          'Failed to load libopus on Windows: $e');
+      throw ArgumentError('Failed to load libopus on Windows: $e');
     }
   }
   // coverage:ignore-end

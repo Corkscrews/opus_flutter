@@ -11,8 +11,10 @@ class OpusFlutterMacOS extends OpusFlutterPlatform {
   }
 
   /// Opens the opus library linked into this plugin.
+  // coverage:ignore-start
   @override
   Future<Object> load() async {
     return DynamicLibrary.process();
   }
+  // coverage:ignore-end
 }

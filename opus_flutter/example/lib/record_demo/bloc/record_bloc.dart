@@ -203,8 +203,8 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     try {
       await _player.stop();
 
-      _playerCompleteSubscription =
-          _player.onPlayerComplete.listen((_) => add(const PlaybackCompleteEvent()));
+      _playerCompleteSubscription = _player.onPlayerComplete
+          .listen((_) => add(const PlaybackCompleteEvent()));
 
       _playerDurationSubscription = _player.onDurationChanged
           .listen((d) => add(PlaybackTotalDurationEvent(d)));

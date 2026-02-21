@@ -20,14 +20,16 @@ void main() {
     });
 
     test('all values are accessible by name', () {
-      expect(FrameTime.values.map((e) => e.name), containsAll([
-        'ms2_5',
-        'ms5',
-        'ms10',
-        'ms20',
-        'ms40',
-        'ms60',
-      ]));
+      expect(
+          FrameTime.values.map((e) => e.name),
+          containsAll([
+            'ms2_5',
+            'ms5',
+            'ms10',
+            'ms20',
+            'ms40',
+            'ms60',
+          ]));
     });
   });
 

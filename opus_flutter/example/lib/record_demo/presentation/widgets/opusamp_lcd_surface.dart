@@ -48,7 +48,10 @@ class OpusampLcdSurface extends StatelessWidget {
             ),
             // Top edge refraction
             Positioned(
-              top: 0, left: 0, right: 0, height: 6,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 6,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -66,7 +69,10 @@ class OpusampLcdSurface extends StatelessWidget {
             ),
             // Left edge refraction
             Positioned(
-              top: 0, left: 0, bottom: 0, width: 4,
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: 4,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -84,7 +90,10 @@ class OpusampLcdSurface extends StatelessWidget {
             ),
             // Bottom edge refraction
             Positioned(
-              bottom: 0, left: 0, right: 0, height: 4,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 4,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -102,7 +111,10 @@ class OpusampLcdSurface extends StatelessWidget {
             ),
             // Right edge refraction
             Positioned(
-              top: 0, right: 0, bottom: 0, width: 3,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 3,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(

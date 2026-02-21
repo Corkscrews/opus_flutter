@@ -79,6 +79,7 @@ The `scripts/` directory contains helper scripts for local development.
 |--------|-------------|
 | [`scripts/unit_tests.sh`](./scripts/unit_tests.sh) | Runs all unit tests across every package and collects per-package lcov coverage reports. When `lcov` is available, all reports are merged into a single `coverage/lcov.info` at the repository root and an HTML report is generated at `coverage/html/index.html`. |
 | [`scripts/analyze.sh`](./scripts/analyze.sh) | Runs static analysis (`flutter analyze` / `dart analyze`) across every package and prints a pass/fail summary. Exits with a non-zero code if any package has analysis errors. |
+| [`scripts/format.sh`](./scripts/format.sh) | Checks that all Dart code is formatted correctly (`dart format --set-exit-if-changed`). Exits with a non-zero code if any file needs formatting. |
 
 ### Running unit tests
 

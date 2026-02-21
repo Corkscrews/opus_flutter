@@ -121,9 +121,9 @@ class _LcdPixelPainter extends CustomPainter {
     required this.infoColor,
     required Animation<double> infoScroll,
     required ValueNotifier<double> flicker,
-  }) : _infoScroll = infoScroll,
-       _flicker = flicker,
-       super(repaint: Listenable.merge([infoScroll, flicker]));
+  })  : _infoScroll = infoScroll,
+        _flicker = flicker,
+        super(repaint: Listenable.merge([infoScroll, flicker]));
 
   final String statusText;
   final Color statusColor;
@@ -140,11 +140,11 @@ class _LcdPixelPainter extends CustomPainter {
   static const int _charSpacing = 1;
   static const double _scrollGap = 48.0;
   static const double _charSlot = (lcdCharWidth + _charSpacing) * _cellSize;
-  static const double _infoCharSlot = (lcdCharWidth + _charSpacing) * _infoCellSize;
+  static const double _infoCharSlot =
+      (lcdCharWidth + _charSpacing) * _infoCellSize;
   static const _blankGlyph = [0, 0, 0, 0, 0, 0, 0];
   static const double infoCellSize = _infoCellSize;
-  static const double totalHeight =
-      _padding +
+  static const double totalHeight = _padding +
       (lcdCharHeight * _cellSize) +
       _lineGap +
       (lcdCharHeight * _infoCellSize) +
@@ -157,15 +157,18 @@ class _LcdPixelPainter extends CustomPainter {
 
     final flicker = _flicker.value;
 
-    _drawText(canvas, statusText, _padding, statusY, statusColor, flicker, _cellSize, _charSlot);
+    _drawText(canvas, statusText, _padding, statusY, statusColor, flicker,
+        _cellSize, _charSlot);
 
     final textWidth = infoText.length * _infoCharSlot;
     final totalCycle = textWidth + _scrollGap;
     final rawOffset = _infoScroll.value * totalCycle;
     final pixelOffset = (rawOffset / _infoCellSize).floor() * _infoCellSize;
 
-    _drawText(canvas, infoText, -pixelOffset, infoY, infoColor, flicker, _infoCellSize, _infoCharSlot);
-    _drawText(canvas, infoText, -pixelOffset + totalCycle, infoY, infoColor, flicker, _infoCellSize, _infoCharSlot);
+    _drawText(canvas, infoText, -pixelOffset, infoY, infoColor, flicker,
+        _infoCellSize, _infoCharSlot);
+    _drawText(canvas, infoText, -pixelOffset + totalCycle, infoY, infoColor,
+        flicker, _infoCellSize, _infoCharSlot);
 
     final gapPaint = Paint()..color = const Color(0x28000000);
     final innerSize = _cellSize - _gapWidth;
@@ -181,7 +184,6 @@ class _LcdPixelPainter extends CustomPainter {
         gapPaint,
       );
     }
-
   }
 
   void _drawText(
@@ -195,7 +197,8 @@ class _LcdPixelPainter extends CustomPainter {
     double charSlot,
   ) {
     final litPaint = Paint()..color = color.withValues(alpha: 1.0 - flicker);
-    final dimPaint = Paint()..color = color.withValues(alpha: 0.04 * (1.0 - flicker));
+    final dimPaint = Paint()
+      ..color = color.withValues(alpha: 0.04 * (1.0 - flicker));
 
     double cursorX = x;
     for (int i = 0; i < text.length; i++) {

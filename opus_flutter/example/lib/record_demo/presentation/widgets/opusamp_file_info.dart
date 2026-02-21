@@ -57,9 +57,7 @@ class _PixelInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasValue = value != null;
-    final displayValue = hasValue
-        ? value!.toUpperCase()
-        : '---';
+    final displayValue = hasValue ? value!.toUpperCase() : '---';
     final valueColor = hasValue ? opusampGreenDim : const Color(0xFF2A2A2A);
 
     return Row(

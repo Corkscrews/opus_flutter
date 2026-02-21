@@ -17,12 +17,16 @@ final class RecorderState {
   final RecorderPhase phase;
   final File? opusFile;
   final File? wavFile;
+
   /// True only after a successful decode pass — gates the PLAY button.
   final bool wavReady;
+
   /// Elapsed time since the current recording started.
   final Duration recordingDuration;
+
   /// Elapsed time since the current playback started.
   final Duration playbackDuration;
+
   /// Total duration of the loaded WAV file; null until the player reports it.
   final Duration? totalPlaybackDuration;
   final String? error;

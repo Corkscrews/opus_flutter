@@ -120,7 +120,8 @@ void main() {
     test('can be set as the platform instance', () {
       final unsupported = OpusFlutterPlatformUnsupported();
       OpusFlutterPlatform.instance = unsupported;
-      expect(OpusFlutterPlatform.instance, isA<OpusFlutterPlatformUnsupported>());
+      expect(
+          OpusFlutterPlatform.instance, isA<OpusFlutterPlatformUnsupported>());
     });
   });
 }

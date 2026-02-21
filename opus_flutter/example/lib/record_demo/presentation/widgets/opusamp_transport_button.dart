@@ -19,6 +19,7 @@ class OpusampTransportButton extends StatefulWidget {
   final String label;
   final Color activeColor;
   final ButtonIndicator indicator;
+
   /// When true, [activeColor] is used even when the button is disabled,
   /// so callers can control the color independently of the enabled state.
   final bool lockColor;
@@ -167,8 +168,9 @@ class _ButtonPainter extends CustomPainter {
         hasIndicator ? indicatorSize + indicatorGap + textWidth : textWidth;
     final contentStartX = size.width / 2 - totalContentWidth / 2;
 
-    final textX =
-        hasIndicator ? contentStartX + indicatorSize + indicatorGap : contentStartX;
+    final textX = hasIndicator
+        ? contentStartX + indicatorSize + indicatorGap
+        : contentStartX;
     final textY = faceTop + faceH / 2 - textHeight / 2;
 
     final litPaint = Paint()..color = activeColor;

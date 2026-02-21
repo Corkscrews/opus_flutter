@@ -58,8 +58,7 @@ void main() {
     int channels = 2,
     Application application = Application.voip,
   }) {
-    when(mockEncoder.opus_encoder_create(any, any, any, any))
-        .thenAnswer((inv) {
+    when(mockEncoder.opus_encoder_create(any, any, any, any)).thenAnswer((inv) {
       (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_OK;
       return Pointer<opus_encoder.OpusEncoder>.fromAddress(0xDEAD);
     });
@@ -86,8 +85,7 @@ void main() {
     int channels = 2,
     Application application = Application.audio,
   }) {
-    when(mockEncoder.opus_encoder_create(any, any, any, any))
-        .thenAnswer((inv) {
+    when(mockEncoder.opus_encoder_create(any, any, any, any)).thenAnswer((inv) {
       (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_OK;
       return Pointer<opus_encoder.OpusEncoder>.fromAddress(0xDEAD);
     });
@@ -136,8 +134,7 @@ void main() {
     });
 
     test('maps Application.restrictedLowdely correctly', () {
-      final encoder =
-          createEncoder(application: Application.restrictedLowdely);
+      final encoder = createEncoder(application: Application.restrictedLowdely);
       expect(encoder.application, Application.restrictedLowdely);
       verify(mockEncoder.opus_encoder_create(
               any, any, OPUS_APPLICATION_RESTRICTED_LOWDELAY, any))
@@ -153,17 +150,14 @@ void main() {
       });
       expect(
         () => SimpleOpusEncoder(
-            sampleRate: 48000,
-            channels: 2,
-            application: Application.voip),
+            sampleRate: 48000, channels: 2, application: Application.voip),
         throwsA(isA<OpusException>()),
       );
     });
 
     test('encode returns encoded bytes', () {
       final encoder = createEncoder();
-      when(mockEncoder.opus_encode(any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encode(any, any, any, any, any)).thenAnswer((inv) {
         final outputPtr = inv.positionalArguments[3] as Pointer<Uint8>;
         outputPtr[0] = 0xAA;
         outputPtr[1] = 0xBB;
@@ -340,9 +334,9 @@ void main() {
       decoder.decode(input: null);
 
       // The second call should pass nullptr and fec=0
-      final calls = verify(
-              mockDecoder.opus_decode(any, any, any, any, any, any))
-          .callCount;
+      final calls =
+          verify(mockDecoder.opus_decode(any, any, any, any, any, any))
+              .callCount;
       expect(calls, 2);
       decoder.destroy();
     });
@@ -413,8 +407,7 @@ void main() {
       final decoder = createDecoder();
       when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
           .thenReturn(960);
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any))
-          .thenReturn(null);
+      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.decodeFloat(
           input: Uint8List.fromList([0x01]), autoSoftClip: true);
@@ -528,23 +521,19 @@ void main() {
     test('throws OpusException when native returns an error', () {
       when(mockEncoder.opus_encoder_create(any, any, any, any))
           .thenAnswer((inv) {
-        (inv.positionalArguments[3] as Pointer<Int32>).value =
-            OPUS_ALLOC_FAIL;
+        (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_ALLOC_FAIL;
         return Pointer<opus_encoder.OpusEncoder>.fromAddress(0);
       });
       expect(
         () => BufferedOpusEncoder(
-            sampleRate: 48000,
-            channels: 2,
-            application: Application.voip),
+            sampleRate: 48000, channels: 2, application: Application.voip),
         throwsA(isA<OpusException>()),
       );
     });
 
     test('encode writes to output buffer and returns it', () {
       final encoder = createBufferedEncoder();
-      when(mockEncoder.opus_encode(any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encode(any, any, any, any, any)).thenAnswer((inv) {
         final outputPtr = inv.positionalArguments[3] as Pointer<Uint8>;
         outputPtr[0] = 0xDE;
         outputPtr[1] = 0xAD;
@@ -605,12 +594,11 @@ void main() {
       final encoder = createBufferedEncoder();
       when(mockEncoder.opus_encoder_ctl(any, any, any)).thenReturn(OPUS_OK);
 
-      final result = encoder.encoderCtl(
-          request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+      final result =
+          encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
 
       expect(result, OPUS_OK);
-      verify(mockEncoder.opus_encoder_ctl(
-              any, OPUS_SET_BITRATE_REQUEST, 64000))
+      verify(mockEncoder.opus_encoder_ctl(any, OPUS_SET_BITRATE_REQUEST, 64000))
           .called(1);
       encoder.destroy();
     });
@@ -669,8 +657,7 @@ void main() {
 
     test('throws OpusException when native returns an error', () {
       when(mockDecoder.opus_decoder_create(any, any, any)).thenAnswer((inv) {
-        (inv.positionalArguments[2] as Pointer<Int32>).value =
-            OPUS_ALLOC_FAIL;
+        (inv.positionalArguments[2] as Pointer<Int32>).value = OPUS_ALLOC_FAIL;
         return Pointer<opus_decoder.OpusDecoder>.fromAddress(0);
       });
       expect(
@@ -808,8 +795,7 @@ void main() {
       final decoder = createBufferedDecoder();
       when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
           .thenReturn(960);
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any))
-          .thenReturn(null);
+      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat(autoSoftClip: true);
@@ -897,8 +883,7 @@ void main() {
       final decoder = createBufferedDecoder();
       when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
           .thenReturn(960);
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any))
-          .thenReturn(null);
+      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat();
@@ -1021,8 +1006,7 @@ void main() {
 
   group('pcmSoftClip', () {
     test('calls opus_pcm_soft_clip and returns clipped data', () {
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any))
-          .thenReturn(null);
+      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       final input = Float32List.fromList([0.5, -0.5, 1.5, -1.5]);
       final result = pcmSoftClip(input: input, channels: 2);
@@ -1032,8 +1016,7 @@ void main() {
     });
 
     test('passes correct frame_size for mono', () {
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any))
-          .thenReturn(null);
+      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       final input = Float32List.fromList([0.1, 0.2, 0.3]);
       pcmSoftClip(input: input, channels: 1);
@@ -1074,8 +1057,7 @@ void main() {
           .thenReturn(OPUS_INVALID_PACKET);
 
       expect(
-        () => OpusPacketUtils.getSampleCount(
-            packet: packet, sampleRate: 48000),
+        () => OpusPacketUtils.getSampleCount(packet: packet, sampleRate: 48000),
         throwsA(isA<OpusException>()),
       );
     });
@@ -1130,8 +1112,8 @@ void main() {
       when(mockDecoder.opus_packet_get_samples_per_frame(any, any))
           .thenReturn(480);
 
-      final result = OpusPacketUtils.getSamplesPerFrame(
-          packet: packet, sampleRate: 48000);
+      final result =
+          OpusPacketUtils.getSamplesPerFrame(packet: packet, sampleRate: 48000);
 
       expect(result, 480);
       verify(mockDecoder.opus_packet_get_samples_per_frame(any, 48000))

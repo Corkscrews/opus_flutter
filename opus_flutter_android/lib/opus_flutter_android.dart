@@ -11,8 +11,10 @@ class OpusFlutterAndroid extends OpusFlutterPlatform {
   }
 
   /// Opens the shared opus library built by this plugin.
+  // coverage:ignore-start
   @override
   Future<Object> load() async {
     return DynamicLibrary.open('libopus.so');
   }
+  // coverage:ignore-end
 }

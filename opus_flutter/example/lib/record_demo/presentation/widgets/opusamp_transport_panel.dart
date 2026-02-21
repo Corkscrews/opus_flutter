@@ -7,7 +7,8 @@ import '../../core/recorder_phase.dart';
 import 'opusamp_file_info.dart';
 import 'opusamp_lcd.dart';
 import 'opusamp_speaker.dart';
-import 'opusamp_transport_button.dart' show ButtonIndicator, OpusampTransportButton;
+import 'opusamp_transport_button.dart'
+    show ButtonIndicator, OpusampTransportButton;
 
 class OpusampTransportPanel extends StatelessWidget {
   const OpusampTransportPanel({
@@ -56,7 +57,8 @@ class OpusampTransportPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: OpusampFileInfo(opusFile: opusFile, wavFile: wavFile),
+                      child:
+                          OpusampFileInfo(opusFile: opusFile, wavFile: wavFile),
                     ),
                     const SizedBox(width: 4),
                     const OpusampSpeaker(),
@@ -87,9 +89,8 @@ class OpusampTransportPanel extends StatelessWidget {
                   OpusampTransportButton(
                     onPressed: onPlay,
                     label: 'PLAY',
-                    activeColor: phase.isPlaying
-                        ? opusampGreen
-                        : opusampGreenDim,
+                    activeColor:
+                        phase.isPlaying ? opusampGreen : opusampGreenDim,
                     indicator: ButtonIndicator.arrow,
                     lockColor: true,
                   ),

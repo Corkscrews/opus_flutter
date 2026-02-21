@@ -162,7 +162,8 @@ void main() {
       expect(OPUS_APPLICATION_AUDIO, 2049);
     });
 
-    test('restrictedLowdely maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
+    test(
+        'restrictedLowdely maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
         () {
       expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051);
     });

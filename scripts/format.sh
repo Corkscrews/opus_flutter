@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 #
-# analyze.sh
+# format.sh
 #
-# Runs `flutter analyze` / `dart analyze` for every package in the monorepo
-# and reports a pass/fail summary.
+# Checks that all Dart code in the monorepo is formatted correctly.
+# Exits with a non-zero code if any file needs formatting.
 #
 # Usage:
-#   ./scripts/analyze.sh
+#   ./scripts/format.sh
 #
 # Requirements:
-#   - flutter (stable channel)
 #   - dart (bundled with flutter)
 
 set -uo pipefail
@@ -24,78 +23,31 @@ failed_packages=()
 passed_packages=()
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Main
 # ---------------------------------------------------------------------------
+echo -e "${BOLD}Format check — $(date '+%Y-%m-%d %H:%M')${NC}"
+echo "Root: $ROOT_DIR"
 
-# run_flutter_analyze <package>
-run_flutter_analyze() {
-  local package="$1"
-  local package_dir="$ROOT_DIR/$package"
+log_header "━━━ Checking formatting ━━━"
+
+for package in "$DART_PACKAGE" "${FLUTTER_PACKAGES[@]}"; do
+  local_dir="$ROOT_DIR/$package"
+
+  if [ ! -d "$local_dir" ]; then
+    log_warning "Directory not found, skipping: $local_dir"
+    continue
+  fi
 
   log_header "▸ $package"
 
-  if [ ! -d "$package_dir" ]; then
-    log_warning "Directory not found, skipping: $package_dir"
-    return 0
-  fi
-
-  (
-    cd "$package_dir"
-    flutter pub get
-    flutter analyze
-  )
-  local exit_code=$?
-
-  if [ $exit_code -eq 0 ]; then
+  if dart format --set-exit-if-changed "$local_dir/"; then
     log_success "$package"
     passed_packages+=("$package")
   else
     log_error "$package"
     failed_packages+=("$package")
   fi
-}
-
-# run_dart_analyze <package>
-run_dart_analyze() {
-  local package="$1"
-  local package_dir="$ROOT_DIR/$package"
-
-  log_header "▸ $package (dart)"
-
-  if [ ! -d "$package_dir" ]; then
-    log_warning "Directory not found, skipping: $package_dir"
-    return 0
-  fi
-
-  (
-    cd "$package_dir"
-    dart pub get
-    dart analyze
-  )
-  local exit_code=$?
-
-  if [ $exit_code -eq 0 ]; then
-    log_success "$package"
-    passed_packages+=("$package")
-  else
-    log_error "$package"
-    failed_packages+=("$package")
-  fi
-}
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-echo -e "${BOLD}Static analysis — $(date '+%Y-%m-%d %H:%M')${NC}"
-echo "Root: $ROOT_DIR"
-
-log_header "━━━ Running analysis ━━━"
-
-for package in "${FLUTTER_PACKAGES[@]}"; do
-  run_flutter_analyze "$package"
 done
-
-run_dart_analyze "$DART_PACKAGE"
 
 # ---------------------------------------------------------------------------
 # Summary
@@ -123,4 +75,4 @@ if [ ${#failed_packages[@]} -gt 0 ]; then
 fi
 
 echo ""
-echo -e "${GREEN}${BOLD}All packages passed analysis!${NC}"
+echo -e "${GREEN}${BOLD}All packages are properly formatted!${NC}"

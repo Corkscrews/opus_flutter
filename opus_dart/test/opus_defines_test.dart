@@ -10,8 +10,8 @@ void main() {
   group('Error codes', () {
     test('OPUS_OK is 0', () => expect(OPUS_OK, 0));
     test('OPUS_BAD_ARG is -1', () => expect(OPUS_BAD_ARG, -1));
-    test('OPUS_BUFFER_TOO_SMALL is -2',
-        () => expect(OPUS_BUFFER_TOO_SMALL, -2));
+    test(
+        'OPUS_BUFFER_TOO_SMALL is -2', () => expect(OPUS_BUFFER_TOO_SMALL, -2));
     test('OPUS_INTERNAL_ERROR is -3', () => expect(OPUS_INTERNAL_ERROR, -3));
     test('OPUS_INVALID_PACKET is -4', () => expect(OPUS_INVALID_PACKET, -4));
     test('OPUS_UNIMPLEMENTED is -5', () => expect(OPUS_UNIMPLEMENTED, -5));
@@ -66,8 +66,8 @@ void main() {
     test('OPUS_FRAMESIZE_ARG is 5000', () => expect(OPUS_FRAMESIZE_ARG, 5000));
     test('OPUS_FRAMESIZE_2_5_MS is 5001',
         () => expect(OPUS_FRAMESIZE_2_5_MS, 5001));
-    test('OPUS_FRAMESIZE_5_MS is 5002',
-        () => expect(OPUS_FRAMESIZE_5_MS, 5002));
+    test(
+        'OPUS_FRAMESIZE_5_MS is 5002', () => expect(OPUS_FRAMESIZE_5_MS, 5002));
     test('OPUS_FRAMESIZE_10_MS is 5003',
         () => expect(OPUS_FRAMESIZE_10_MS, 5003));
     test('OPUS_FRAMESIZE_20_MS is 5004',
@@ -110,7 +110,8 @@ void main() {
     test('SET/GET pairs differ by 1', () {
       expect(OPUS_GET_APPLICATION_REQUEST - OPUS_SET_APPLICATION_REQUEST, 1);
       expect(OPUS_GET_BITRATE_REQUEST - OPUS_SET_BITRATE_REQUEST, 1);
-      expect(OPUS_GET_MAX_BANDWIDTH_REQUEST - OPUS_SET_MAX_BANDWIDTH_REQUEST, 1);
+      expect(
+          OPUS_GET_MAX_BANDWIDTH_REQUEST - OPUS_SET_MAX_BANDWIDTH_REQUEST, 1);
       expect(OPUS_GET_VBR_REQUEST - OPUS_SET_VBR_REQUEST, 1);
       expect(OPUS_GET_BANDWIDTH_REQUEST - OPUS_SET_BANDWIDTH_REQUEST, 1);
       expect(OPUS_GET_COMPLEXITY_REQUEST - OPUS_SET_COMPLEXITY_REQUEST, 1);

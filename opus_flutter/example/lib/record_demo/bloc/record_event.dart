@@ -43,4 +43,3 @@ final class PlaybackTotalDurationEvent extends RecordEvent {
   const PlaybackTotalDurationEvent(this.total);
   final Duration total;
 }
-

@@ -82,9 +82,8 @@ abstract class OpusEncoderFunctions {
       ffi.Pointer<OpusEncoder> st, int Fs, int channels, int application);
   int opus_encode(ffi.Pointer<OpusEncoder> st, ffi.Pointer<ffi.Int16> pcm,
       int frame_size, ffi.Pointer<ffi.Uint8> data, int max_data_bytes);
-  int opus_encode_float(ffi.Pointer<OpusEncoder> st,
-      ffi.Pointer<ffi.Float> pcm, int frame_size, ffi.Pointer<ffi.Uint8> data,
-      int max_data_bytes);
+  int opus_encode_float(ffi.Pointer<OpusEncoder> st, ffi.Pointer<ffi.Float> pcm,
+      int frame_size, ffi.Pointer<ffi.Uint8> data, int max_data_bytes);
   void opus_encoder_destroy(ffi.Pointer<OpusEncoder> st);
   int opus_encoder_ctl(ffi.Pointer<OpusEncoder> st, int request, int va);
 }

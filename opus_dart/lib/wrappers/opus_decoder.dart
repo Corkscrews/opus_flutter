@@ -157,13 +157,20 @@ abstract class OpusDecoderFunctions {
   int opus_decoder_init(ffi.Pointer<OpusDecoder> st, int Fs, int channels);
   int opus_decode(ffi.Pointer<OpusDecoder> st, ffi.Pointer<ffi.Uint8> data,
       int len, ffi.Pointer<ffi.Int16> pcm, int frame_size, int decode_fec);
-  int opus_decode_float(ffi.Pointer<OpusDecoder> st,
-      ffi.Pointer<ffi.Uint8> data, int len, ffi.Pointer<ffi.Float> pcm,
-      int frame_size, int decode_fec);
+  int opus_decode_float(
+      ffi.Pointer<OpusDecoder> st,
+      ffi.Pointer<ffi.Uint8> data,
+      int len,
+      ffi.Pointer<ffi.Float> pcm,
+      int frame_size,
+      int decode_fec);
   void opus_decoder_destroy(ffi.Pointer<OpusDecoder> st);
   int opus_packet_parse(
-      ffi.Pointer<ffi.Uint8> data, int len, ffi.Pointer<ffi.Uint8> out_toc,
-      ffi.Pointer<ffi.Uint8> frames, int size,
+      ffi.Pointer<ffi.Uint8> data,
+      int len,
+      ffi.Pointer<ffi.Uint8> out_toc,
+      ffi.Pointer<ffi.Uint8> frames,
+      int size,
       ffi.Pointer<ffi.Int32> payload_offset);
   int opus_packet_get_bandwidth(ffi.Pointer<ffi.Uint8> data);
   int opus_packet_get_samples_per_frame(ffi.Pointer<ffi.Uint8> data, int Fs);
@@ -171,8 +178,8 @@ abstract class OpusDecoderFunctions {
   int opus_packet_get_nb_frames(ffi.Pointer<ffi.Uint8> packet, int len);
   int opus_packet_get_nb_samples(
       ffi.Pointer<ffi.Uint8> packet, int len, int Fs);
-  int opus_decoder_get_nb_samples(ffi.Pointer<OpusDecoder> dec,
-      ffi.Pointer<ffi.Uint8> packet, int len);
+  int opus_decoder_get_nb_samples(
+      ffi.Pointer<OpusDecoder> dec, ffi.Pointer<ffi.Uint8> packet, int len);
   void opus_pcm_soft_clip(ffi.Pointer<ffi.Float> pcm, int frame_size,
       int channels, ffi.Pointer<ffi.Float> softclip_mem);
 }
