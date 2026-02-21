@@ -40,10 +40,12 @@ for package in "$DART_PACKAGE" "${FLUTTER_PACKAGES[@]}"; do
 
   log_header "▸ $package"
 
-  # Resolve packages first so the formatter can read analysis_options.yaml
-  # (needed for page_width and other formatter settings in Dart 3.7+).
-  (cd "$local_dir" && flutter pub get --quiet 2>/dev/null) || \
-  (cd "$local_dir" && dart pub get --quiet 2>/dev/null) || true
+  # Resolve packages so the formatter can read analysis_options.yaml.
+  if [ "$package" = "$DART_PACKAGE" ]; then
+    (cd "$local_dir" && dart pub get) || true
+  else
+    (cd "$local_dir" && flutter pub get) || true
+  fi
 
   if dart format --set-exit-if-changed "$local_dir/"; then
     log_success "$package"
