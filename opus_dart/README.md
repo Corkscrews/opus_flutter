@@ -16,6 +16,10 @@ Vendored from [EPNW/opus_dart](https://github.com/EPNW/opus_dart) (v3.0.1) and u
   - [Bindings Only](#bindings-only)
 - [Cross-Platform FFI](#cross-platform-ffi)
 - [Encoder CTL](#encoder-ctl)
+- [Testing](#testing)
+  - [Test structure](#test-structure)
+  - [Running the tests](#running-the-tests)
+  - [Writing new tests](#writing-new-tests)
 
 ## Choosing the Right API
 
@@ -101,3 +105,68 @@ SimpleOpusEncoder createCbrEncoder() {
 ```
 
 Note: although the C API's `opus_encoder_ctl` accepts variadic arguments, the Dart binding only supports one argument. This is sufficient for most use cases.
+
+## Testing
+
+`opus_dart` has a pure-Dart test suite that runs without a physical device or a real libopus binary. All FFI calls are intercepted by [Mockito](https://pub.dev/packages/mockito) mocks, so tests are fast and fully hermetic.
+
+### Test structure
+
+| File | What it covers |
+|------|----------------|
+| `test/opus_defines_test.dart` | Constant values and wire-format correctness for every symbol in `opus_defines.dart` |
+| `test/opus_dart_test.dart` | Public API types: `OpusException`, `OpusDestroyedError`, `Application`, `FrameTime`, `maxDataBytes`, `maxSamplesPerPacket` |
+| `test/opus_dart_streaming_test.dart` | `FrameTime` ordering, `UnfinishedFrameException` subtype, `StreamOpusEncoder._calculateMaxSampleSize` formula |
+| `test/opus_dart_mock_test.dart` | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder`, `OpusPacketUtils`, `pcmSoftClip`, `getOpusVersion`, `OpusException.toString` — all backed by Mockito mocks |
+| `test/opus_dart_streaming_mock_test.dart` | `StreamOpusEncoder` and `StreamOpusDecoder` end-to-end stream behaviour, FEC, packet loss, buffer flushing, soft-clip — all backed by Mockito mocks |
+
+#### How mocking works
+
+Each wrapper's `FunctionsAndGlobals` class implements an abstract interface (`OpusDecoderFunctions`, `OpusEncoderFunctions`, `OpusLibInfoFunctions`). The global `ApiObject` that holds these is replaceable via `ApiObject.test(...)`:
+
+```dart
+opus = ApiObject.test(
+  libinfo: mockLibInfo,
+  encoder: mockEncoder,
+  decoder: mockDecoder,
+  allocator: malloc,  // real allocator — native memory still works
+);
+```
+
+This lets every call to `opus.encoder.opus_encode(...)` (and friends) be intercepted and controlled by a Mockito mock, with no native library loaded.
+
+The mock classes are **generated** by `build_runner` and are excluded from version control (`**/*.mocks.dart` in `.gitignore`). They must exist before the mock tests can run.
+
+### Running the tests
+
+**Run the full monorepo test suite** (recommended — handles code generation automatically):
+
+```bash
+# from the repository root
+./scripts/unit_tests.sh
+```
+
+The script runs `dart run build_runner build --delete-conflicting-outputs` before `dart test`, so no manual setup is needed.
+
+**Run tests for this package only:**
+
+```bash
+cd opus_dart
+dart pub get
+dart run build_runner build --delete-conflicting-outputs
+dart test
+```
+
+To run a single file:
+
+```bash
+dart test test/opus_dart_mock_test.dart
+dart test test/opus_dart_streaming_mock_test.dart
+```
+
+### Writing new tests
+
+1. Add your test in the appropriate file under `test/`, or create a new file.
+2. If you need to mock the FFI layer, import the shared mock types from the nearest `*.mocks.dart` file (after generation), or add a `@GenerateMocks([...])` annotation to your own file and re-run `build_runner`.
+3. Inject the mocks via `ApiObject.test(...)` in `setUp`.
+4. Use `provideDummy<Pointer<T>>(Pointer.fromAddress(0))` for any FFI pointer return types that Mockito cannot generate automatically.

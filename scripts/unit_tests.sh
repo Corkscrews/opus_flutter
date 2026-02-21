@@ -18,42 +18,8 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# ---------------------------------------------------------------------------
-# Colours
-# ---------------------------------------------------------------------------
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
-
-log_info()    { echo -e "${BLUE}[INFO]${NC}  $1"; }
-log_success() { echo -e "${GREEN}[PASS]${NC}  $1"; }
-log_warning() { echo -e "${YELLOW}[WARN]${NC}  $1"; }
-log_error()   { echo -e "${RED}[FAIL]${NC}  $1"; }
-log_header()  { echo -e "\n${BOLD}$1${NC}"; }
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-# Packages tested with `flutter test --coverage`
-FLUTTER_PACKAGES=(
-  "opus_flutter_platform_interface"
-  "opus_flutter_android"
-  "opus_flutter_ios"
-  "opus_flutter_linux"
-  "opus_flutter_macos"
-  "opus_flutter_windows"
-  "opus_flutter"
-)
-
-# Package tested with `dart test` (pure Dart, no Flutter)
-DART_PACKAGE="opus_dart"
+# shellcheck source=scripts/common.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 # Where per-package lcov files and the merged report are written
 COVERAGE_DIR="$ROOT_DIR/coverage"
@@ -129,7 +95,7 @@ run_dart_tests() {
   fi
 
   # Test pass/fail is determined solely by `dart test`.
-  if (cd "$package_dir" && dart pub get && dart test --coverage=coverage); then
+  if (cd "$package_dir" && dart pub get && dart run build_runner build --delete-conflicting-outputs && dart test --coverage=coverage); then
     log_success "$package"
     passed_packages+=("$package")
 
@@ -141,6 +107,7 @@ run_dart_tests() {
       cd "$package_dir"
       dart pub global run coverage:format_coverage \
         --lcov \
+        --check-ignore \
         --in=coverage \
         --out=coverage/lcov.info \
         --packages=.dart_tool/package_config.json \

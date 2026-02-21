@@ -60,10 +60,12 @@ class ApiObject {
   final opus_decoder.OpusDecoderFunctions decoder;
   final Allocator allocator;
 
+  // coverage:ignore-start
   ApiObject(DynamicLibrary lib, this.allocator)
       : libinfo = opus_libinfo.FunctionsAndGlobals(lib),
         encoder = opus_encoder.FunctionsAndGlobals(lib),
         decoder = opus_decoder.FunctionsAndGlobals(lib);
+  // coverage:ignore-end
 
   ApiObject.test({
     required this.libinfo,
@@ -79,6 +81,8 @@ class ApiObject {
 /// It accepts [Object] so callers don't need to cast from the platform
 /// interface's `Future<Object>` return type -- on native platforms this is a
 /// `dart:ffi` DynamicLibrary, on web a `wasm_ffi` DynamicLibrary.
+// coverage:ignore-start
 void initOpus(Object opusLib) {
   opus = createApiObject(opusLib);
 }
+// coverage:ignore-end

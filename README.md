@@ -78,6 +78,7 @@ The `scripts/` directory contains helper scripts for local development.
 | Script | Description |
 |--------|-------------|
 | [`scripts/unit_tests.sh`](./scripts/unit_tests.sh) | Runs all unit tests across every package and collects per-package lcov coverage reports. When `lcov` is available, all reports are merged into a single `coverage/lcov.info` at the repository root and an HTML report is generated at `coverage/html/index.html`. |
+| [`scripts/analyze.sh`](./scripts/analyze.sh) | Runs static analysis (`flutter analyze` / `dart analyze`) across every package and prints a pass/fail summary. Exits with a non-zero code if any package has analysis errors. |
 
 ### Running unit tests
 
@@ -85,11 +86,23 @@ The `scripts/` directory contains helper scripts for local development.
 ./scripts/unit_tests.sh
 ```
 
+The script automatically runs `dart run build_runner build --delete-conflicting-outputs` for `opus_dart` before executing its tests, so Mockito mock classes are always up to date.
+
 **Requirements:**
 
 - `flutter` (stable channel) with `dart` bundled
 - `lcov` (optional, for merged HTML coverage report) — `brew install lcov`
 - `dart pub global activate coverage` (for `opus_dart` pure-Dart coverage)
+
+### Running static analysis
+
+```bash
+./scripts/analyze.sh
+```
+
+**Requirements:**
+
+- `flutter` (stable channel) with `dart` bundled
 
 ## Requirements
 

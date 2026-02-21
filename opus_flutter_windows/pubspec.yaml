@@ -13,12 +13,6 @@ dependencies:
   opus_flutter_platform_interface:
     path: ../opus_flutter_platform_interface
   path_provider: ^2.1.5
-  universal_io: ^2.2.2
-
-dependency_overrides:
-  # platform 3.0.0 references Platform.packageRoot which was removed from the
-  # Dart SDK. Force a version that does not use that deprecated API.
-  platform: ">=3.1.0 <4.0.0"
 
 dev_dependencies:
   flutter_test:
