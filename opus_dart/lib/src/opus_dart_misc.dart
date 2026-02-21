@@ -52,18 +52,25 @@ class OpusDestroyedError extends StateError {
             'OpusDestroyedException: This OpusDecoder was already destroyed!');
 }
 
-late final ApiObject opus;
+late ApiObject opus;
 
 class ApiObject {
-  final opus_libinfo.FunctionsAndGlobals libinfo;
-  final opus_encoder.FunctionsAndGlobals encoder;
-  final opus_decoder.FunctionsAndGlobals decoder;
+  final opus_libinfo.OpusLibInfoFunctions libinfo;
+  final opus_encoder.OpusEncoderFunctions encoder;
+  final opus_decoder.OpusDecoderFunctions decoder;
   final Allocator allocator;
 
-  ApiObject(DynamicLibrary opus, this.allocator)
-      : libinfo = opus_libinfo.FunctionsAndGlobals(opus),
-        encoder = opus_encoder.FunctionsAndGlobals(opus),
-        decoder = opus_decoder.FunctionsAndGlobals(opus);
+  ApiObject(DynamicLibrary lib, this.allocator)
+      : libinfo = opus_libinfo.FunctionsAndGlobals(lib),
+        encoder = opus_encoder.FunctionsAndGlobals(lib),
+        decoder = opus_decoder.FunctionsAndGlobals(lib);
+
+  ApiObject.test({
+    required this.libinfo,
+    required this.encoder,
+    required this.decoder,
+    required this.allocator,
+  });
 }
 
 /// Must be called to initialize this library.

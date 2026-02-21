@@ -74,7 +74,22 @@ typedef _opus_encoder_destroy_Dart = void Function(
   ffi.Pointer<OpusEncoder> st,
 );
 
-class FunctionsAndGlobals {
+abstract class OpusEncoderFunctions {
+  int opus_encoder_get_size(int channels);
+  ffi.Pointer<OpusEncoder> opus_encoder_create(
+      int Fs, int channels, int application, ffi.Pointer<ffi.Int32> error);
+  int opus_encoder_init(
+      ffi.Pointer<OpusEncoder> st, int Fs, int channels, int application);
+  int opus_encode(ffi.Pointer<OpusEncoder> st, ffi.Pointer<ffi.Int16> pcm,
+      int frame_size, ffi.Pointer<ffi.Uint8> data, int max_data_bytes);
+  int opus_encode_float(ffi.Pointer<OpusEncoder> st,
+      ffi.Pointer<ffi.Float> pcm, int frame_size, ffi.Pointer<ffi.Uint8> data,
+      int max_data_bytes);
+  void opus_encoder_destroy(ffi.Pointer<OpusEncoder> st);
+  int opus_encoder_ctl(ffi.Pointer<OpusEncoder> st, int request, int va);
+}
+
+class FunctionsAndGlobals implements OpusEncoderFunctions {
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
       _lookup;
 
@@ -105,6 +120,7 @@ class FunctionsAndGlobals {
         ),
         _lookup = dynamicLibrary.lookup;
 
+  @override
   int opus_encoder_get_size(
     int channels,
   ) {
@@ -113,6 +129,7 @@ class FunctionsAndGlobals {
 
   final _opus_encoder_get_size_Dart _opus_encoder_get_size;
 
+  @override
   ffi.Pointer<OpusEncoder> opus_encoder_create(
     int Fs,
     int channels,
@@ -124,6 +141,7 @@ class FunctionsAndGlobals {
 
   final _opus_encoder_create_Dart _opus_encoder_create;
 
+  @override
   int opus_encoder_init(
     ffi.Pointer<OpusEncoder> st,
     int Fs,
@@ -135,6 +153,7 @@ class FunctionsAndGlobals {
 
   final _opus_encoder_init_Dart _opus_encoder_init;
 
+  @override
   int opus_encode(
     ffi.Pointer<OpusEncoder> st,
     ffi.Pointer<ffi.Int16> pcm,
@@ -147,6 +166,7 @@ class FunctionsAndGlobals {
 
   final _opus_encode_Dart _opus_encode;
 
+  @override
   int opus_encode_float(
     ffi.Pointer<OpusEncoder> st,
     ffi.Pointer<ffi.Float> pcm,
@@ -159,6 +179,7 @@ class FunctionsAndGlobals {
 
   final _opus_encode_float_Dart _opus_encode_float;
 
+  @override
   void opus_encoder_destroy(
     ffi.Pointer<OpusEncoder> st,
   ) {
@@ -176,6 +197,7 @@ class FunctionsAndGlobals {
   /// [request] and all remaining parameters should be replaced by one
   /// of the convenience macros in `opus_genericctls` or
   /// `opus_encoderctls`.
+  @override
   int opus_encoder_ctl(
     ffi.Pointer<OpusEncoder> st,
     int request,

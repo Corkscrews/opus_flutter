@@ -150,7 +150,34 @@ typedef _opus_pcm_soft_clip_Dart = void Function(
   ffi.Pointer<ffi.Float> softclip_mem,
 );
 
-class FunctionsAndGlobals {
+abstract class OpusDecoderFunctions {
+  int opus_decoder_get_size(int channels);
+  ffi.Pointer<OpusDecoder> opus_decoder_create(
+      int Fs, int channels, ffi.Pointer<ffi.Int32> error);
+  int opus_decoder_init(ffi.Pointer<OpusDecoder> st, int Fs, int channels);
+  int opus_decode(ffi.Pointer<OpusDecoder> st, ffi.Pointer<ffi.Uint8> data,
+      int len, ffi.Pointer<ffi.Int16> pcm, int frame_size, int decode_fec);
+  int opus_decode_float(ffi.Pointer<OpusDecoder> st,
+      ffi.Pointer<ffi.Uint8> data, int len, ffi.Pointer<ffi.Float> pcm,
+      int frame_size, int decode_fec);
+  void opus_decoder_destroy(ffi.Pointer<OpusDecoder> st);
+  int opus_packet_parse(
+      ffi.Pointer<ffi.Uint8> data, int len, ffi.Pointer<ffi.Uint8> out_toc,
+      ffi.Pointer<ffi.Uint8> frames, int size,
+      ffi.Pointer<ffi.Int32> payload_offset);
+  int opus_packet_get_bandwidth(ffi.Pointer<ffi.Uint8> data);
+  int opus_packet_get_samples_per_frame(ffi.Pointer<ffi.Uint8> data, int Fs);
+  int opus_packet_get_nb_channels(ffi.Pointer<ffi.Uint8> data);
+  int opus_packet_get_nb_frames(ffi.Pointer<ffi.Uint8> packet, int len);
+  int opus_packet_get_nb_samples(
+      ffi.Pointer<ffi.Uint8> packet, int len, int Fs);
+  int opus_decoder_get_nb_samples(ffi.Pointer<OpusDecoder> dec,
+      ffi.Pointer<ffi.Uint8> packet, int len);
+  void opus_pcm_soft_clip(ffi.Pointer<ffi.Float> pcm, int frame_size,
+      int channels, ffi.Pointer<ffi.Float> softclip_mem);
+}
+
+class FunctionsAndGlobals implements OpusDecoderFunctions {
   FunctionsAndGlobals(ffi.DynamicLibrary dynamicLibrary)
       : _opus_decoder_get_size = dynamicLibrary.lookupFunction<
             _opus_decoder_get_size_C, _opus_decoder_get_size_Dart>(
@@ -210,12 +237,14 @@ class FunctionsAndGlobals {
           'opus_pcm_soft_clip',
         );
 
+  @override
   int opus_decoder_get_size(int channels) {
     return _opus_decoder_get_size(channels);
   }
 
   final _opus_decoder_get_size_Dart _opus_decoder_get_size;
 
+  @override
   ffi.Pointer<OpusDecoder> opus_decoder_create(
     int Fs,
     int channels,
@@ -226,6 +255,7 @@ class FunctionsAndGlobals {
 
   final _opus_decoder_create_Dart _opus_decoder_create;
 
+  @override
   int opus_decoder_init(
     ffi.Pointer<OpusDecoder> st,
     int Fs,
@@ -236,6 +266,7 @@ class FunctionsAndGlobals {
 
   final _opus_decoder_init_Dart _opus_decoder_init;
 
+  @override
   int opus_decode(
     ffi.Pointer<OpusDecoder> st,
     ffi.Pointer<ffi.Uint8> data,
@@ -249,6 +280,7 @@ class FunctionsAndGlobals {
 
   final _opus_decode_Dart _opus_decode;
 
+  @override
   int opus_decode_float(
     ffi.Pointer<OpusDecoder> st,
     ffi.Pointer<ffi.Uint8> data,
@@ -262,12 +294,14 @@ class FunctionsAndGlobals {
 
   final _opus_decode_float_Dart _opus_decode_float;
 
+  @override
   void opus_decoder_destroy(ffi.Pointer<OpusDecoder> st) {
     _opus_decoder_destroy(st);
   }
 
   final _opus_decoder_destroy_Dart _opus_decoder_destroy;
 
+  @override
   int opus_packet_parse(
     ffi.Pointer<ffi.Uint8> data,
     int len,
@@ -281,12 +315,14 @@ class FunctionsAndGlobals {
 
   final _opus_packet_parse_Dart _opus_packet_parse;
 
+  @override
   int opus_packet_get_bandwidth(ffi.Pointer<ffi.Uint8> data) {
     return _opus_packet_get_bandwidth(data);
   }
 
   final _opus_packet_get_bandwidth_Dart _opus_packet_get_bandwidth;
 
+  @override
   int opus_packet_get_samples_per_frame(
     ffi.Pointer<ffi.Uint8> data,
     int Fs,
@@ -297,12 +333,14 @@ class FunctionsAndGlobals {
   final _opus_packet_get_samples_per_frame_Dart
       _opus_packet_get_samples_per_frame;
 
+  @override
   int opus_packet_get_nb_channels(ffi.Pointer<ffi.Uint8> data) {
     return _opus_packet_get_nb_channels(data);
   }
 
   final _opus_packet_get_nb_channels_Dart _opus_packet_get_nb_channels;
 
+  @override
   int opus_packet_get_nb_frames(
     ffi.Pointer<ffi.Uint8> packet,
     int len,
@@ -312,6 +350,7 @@ class FunctionsAndGlobals {
 
   final _opus_packet_get_nb_frames_Dart _opus_packet_get_nb_frames;
 
+  @override
   int opus_packet_get_nb_samples(
     ffi.Pointer<ffi.Uint8> packet,
     int len,
@@ -322,6 +361,7 @@ class FunctionsAndGlobals {
 
   final _opus_packet_get_nb_samples_Dart _opus_packet_get_nb_samples;
 
+  @override
   int opus_decoder_get_nb_samples(
     ffi.Pointer<OpusDecoder> dec,
     ffi.Pointer<ffi.Uint8> packet,
@@ -332,6 +372,7 @@ class FunctionsAndGlobals {
 
   final _opus_decoder_get_nb_samples_Dart _opus_decoder_get_nb_samples;
 
+  @override
   void opus_pcm_soft_clip(
     ffi.Pointer<ffi.Float> pcm,
     int frame_size,
