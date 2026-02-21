@@ -100,6 +100,8 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         recordingDuration: Duration.zero,
       ));
     } catch (error) {
+      // ignore: avoid_print
+      print('Failed to start recording: $error');
       emit(state.copyWith(
         phase: RecorderPhase.idle,
         error: () => 'Failed to start recording: $error',

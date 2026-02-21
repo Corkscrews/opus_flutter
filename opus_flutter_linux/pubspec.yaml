@@ -28,4 +28,3 @@ flutter:
     platforms:
       linux:
         dartPluginClass: OpusFlutterLinux
-        pluginClass: none
