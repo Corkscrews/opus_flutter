@@ -10,7 +10,6 @@ import 'package:opus_dart/wrappers/opus_encoder.dart' as opus_encoder;
 import 'package:opus_dart/wrappers/opus_libinfo.dart' as opus_libinfo;
 import 'package:opus_dart/wrappers/opus_defines.dart';
 import 'package:opus_dart/opus_dart.dart';
-import 'package:opus_dart/src/opus_dart_packet.dart';
 import 'package:test/test.dart';
 
 import 'opus_dart_mock_test.mocks.dart';
