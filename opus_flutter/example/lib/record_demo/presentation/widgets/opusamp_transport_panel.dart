@@ -56,10 +56,8 @@ class OpusampTransportPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child:
-                          OpusampFileInfo(
-                              opusStorage: opusStorage,
-                              wavStorage: wavStorage),
+                      child: OpusampFileInfo(
+                          opusStorage: opusStorage, wavStorage: wavStorage),
                     ),
                     const SizedBox(width: 4),
                     const OpusampSpeaker(),

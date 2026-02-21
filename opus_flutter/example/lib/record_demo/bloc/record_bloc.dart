@@ -56,8 +56,7 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
 
       final opusStorage =
           await RecordingStorage.create('recorded_audio.opuspack');
-      final wavStorage =
-          await RecordingStorage.create('decoded_audio.wav');
+      final wavStorage = await RecordingStorage.create('decoded_audio.wav');
 
       if (await opusStorage.exists()) await opusStorage.delete();
       if (await wavStorage.exists()) await wavStorage.delete();
