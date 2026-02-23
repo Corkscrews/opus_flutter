@@ -1,7 +1,7 @@
 name: opus_codec_android
 description: Android implementation of the opus_codec plugin.
 repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter_android
-version: 3.0.1
+version: 3.0.4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

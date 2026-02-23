@@ -1,7 +1,7 @@
 name: opus_codec_macos
 description: macOS implementation of the opus_codec plugin.
 repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter_macos
-version: 3.0.0
+version: 3.0.4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

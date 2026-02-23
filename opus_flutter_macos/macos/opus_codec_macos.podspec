@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'opus_codec_macos'
-  s.version          = '3.0.0'
+  s.version          = '3.0.4'
   s.summary          = 'libopus wrappers for flutter on macOS.'
   s.description      = <<-DESC
   libopus wrappers for flutter on macOS.

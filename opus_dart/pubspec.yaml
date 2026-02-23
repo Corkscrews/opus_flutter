@@ -1,5 +1,5 @@
 name: opus_codec_dart
-version: 3.0.1
+version: 3.0.4
 description: >
   Wraps libopus in dart, and additionally provides a dart friendly API for
   encoding and decoding.

@@ -1,7 +1,7 @@
 name: opus_codec
 description: Loads a DynamicLibrary of opus for usage with opus_codec_dart on flutter platforms.
 repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter
-version: 3.0.3
+version: 3.0.4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
