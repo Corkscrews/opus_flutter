@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Corkscrews' => '' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'opus_codec_ios/Sources/opus_codec_ios/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
   s.vendored_frameworks = 'opus.xcframework'

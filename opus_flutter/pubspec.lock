@@ -219,51 +219,58 @@ packages:
   opus_codec_android:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_android"
-      relative: true
-    source: path
+      name: opus_codec_android
+      sha256: a92c636f826d9bfe490b7820b14ab14b86c756a513b0ab24dfabf334d9c96168
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.1"
   opus_codec_ios:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_ios"
-      relative: true
-    source: path
+      name: opus_codec_ios
+      sha256: "5822f56246bc2cf527945bec2d60239d64d939261ba593fd00aedd836f3395d3"
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.1"
   opus_codec_linux:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_linux"
-      relative: true
-    source: path
+      name: opus_codec_linux
+      sha256: "679ebf5c82713f5b950bc7a0f344e524e8dd37d451bf9588fb701f18c98f7d90"
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.0"
   opus_codec_macos:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_macos"
-      relative: true
-    source: path
+      name: opus_codec_macos
+      sha256: dda2e8f159cd7301fc727f4788468f50f1fde7901973be4dda04d3d0c312929e
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.0"
   opus_codec_platform_interface:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_platform_interface"
-      relative: true
-    source: path
+      name: opus_codec_platform_interface
+      sha256: "5cf72337959f93b35dcec351fc43c10deafa44e866f345cbbbc0ad600211cdec"
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.0"
   opus_codec_web:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_web"
-      relative: true
-    source: path
+      name: opus_codec_web
+      sha256: ead9de53a1e44261ffa1d21a677b9584398536ae058d416a766a067a8d5f1908
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.3"
   opus_codec_windows:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_windows"
-      relative: true
-    source: path
+      name: opus_codec_windows
+      sha256: "3968008555d655da785fae238b542ad010d63c2777dfec4c5782b0ace30ba3eb"
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.0"
   path:
     dependency: transitive
