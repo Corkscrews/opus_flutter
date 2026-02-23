@@ -82,6 +82,7 @@ The `scripts/` directory contains helper scripts for local development.
 | [`scripts/analyze.sh`](./scripts/analyze.sh) | Runs static analysis (`flutter analyze` / `dart analyze`) across every package and prints a pass/fail summary. Exits with a non-zero code if any package has analysis errors. |
 | [`scripts/format.sh`](./scripts/format.sh) | Checks that all Dart code is formatted correctly (`dart format --set-exit-if-changed`). Exits with a non-zero code if any file needs formatting. |
 | [`scripts/check_dependencies.sh`](./scripts/check_dependencies.sh) | Reports outdated dependencies and checks pub.dev for discontinued or abandoned packages. Requires `curl` and `python3` for the discontinued-package checks. |
+| [`scripts/publish.sh`](./scripts/publish.sh) | Publishes all packages to pub.dev in dependency order (three tiers). Runs in dry-run mode by default; pass `--publish` to push to pub.dev. |
 
 ### Running unit tests
 
