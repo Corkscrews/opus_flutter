@@ -1,9 +1,9 @@
 name: opus_codec_platform_interface
 description: A common platform interface for the opus_codec plugin.
-repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_platform_interface
+repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter_platform_interface
 # NOTE: We strongly prefer non-breaking changes, even at the expense of a
 # less-clean API. See https://flutter.dev/go/platform-interface-breaking-changes
-version: 3.0.0
+version: 3.0.4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

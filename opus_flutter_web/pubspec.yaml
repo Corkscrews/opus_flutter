@@ -1,7 +1,7 @@
 name: opus_codec_web
 description: Web implementation of the opus_codec plugin.
-repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_web
-version: 3.0.3
+repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter_web
+version: 3.0.4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -12,8 +12,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  opus_codec_platform_interface:
-    path: ../opus_flutter_platform_interface
+  opus_codec_platform_interface: ^3.0.0
   wasm_ffi: ^2.1.0
 
 dev_dependencies:

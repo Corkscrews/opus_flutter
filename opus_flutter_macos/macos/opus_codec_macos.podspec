@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'opus_codec_macos'
-  s.version          = '3.0.0'
+  s.version          = '3.0.4'
   s.summary          = 'libopus wrappers for flutter on macOS.'
   s.description      = <<-DESC
   libopus wrappers for flutter on macOS.
@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Corkscrews' => '' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'opus_codec_macos/Sources/opus_codec_macos/**/*'
   s.dependency 'FlutterMacOS'
   s.platform = :osx, '10.14'
   s.vendored_frameworks = 'opus.xcframework'

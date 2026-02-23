@@ -155,9 +155,10 @@ packages:
   opus_codec_platform_interface:
     dependency: "direct main"
     description:
-      path: "../opus_flutter_platform_interface"
-      relative: true
-    source: path
+      name: opus_codec_platform_interface
+      sha256: "5cf72337959f93b35dcec351fc43c10deafa44e866f345cbbbc0ad600211cdec"
+      url: "https://pub.dev"
+    source: hosted
     version: "3.0.0"
   path:
     dependency: transitive
