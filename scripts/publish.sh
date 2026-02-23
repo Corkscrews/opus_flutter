@@ -8,7 +8,7 @@
 # Usage:
 #   ./scripts/publish.sh              # dry run (validate only)
 #   ./scripts/publish.sh --publish    # publish for real
-#   ./scripts/publish.sh --wait 60    # customise the inter-tier wait (default 120s)
+#   ./scripts/publish.sh --wait 90    # customise the inter-tier wait (default 60s)
 #
 # Requirements:
 #   - flutter (stable channel) with dart bundled
@@ -19,7 +19,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 DRY_RUN=true
-WAIT_SECONDS=120
+WAIT_SECONDS=60
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
