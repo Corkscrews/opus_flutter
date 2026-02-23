@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ffi';
 
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 
 /// An implementation of [OpusFlutterPlatform] for macOS.
 class OpusFlutterMacOS extends OpusFlutterPlatform {

@@ -2,7 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// An implementation of [OpusFlutterPlatform] for Linux.
@@ -66,7 +66,7 @@ class OpusFlutterLinux extends OpusFlutterPlatform {
     final f = File('${dir.path}/$dst');
     if (!(await f.exists())) {
       final data =
-          await rootBundle.load('packages/opus_flutter_linux/assets/$src');
+          await rootBundle.load('packages/opus_codec_linux/assets/$src');
       await f.writeAsBytes(
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
     }

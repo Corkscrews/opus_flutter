@@ -1,6 +1,6 @@
-# opus_flutter
+# opus_codec
 
-A Flutter plugin that provides the [Opus audio codec](https://opus-codec.org/) as a `DynamicLibrary` for use with [opus_dart](https://pub.dev/packages/opus_dart) on Flutter platforms.
+A Flutter plugin that provides the [Opus audio codec](https://opus-codec.org/) as a `DynamicLibrary` for use with [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) on Flutter platforms.
 
 ## Overview
 
@@ -10,14 +10,14 @@ This monorepo contains a federated Flutter plugin that loads libopus on each sup
 
 | Package | Description | Version |
 |---------|-------------|---------|
-| [opus_flutter](./opus_flutter) | Main app-facing package | 3.0.3 |
-| [opus_flutter_platform_interface](./opus_flutter_platform_interface) | Common platform interface | 3.0.0 |
-| [opus_flutter_android](./opus_flutter_android) | Android implementation | 3.0.1 |
-| [opus_flutter_ios](./opus_flutter_ios) | iOS implementation | 3.0.1 |
-| [opus_flutter_linux](./opus_flutter_linux) | Linux implementation | 3.0.0 |
-| [opus_flutter_macos](./opus_flutter_macos) | macOS implementation | 3.0.0 |
-| [opus_flutter_web](./opus_flutter_web) | Web implementation | 3.0.3 |
-| [opus_flutter_windows](./opus_flutter_windows) | Windows implementation | 3.0.0 |
+| [opus_codec](./opus_flutter) | Main app-facing package | 3.0.3 |
+| [opus_codec_platform_interface](./opus_flutter_platform_interface) | Common platform interface | 3.0.0 |
+| [opus_codec_android](./opus_flutter_android) | Android implementation | 3.0.1 |
+| [opus_codec_ios](./opus_flutter_ios) | iOS implementation | 3.0.1 |
+| [opus_codec_linux](./opus_flutter_linux) | Linux implementation | 3.0.0 |
+| [opus_codec_macos](./opus_flutter_macos) | macOS implementation | 3.0.0 |
+| [opus_codec_web](./opus_flutter_web) | Web implementation | 3.0.3 |
+| [opus_codec_windows](./opus_flutter_windows) | Windows implementation | 3.0.0 |
 
 ## Platform support
 
@@ -27,12 +27,12 @@ This monorepo contains a federated Flutter plugin that loads libopus on each sup
 
 ## Getting started
 
-Add `opus_flutter` to your `pubspec.yaml`:
+Add `opus_codec` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  opus_flutter: ^3.0.0
-  opus_dart: ^3.0.1
+  opus_codec: ^3.0.0
+  opus_codec_dart: ^3.0.1
 ```
 
 Platform packages are automatically included through the federated plugin system -- you don't need to add them individually.
@@ -40,21 +40,21 @@ Platform packages are automatically included through the federated plugin system
 ## Usage
 
 ```dart
-import 'package:opus_flutter/opus_flutter.dart' as opus_flutter;
-import 'package:opus_dart/opus_dart.dart';
+import 'package:opus_codec/opus_codec.dart' as opus_codec;
+import 'package:opus_codec_dart/opus_codec_dart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initOpus(await opus_flutter.load());
-  // opus_dart functions are now available
+  initOpus(await opus_codec.load());
+  // opus_codec_dart functions are now available
 }
 ```
 
 The `load()` function returns a `DynamicLibrary` on native platforms (via `dart:ffi`) or a `wasm_ffi` `DynamicLibrary` on the web. See the [example app](./opus_flutter/example) for a complete encoding/decoding demo.
 
-## Why are opus_dart and opus_flutter separate packages?
+## Why are opus_codec_dart and opus_codec separate packages?
 
-Dart is more than just Flutter. With this split, Flutter developers get a convenient way to load opus, while `opus_dart` can still be used without Flutter (e.g. on headless servers). Developers are also free to load opus themselves without using `opus_dart`.
+Dart is more than just Flutter. With this split, Flutter developers get a convenient way to load opus, while `opus_codec_dart` can still be used without Flutter (e.g. on headless servers). Developers are also free to load opus themselves without using `opus_codec_dart`.
 
 ## Opus version
 
@@ -87,13 +87,13 @@ The `scripts/` directory contains helper scripts for local development.
 ./scripts/unit_tests.sh
 ```
 
-The script automatically runs `dart run build_runner build --delete-conflicting-outputs` for `opus_dart` before executing its tests, so Mockito mock classes are always up to date.
+The script automatically runs `dart run build_runner build --delete-conflicting-outputs` for `opus_codec_dart` before executing its tests, so Mockito mock classes are always up to date.
 
 **Requirements:**
 
 - `flutter` (stable channel) with `dart` bundled
 - `lcov` (optional, for merged HTML coverage report) — `brew install lcov`
-- `dart pub global activate coverage` (for `opus_dart` pure-Dart coverage)
+- `dart pub global activate coverage` (for `opus_codec_dart` pure-Dart coverage)
 
 ### Running static analysis
 

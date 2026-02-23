@@ -1,6 +1,6 @@
-name: opus_flutter_windows
-description: Windows implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_windows
+name: opus_codec_windows
+description: Windows implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_windows
 version: 3.0.0
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     path: ../opus_flutter_platform_interface
   path_provider: ^2.1.5
 
@@ -25,7 +25,7 @@ flutter:
     - assets/libopus_x64.dll.blob
     - assets/libopus_x86.dll.blob
   plugin:
-    implements: opus_flutter
+    implements: opus_codec
     platforms:
       windows:
         dartPluginClass: OpusFlutterWindows

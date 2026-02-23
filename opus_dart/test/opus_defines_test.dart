@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:opus_dart/src/opus_dart_misc.dart' show maxDataBytes;
+import 'package:opus_codec_dart/src/opus_dart_misc.dart' show maxDataBytes;
 
 // Import the raw defines so we can verify every constant against the official
 // opus C header values.  A mismatch here means someone changed a constant
 // accidentally and broke wire compatibility.
-import 'package:opus_dart/wrappers/opus_defines.dart';
+import 'package:opus_codec_dart/wrappers/opus_defines.dart';
 
 void main() {
   group('Error codes', () {

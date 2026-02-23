@@ -1,5 +1,5 @@
-import 'package:opus_dart/opus_dart.dart';
-import 'package:opus_dart/wrappers/opus_defines.dart';
+import 'package:opus_codec_dart/opus_codec_dart.dart';
+import 'package:opus_codec_dart/wrappers/opus_defines.dart';
 import 'package:test/test.dart';
 
 void main() {

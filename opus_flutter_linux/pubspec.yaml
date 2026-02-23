@@ -1,6 +1,6 @@
-name: opus_flutter_linux
-description: Linux implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_linux
+name: opus_codec_linux
+description: Linux implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_linux
 version: 3.0.0
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     path: ../opus_flutter_platform_interface
   path_provider: ^2.1.5
 
@@ -24,7 +24,7 @@ flutter:
     - assets/libopus_x86_64.so.blob
     - assets/libopus_aarch64.so.blob
   plugin:
-    implements: opus_flutter
+    implements: opus_codec
     platforms:
       linux:
         dartPluginClass: OpusFlutterLinux

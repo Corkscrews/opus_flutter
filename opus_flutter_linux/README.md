@@ -1,10 +1,10 @@
-# opus_flutter_linux
+# opus_codec_linux
 
-The Linux implementation of [`opus_flutter`](https://pub.dev/packages/opus_flutter).
+The Linux implementation of [`opus_codec`](https://pub.dev/packages/opus_codec).
 
 ## Usage
 
-This package is [endorsed](https://flutter.dev/docs/development/packages-and-plugins/developing-packages#endorsed-federated-plugin), so it is automatically included when you depend on `opus_flutter` in your Flutter application. No additional setup is required.
+This package is [endorsed](https://flutter.dev/docs/development/packages-and-plugins/developing-packages#endorsed-federated-plugin), so it is automatically included when you depend on `opus_codec` in your Flutter application. No additional setup is required.
 
 ## How opus is loaded
 

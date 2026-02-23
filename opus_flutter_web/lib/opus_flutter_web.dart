@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 import 'package:wasm_ffi/ffi.dart';
 
 /// An implementation of [OpusFlutterPlatform] for web.
@@ -20,7 +20,7 @@ class OpusFlutterWeb extends OpusFlutterPlatform {
   @override
   Future<Object> load() async {
     _library ??= await DynamicLibrary.open(
-      './assets/packages/opus_flutter_web/assets/libopus.js',
+      './assets/packages/opus_codec_web/assets/libopus.js',
       moduleName: 'libopus',
       useAsGlobal: GlobalMemory.ifNotSet,
     );

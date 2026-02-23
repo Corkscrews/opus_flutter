@@ -3,12 +3,12 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:opus_dart/src/opus_dart_misc.dart';
-import 'package:opus_dart/wrappers/opus_decoder.dart' as opus_decoder;
-import 'package:opus_dart/wrappers/opus_encoder.dart' as opus_encoder;
-import 'package:opus_dart/wrappers/opus_libinfo.dart' as opus_libinfo;
-import 'package:opus_dart/wrappers/opus_defines.dart';
-import 'package:opus_dart/opus_dart.dart';
+import 'package:opus_codec_dart/src/opus_dart_misc.dart';
+import 'package:opus_codec_dart/wrappers/opus_decoder.dart' as opus_decoder;
+import 'package:opus_codec_dart/wrappers/opus_encoder.dart' as opus_encoder;
+import 'package:opus_codec_dart/wrappers/opus_libinfo.dart' as opus_libinfo;
+import 'package:opus_codec_dart/wrappers/opus_defines.dart';
+import 'package:opus_codec_dart/opus_dart.dart';
 import 'package:test/test.dart';
 
 import 'opus_dart_streaming_mock_test.mocks.dart';

@@ -1,8 +1,7 @@
-name: opus_flutter
-description: Loads a DynamicLibrary of opus for usage with opus_dart on flutter platforms.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter
+name: opus_codec
+description: Loads a DynamicLibrary of opus for usage with opus_codec_dart on flutter platforms.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter
 version: 3.0.3
-publish_to: none
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -11,19 +10,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     path: ../opus_flutter_platform_interface
-  opus_flutter_android:
+  opus_codec_android:
     path: ../opus_flutter_android
-  opus_flutter_ios:
+  opus_codec_ios:
     path: ../opus_flutter_ios
-  opus_flutter_linux:
+  opus_codec_linux:
     path: ../opus_flutter_linux
-  opus_flutter_macos:
+  opus_codec_macos:
     path: ../opus_flutter_macos
-  opus_flutter_windows:
+  opus_codec_windows:
     path: ../opus_flutter_windows
-  opus_flutter_web:
+  opus_codec_web:
     path: ../opus_flutter_web
 
 dev_dependencies:
@@ -36,14 +35,14 @@ flutter:
   plugin:
     platforms:
       android:
-        default_package: opus_flutter_android
+        default_package: opus_codec_android
       ios:
-        default_package: opus_flutter_ios
+        default_package: opus_codec_ios
       linux:
-        default_package: opus_flutter_linux
+        default_package: opus_codec_linux
       macos:
-        default_package: opus_flutter_macos
+        default_package: opus_codec_macos
       windows:
-        default_package: opus_flutter_windows
+        default_package: opus_codec_windows
       web:
-        default_package: opus_flutter_web
+        default_package: opus_codec_web

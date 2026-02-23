@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:opus_dart/opus_dart.dart';
+import 'package:opus_codec_dart/opus_codec_dart.dart';
 
 import '../core/audio_constants.dart';
 

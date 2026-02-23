@@ -1,4 +1,4 @@
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 
 /// On supported platforms a `DynamicLibrary` of the [opus audio codec](https://opus-codec.org/) is returned,
 /// whereas on not supported platforms an [UnsupportedError] is thrown.

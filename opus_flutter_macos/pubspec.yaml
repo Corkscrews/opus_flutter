@@ -1,6 +1,6 @@
-name: opus_flutter_macos
-description: macOS implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_macos
+name: opus_codec_macos
+description: macOS implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_macos
 version: 3.0.0
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     path: ../opus_flutter_platform_interface
 
 dev_dependencies:
@@ -20,7 +20,7 @@ dev_dependencies:
 
 flutter:
   plugin:
-    implements: opus_flutter
+    implements: opus_codec
     platforms:
       macos:
         pluginClass: OpusFlutterMacosPlugin

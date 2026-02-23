@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:opus_dart/opus_dart.dart';
+import 'package:opus_codec_dart/opus_codec_dart.dart';
 import 'package:record/record.dart';
 
 import '../core/audio_constants.dart';

@@ -2,7 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// An implementation of [OpusFlutterPlatform] for Windows.
@@ -22,7 +22,7 @@ class OpusFlutterWindows extends OpusFlutterPlatform {
     File f = File('${dir.path}/$_licenseFile');
     if (!(await f.exists())) {
       data = await rootBundle
-          .load('packages/opus_flutter_windows/assets/$_licenseFile');
+          .load('packages/opus_codec_windows/assets/$_licenseFile');
       await f.writeAsBytes(
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
     }
@@ -42,7 +42,7 @@ class OpusFlutterWindows extends OpusFlutterPlatform {
 
     f = File('${dir.path}/$dst');
     if (!(await f.exists())) {
-      data = await rootBundle.load('packages/opus_flutter_windows/assets/$src');
+      data = await rootBundle.load('packages/opus_codec_windows/assets/$src');
       await f.writeAsBytes(
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
     }

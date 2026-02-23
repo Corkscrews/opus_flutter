@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opus_flutter/opus_flutter.dart' as opus_flutter;
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec/opus_codec.dart' as opus_flutter;
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockOpusFlutterPlatform extends Fake

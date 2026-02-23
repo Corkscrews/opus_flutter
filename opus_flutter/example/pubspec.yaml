@@ -1,5 +1,5 @@
-name: opus_flutter_example
-description: Demonstrates how to use the opus_flutter plugin.
+name: opus_codec_example
+description: Demonstrates how to use the opus_codec plugin.
 version: 2.0.0+2
 publish_to: 'none'
 
@@ -7,12 +7,12 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
-  opus_dart:
+  opus_codec_dart:
     path: ../../opus_dart
   flutter:
     sdk: flutter
   share_plus: ^10.0.0
-  opus_flutter:
+  opus_codec:
     path: ../
   cupertino_icons: ^1.0.8
   platform_info: ^5.0.0
@@ -23,19 +23,19 @@ dependencies:
   flutter_bloc: ^9.0.0
   universal_io: ^2.3.1
 dependency_overrides:
-  opus_flutter_android:
+  opus_codec_android:
     path: ../../opus_flutter_android
-  opus_flutter_ios:
+  opus_codec_ios:
     path: ../../opus_flutter_ios
-  opus_flutter_linux:
+  opus_codec_linux:
     path: ../../opus_flutter_linux
-  opus_flutter_macos:
+  opus_codec_macos:
     path: ../../opus_flutter_macos
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     path: ../../opus_flutter_platform_interface
-  opus_flutter_web:
+  opus_codec_web:
     path: ../../opus_flutter_web
-  opus_flutter_windows:
+  opus_codec_windows:
     path: ../../opus_flutter_windows
 
 dev_dependencies:

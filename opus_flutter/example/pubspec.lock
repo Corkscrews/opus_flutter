@@ -336,63 +336,63 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.3.0"
-  opus_dart:
-    dependency: "direct main"
-    description:
-      path: "../../opus_dart"
-      relative: true
-    source: path
-    version: "3.0.1"
-  opus_flutter:
+  opus_codec:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
     version: "3.0.3"
-  opus_flutter_android:
+  opus_codec_android:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_android"
       relative: true
     source: path
     version: "3.0.1"
-  opus_flutter_ios:
+  opus_codec_dart:
+    dependency: "direct main"
+    description:
+      path: "../../opus_dart"
+      relative: true
+    source: path
+    version: "3.0.1"
+  opus_codec_ios:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_ios"
       relative: true
     source: path
     version: "3.0.1"
-  opus_flutter_linux:
+  opus_codec_linux:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_linux"
       relative: true
     source: path
     version: "3.0.0"
-  opus_flutter_macos:
+  opus_codec_macos:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_macos"
       relative: true
     source: path
     version: "3.0.0"
-  opus_flutter_platform_interface:
+  opus_codec_platform_interface:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_platform_interface"
       relative: true
     source: path
     version: "3.0.0"
-  opus_flutter_web:
+  opus_codec_web:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_web"
       relative: true
     source: path
     version: "3.0.3"
-  opus_flutter_windows:
+  opus_codec_windows:
     dependency: "direct overridden"
     description:
       path: "../../opus_flutter_windows"

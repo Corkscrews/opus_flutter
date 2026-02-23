@@ -1,14 +1,14 @@
-# opus_flutter_platform_interface
+# opus_codec_platform_interface
 
-A common platform interface for the [`opus_flutter`][1] plugin.
+A common platform interface for the [`opus_codec`][1] plugin.
 
-This interface allows platform-specific implementations of the `opus_flutter`
+This interface allows platform-specific implementations of the `opus_codec`
 plugin, as well as the plugin itself, to ensure they are supporting the
 same interface.
 
 # Usage
 
-To implement a new platform-specific implementation of `opus_flutter`, extend
+To implement a new platform-specific implementation of `opus_codec`, extend
 [`OpusFlutterPlatform`][2] with an implementation that performs the
 platform-specific behavior, and when you register your plugin, set the default
 `OpusFlutterPlatform` by calling

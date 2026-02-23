@@ -1,6 +1,6 @@
-import 'package:opus_flutter/opus_flutter.dart' as opus_flutter;
+import 'package:opus_codec/opus_codec.dart' as opus_flutter;
 import 'package:flutter/material.dart';
-import 'package:opus_dart/opus_dart.dart';
+import 'package:opus_codec_dart/opus_codec_dart.dart';
 
 import 'record_demo/app/record_demo_app.dart';
 

@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import audioplayers_darwin
-import opus_flutter_macos
+import opus_codec_macos
 import record_macos
 import share_plus
 

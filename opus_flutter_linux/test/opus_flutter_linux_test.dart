@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opus_flutter_linux/opus_flutter_linux.dart';
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_linux/opus_codec_linux.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 
 void main() {
   group('OpusFlutterLinux', () {
