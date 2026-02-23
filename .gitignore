@@ -5,5 +5,7 @@
 .pub/
 .idea
 build/
+**/coverage/
+**/*.mocks.dart
 opus_flutter/.vscode/
 opus_flutter/example/.vscode/

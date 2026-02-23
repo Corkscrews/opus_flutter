@@ -1,24 +1,27 @@
-name: opus_flutter_ios
-description: iOS implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_ios
+name: opus_codec_ios
+description: iOS implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_ios
 version: 3.0.1
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=2.0.0"
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface: ^3.0.0
+  opus_codec_platform_interface:
+    path: ../opus_flutter_platform_interface
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
  plugin:
-    implements: opus_flutter
+    implements: opus_codec
     platforms:
       ios:
         pluginClass: OpusFlutterIosPlugin
+        dartPluginClass: OpusFlutterIOS

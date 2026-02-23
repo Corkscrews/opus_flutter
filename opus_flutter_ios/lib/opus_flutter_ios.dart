@@ -1,12 +1,20 @@
 import 'dart:async';
 import 'dart:ffi';
 
-import 'package:opus_flutter_platform_interface/opus_flutter_platform_interface.dart';
+import 'package:opus_codec_platform_interface/opus_codec_platform_interface.dart';
 
 /// An implementation of [OpusFlutterPlatform] for iOS.
 class OpusFlutterIOS extends OpusFlutterPlatform {
-  /// Opens the static opus library build into this plugin.
-  Future<dynamic> load() async {
+  /// Registers this class as the default instance of [OpusFlutterPlatform].
+  static void registerWith() {
+    OpusFlutterPlatform.instance = OpusFlutterIOS();
+  }
+
+  /// Opens the static opus library built into this plugin.
+  // coverage:ignore-start
+  @override
+  Future<Object> load() async {
     return DynamicLibrary.process();
   }
+  // coverage:ignore-end
 }

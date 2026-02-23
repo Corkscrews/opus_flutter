@@ -1,23 +1,28 @@
-name: opus_flutter_android
-description: Android implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_android
+name: opus_codec_android
+description: Android implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_android
 version: 3.0.1
 
 environment:
-  sdk: '>=3.1.5 <4.0.0'
-  flutter: '>=3.3.0'
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  opus_flutter_platform_interface: ^3.0.0
+  opus_codec_platform_interface:
+    path: ../opus_flutter_platform_interface
 
 dev_dependencies:
-  flutter_lints: ^2.0.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   plugin:
+    implements: opus_codec
     platforms:
       android:
         package: eu.epnw.opus_flutter_android
         pluginClass: OpusFlutterAndroidPlugin
+        dartPluginClass: OpusFlutterAndroid

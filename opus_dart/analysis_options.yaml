@@ -1,0 +1,6 @@
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    # Vendored FFI wrappers mirror C API naming (OPUS_SET_BITRATE_REQUEST, etc.)
+    constant_identifier_names: false

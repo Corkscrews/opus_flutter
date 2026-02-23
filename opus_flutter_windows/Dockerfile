@@ -1,8 +1,8 @@
-FROM ubuntu:bionic
+FROM ubuntu:24.04
 
 # Install dependencies
 RUN apt-get update \
-	&& DEBIAN_FRONTENTD="noninteractive" apt-get install -y --no-install-recommends \
+	&& DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
 	apt-transport-https \
 	wget \
 	gnupg \
@@ -17,7 +17,7 @@ RUN apt-get update \
 
 # Clone opus
 WORKDIR /app
-RUN git clone --branch v1.3.1 https://github.com/xiph/opus.git
+RUN git clone --branch v1.5.2 https://github.com/xiph/opus.git
 WORKDIR /app/opus
 
 # Build opus using Windows cross compile

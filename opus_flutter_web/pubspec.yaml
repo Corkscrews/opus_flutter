@@ -1,31 +1,32 @@
-name: opus_flutter_web
-description: Web implementation of the opus_flutter plugin.
-repository: https://github.com/EPNW/opus_flutter/tree/master/opus_flutter_web
+name: opus_codec_web
+description: Web implementation of the opus_codec plugin.
+repository: https://github.com/ppamorim/opus_codec/tree/master/opus_flutter_web
 version: 3.0.3
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=2.0.0"
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  opus_flutter_platform_interface: ^3.0.0
-  inject_js: ^2.0.0
-  web_ffi: ^0.7.2
+  opus_codec_platform_interface:
+    path: ../opus_flutter_platform_interface
+  wasm_ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   assets:
     - assets/libopus.js
     - assets/libopus.wasm
   plugin:
-    implements: opus_flutter
+    implements: opus_codec
     platforms:
       web:
         pluginClass: OpusFlutterWeb
