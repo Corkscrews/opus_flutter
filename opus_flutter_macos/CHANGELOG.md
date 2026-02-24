@@ -1,6 +1,7 @@
 ## 3.0.5
 
-* Bump version
+* Fix podspec version to match pubspec
+* Bump all package versions
 
 
 ## 3.0.4

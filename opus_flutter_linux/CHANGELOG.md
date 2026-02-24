@@ -1,6 +1,6 @@
 ## 3.0.5
 
-* Bump version
+* Bump all package versions
 
 
 ## 3.0.4

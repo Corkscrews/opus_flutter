@@ -2,6 +2,8 @@
 
 ## 3.0.5
 
+* Add `repository` field and `CHANGELOG.md` to `opus_codec_dart`
+* Fix podspec version mismatch in `opus_codec_ios` and `opus_codec_macos`
 * Bump all package versions
 
 | Package | Version |
