@@ -5,6 +5,6 @@
 .pub/
 .idea/
 doc/api/
-pubspec.lock
+/pubspec.lock
 
 build/
