@@ -1,3 +1,14 @@
+## 3.0.5
+
+* Bump version
+
+
+## 3.0.4
+
+* Add Swift Package Manager support to `opus_codec_ios` and `opus_codec_macos`
+* Bump all package versions
+
+
 ## 3.0.3
 
 * Depend on `opus_flutter_ios:3.0.1` and `opus_flutter_android:3.0.1`

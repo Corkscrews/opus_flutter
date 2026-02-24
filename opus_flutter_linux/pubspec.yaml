@@ -1,7 +1,7 @@
 name: opus_codec_linux
 description: Linux implementation of the opus_codec plugin.
 repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter_linux
-version: 3.0.4
+version: 3.0.5
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

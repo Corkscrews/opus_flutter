@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.5
+
+* Bump all package versions
+
+| Package | Version |
+|---------|---------|
+| opus_dart | 3.0.5 |
+| opus_flutter | 3.0.5 |
+| opus_flutter_android | 3.0.5 |
+| opus_flutter_ios | 3.0.5 |
+| opus_flutter_linux | 3.0.5 |
+| opus_flutter_macos | 3.0.5 |
+| opus_flutter_platform_interface | 3.0.5 |
+| opus_flutter_web | 3.0.5 |
+| opus_flutter_windows | 3.0.5 |
+
+
 ## 3.0.4
 
 * Add Swift Package Manager support to `opus_codec_ios` and `opus_codec_macos`
