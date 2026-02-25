@@ -203,18 +203,18 @@ At runtime, the Windows implementation:
 
 | Aspect | Detail |
 |--------|--------|
-| Language | Dart (uses `wasm_ffi` and `inject_js`) |
-| Library loading | Injects `libopus.js`, loads `libopus.wasm`, returns `wasm_ffi` `DynamicLibrary` |
+| Language | Dart (uses `wasm_ffi`) |
+| Library loading | `DynamicLibrary.open()` handles JS injection, WASM loading, and memory setup |
 | Opus distribution | Pre-built `libopus.js` + `libopus.wasm` stored as Flutter assets |
 | Build method | Compiled with Emscripten via Docker (`Dockerfile`) |
 | Registration | Uses `pluginClass: OpusFlutterWeb` with `fileName: opus_flutter_web.dart` |
 
-The web implementation:
+The web implementation calls `wasm_ffi`'s `DynamicLibrary.open()` which internally:
 
 1. Injects the Emscripten-generated JS glue (`libopus.js`) into the page.
-2. Fetches the WASM binary (`libopus.wasm`).
-3. Initializes `wasm_ffi`'s `Memory` and compiles the Emscripten module.
-4. Returns a `wasm_ffi` `DynamicLibrary.fromModule()`.
+2. Compiles the Emscripten module and loads the WASM binary.
+3. Initializes memory (registers as global if none is set).
+4. Returns a `wasm_ffi` `DynamicLibrary`.
 
 ## Opus Build Pipeline
 
