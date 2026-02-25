@@ -117,7 +117,7 @@ jobs:
           channel: stable
       - name: Build web (release)
         working-directory: opus_flutter/example
-        run: flutter pub get && flutter build web --release --base-href /opus_codec/
+        run: flutter pub get && flutter build web --release --base-href /opus_flutter/
       - name: Upload Pages artifact
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
