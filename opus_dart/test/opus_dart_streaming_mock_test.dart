@@ -835,6 +835,31 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusDecoder.float bind()', () {
+    test('float decoder buffer fits max 120ms frame', () async {
+      stubDecoderCreate();
+      // 120ms at 8kHz mono = 960 samples per channel
+      const maxSamplesPerCh = 960;
+      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
+          .thenAnswer((inv) {
+        final ptr = inv.positionalArguments[3] as Pointer<Float>;
+        for (var i = 0; i < maxSamplesPerCh; i++) {
+          ptr[i] = 0.0;
+        }
+        return maxSamplesPerCh;
+      });
+
+      final decoder = StreamOpusDecoder.float(
+        sampleRate: _sampleRate,
+        channels: _channels,
+      );
+
+      final packet = Uint8List.fromList([0x01]);
+      final results = await decoder.bind(Stream.value(packet)).toList();
+
+      expect(results, hasLength(1));
+      expect(results[0], hasLength(maxSamplesPerCh));
+    });
+
     test('packet emits Float32List', () async {
       stubDecoderCreate();
       stubDecodeFloat([0.5, -0.25]);

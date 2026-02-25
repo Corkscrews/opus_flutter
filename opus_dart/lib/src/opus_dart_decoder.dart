@@ -308,7 +308,7 @@ class BufferedOpusDecoder extends OpusDecoder {
       int? maxInputBufferSizeBytes,
       int? maxOutputBufferSizeBytes}) {
     maxInputBufferSizeBytes ??= maxDataBytes;
-    maxOutputBufferSizeBytes ??= maxSamplesPerPacket(sampleRate, channels);
+    maxOutputBufferSizeBytes ??= 4 * maxSamplesPerPacket(sampleRate, channels);
     Pointer<Int32> error = opus.allocator.call<Int32>(1);
     Pointer<Uint8> input = opus.allocator.call<Uint8>(maxInputBufferSizeBytes);
     Pointer<Uint8> output =

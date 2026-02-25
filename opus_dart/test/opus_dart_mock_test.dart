@@ -715,6 +715,35 @@ void main() {
       decoder.destroy();
     });
 
+    test('default output buffer is large enough for float decode', () {
+      final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
+      // 4 bytes/float * maxSamplesPerPacket ensures a 120ms frame fits
+      expect(decoder.maxOutputBufferSizeBytes,
+          4 * maxSamplesPerPacket(48000, 2));
+      decoder.destroy();
+    });
+
+    test('default output buffer is large enough for float decode (mono)', () {
+      final decoder = createBufferedDecoder(sampleRate: 8000, channels: 1);
+      expect(decoder.maxOutputBufferSizeBytes,
+          4 * maxSamplesPerPacket(8000, 1));
+      decoder.destroy();
+    });
+
+    test('decodeFloat succeeds with max frame size using default buffer', () {
+      final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
+      // 120ms at 48kHz stereo = 5760 samples per channel
+      const samplesPerChannel = 5760;
+      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
+          .thenReturn(samplesPerChannel);
+
+      decoder.inputBufferIndex = 10;
+      final result = decoder.decodeFloat();
+
+      expect(result, hasLength(samplesPerChannel * 2));
+      decoder.destroy();
+    });
+
     test('throws OpusException when native returns an error', () {
       when(mockDecoder.opus_decoder_create(any, any, any)).thenAnswer((inv) {
         (inv.positionalArguments[2] as Pointer<Int32>).value = OPUS_ALLOC_FAIL;

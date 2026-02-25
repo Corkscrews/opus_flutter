@@ -56,7 +56,7 @@ ApiObject createApiObject(Object lib) {
   registerOpaqueType<opus_projection.OpusProjectionEncoder>();
   registerOpaqueType<opus_projection.OpusProjectionDecoder>();
   registerOpaqueType<opus_repacketizer.OpusRepacketizer>();
-  registerOpaqueType<opus_repacketizer.OpusRepacketizer>();  // duplicate
+  registerOpaqueType<opus_custom.OpusCustomMode>();
   return ApiObject(library, library.allocator);
 }
 ```
@@ -64,8 +64,8 @@ ApiObject createApiObject(Object lib) {
 - Casts to `wasm_ffi` `DynamicLibrary`.
 - Must register every `Opaque` subclass so `wasm_ffi` can handle pointer lookups.
 - Uses `library.allocator` (WASM linear memory allocator) instead of `malloc`.
-- **Bug candidate:** `OpusRepacketizer` is registered twice; `OpusCustomMode` is
-  never registered. If `OpusCustomMode` pointers are ever used on web, this will fail.
+- (**Fixed** — previously `OpusRepacketizer` was registered twice and `OpusCustomMode`
+  was missing. Now all 10 opaque types are registered exactly once.)
 
 ### 2.3 Differences Summary
 
@@ -414,40 +414,17 @@ should be safe in practice, but there is no runtime assertion.
 
 ## 8. `BufferedOpusDecoder` Output Buffer Sizing
 
-The `BufferedOpusDecoder` factory has this default for `maxOutputBufferSizeBytes`:
+(**Fixed** — both issues below have been corrected.)
 
-```dart
-maxOutputBufferSizeBytes ??= maxSamplesPerPacket(sampleRate, channels);
-```
+The `BufferedOpusDecoder` factory previously defaulted `maxOutputBufferSizeBytes` to
+`maxSamplesPerPacket(sampleRate, channels)` — a sample count, not a byte count. Since
+the buffer must accommodate float output (4 bytes/sample), this was 4x too small for
+`decodeFloat` with maximum-length opus frames (120ms). Fixed to
+`4 * maxSamplesPerPacket(sampleRate, channels)`.
 
-`maxSamplesPerPacket` returns the number of **samples** (not bytes):
-
-```dart
-int maxSamplesPerPacket(int sampleRate, int channels) =>
-    ((sampleRate * channels * 120) / 1000).ceil();
-```
-
-For 48000 Hz stereo, this is `ceil(48000 * 2 * 120 / 1000) = 11520` samples.
-
-This value is then used as a **byte count** for `opus.allocator.call<Uint8>(...)`.
-When the output is interpreted as `Int16` (2 bytes/sample), the effective sample
-capacity is `11520 / 2 = 5760`, which is exactly `maxSamplesPerPacket`. When interpreted
-as `Float` (4 bytes/sample), the capacity is `11520 / 4 = 2880`, which is only half of
-`maxSamplesPerPacket`.
-
-**Bug candidate:** For float decoding with `BufferedOpusDecoder`, the output buffer
-may be too small to hold a maximum-length opus frame (120ms). A 120ms frame at 48kHz
-stereo produces 11520 float samples = 46080 bytes, but the buffer is only 11520 bytes.
-
-Contrast with `StreamOpusDecoder`, which computes:
-
-```dart
-maxOutputBufferSizeBytes: (floats ? 2 : 4) * maxSamplesPerPacket(sampleRate, channels)
-```
-
-This looks inverted — it allocates **less** space for float (multiplier 2) and more
-for s16le (multiplier 4). The correct multipliers should be 4 for float
-(`Float` = 4 bytes) and 2 for s16le (`Int16` = 2 bytes).
+`StreamOpusDecoder` previously computed
+`(floats ? 2 : 4) * maxSamplesPerPacket(...)` — inverted multipliers that allocated
+less space for float (which needs more). Fixed to `(floats ? 4 : 2)`.
 
 ---
 
@@ -477,13 +454,13 @@ argument is an integer. However:
 
 | # | Risk | Location | Severity | Detail |
 |---|------|----------|----------|--------|
-| 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | Medium | `OpusRepacketizer` registered twice; `OpusCustomMode` never registered. Using custom mode on web will fail. |
+| 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | Fixed | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
 | 2 | **Memory leak if second allocation throws** | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, and float variants | Low | If the second `allocator.call` throws, the first allocation is not freed. |
 | 3 | **No `NativeFinalizer`** | All encoder/decoder classes | Medium | If `destroy()` is never called, native memory leaks permanently. No GC-driven cleanup. |
 | 4 | ~~**Use-after-destroy (dangling pointer)**~~ | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | ~~High~~ **Fixed** | All public methods now check `_destroyed` and throw `OpusDestroyedError` before touching native pointers. |
 | 5 | **`copyOutput = false` use-after-write** | `StreamOpusEncoder`, `StreamOpusDecoder` | Medium | Yielded views point to native buffers that get overwritten on next call. |
 | 6 | **`StreamOpusDecoder` FEC double-yield overwrites** | `opus_dart_streaming.dart:321-327` | Medium | With `copyOutput = false` and FEC, the first yielded output is overwritten before the consumer reads it. |
-| 7 | **Output buffer too small for float decode** | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | High | `maxOutputBufferSizeBytes` defaults to `maxSamplesPerPacket` (a sample count, not byte count). For float output (4 bytes/sample), the buffer is 4x too small. `StreamOpusDecoder` has an inverted multiplier. |
+| 7 | ~~**Output buffer too small for float decode**~~ | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | ~~High~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
 | 8 | **`free(nullptr)` on web** | `SimpleOpusDecoder.decode` finally block | Low | After null-input decode, `free(nullptr)` is called. Safe on native; behavior on `wasm_ffi` depends on allocator implementation. |
 | 9 | **`_asString` unbounded loop** | `opus_dart_misc.dart:26-31` | Low | If pointer is invalid, loops until segfault. Only used with trusted libopus static strings. |
 | 10 | **`opus_encoder_ctl` variadic binding** | `opus_encoder.dart` | Low | Hardcoded to 3 int args. Getter CTLs (pointer arg) cannot be used correctly. |
@@ -589,13 +566,14 @@ type arguments."
 | `OpusMSDecoder` | Yes | |
 | `OpusProjectionEncoder` | Yes | |
 | `OpusProjectionDecoder` | Yes | |
-| `OpusRepacketizer` | Yes (twice) | Duplicate call — harmless but wasteful |
-| **`OpusCustomMode`** | **No** | **Missing. Will cause runtime failure on web if used.** |
+| `OpusRepacketizer` | Yes | |
+| `OpusCustomMode` | Yes | |
 
 None of the opaque types have type arguments, which satisfies that constraint.
 
-**Verdict:** Non-compliant for `OpusCustomMode`. The duplicate `OpusRepacketizer`
-registration is a code smell but not a functional bug.
+**Verdict:** Compliant. All 10 opaque subclasses are registered exactly once.
+(**Fixed** — previously `OpusRepacketizer` was registered twice and `OpusCustomMode`
+was missing.)
 
 ### 12.4 No Type Checking on Function Lookups
 
@@ -841,7 +819,7 @@ documentation:
 | W2 | **Variadic `opus_encoder_ctl` ABI mismatch** | High | Even if exported, Emscripten's variadic function ABI may not match the Dart binding's fixed 3-arg signature. The WASM function likely expects a pointer to a variadic arg buffer, not direct arguments. |
 | W3 | **`asTypedList` views detach on memory growth** | Medium | `ALLOW_MEMORY_GROWTH=1` means `malloc` can trigger buffer replacement. Held `asTypedList` views (especially in `Buffered*` classes and `StreamOpusEncoder.bind`) become invalid. |
 | W4 | **`StreamOpusEncoder` caches stale buffer view** | Medium | `bind()` stores `_encoder.inputBuffer` in a local variable at stream start. If WASM memory grows during the stream, this view is detached. |
-| W5 | **`OpusCustomMode` not registered** | Medium | `registerOpaqueType<OpusCustomMode>()` is missing from `init_web.dart`. Using opus custom mode API on web will fail. |
+| W5 | **`OpusCustomMode` not registered** | Fixed | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
 | W6 | **No function signature validation** | Low | `wasm_ffi` does not validate that Dart typedefs match WASM function signatures. A typedef error would cause silent data corruption on web while working on native. |
 | W7 | **`free(nullptr)` behavior unverified** | Low | After packet-loss decode, `free(nullptr)` is called. The WASM `_free` (Emscripten's `free`) should handle `NULL` safely per C standard, but this is not explicitly guaranteed by `wasm_ffi`. |
 | W8 | **`Pointer[i]` indexing in `_asString`** | Low | `_asString` uses `pointer[i]` to walk memory byte-by-byte. This should work identically on `wasm_ffi` (linear memory indexing), but the lack of bounds checking means an invalid pointer walks arbitrary WASM memory rather than segfaulting. |
@@ -857,11 +835,11 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 1 | `opus_encoder_ctl` not exported from WASM | Web | **High** | `Dockerfile`, `opus_encoder.dart` |
 | 2 | Variadic `opus_encoder_ctl` ABI mismatch under WASM | Web | **High** | `opus_encoder.dart:212-217` |
 | 3 | ~~Use-after-destroy (no `_destroyed` check in encode/decode)~~ | All | ~~**High**~~ **Fixed** | `SimpleOpus*`, `BufferedOpus*` — all public methods now throw `OpusDestroyedError` before touching native pointers |
-| 4 | Output buffer sizing bug (samples vs bytes) | All | **High** | `BufferedOpusDecoder` factory, `StreamOpusDecoder` ctor |
+| 4 | ~~Output buffer sizing bug (samples vs bytes)~~ | All | ~~**High**~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
 | 5 | `asTypedList` views detach on WASM memory growth | Web | **Medium** | `BufferedOpus*` buffer getters |
 | 6 | `StreamOpusEncoder.bind` caches stale buffer view | Web | **Medium** | `opus_dart_streaming.dart:129` |
-| 7 | `OpusCustomMode` not registered on web | Web | **Medium** | `init_web.dart` |
-| 8 | Duplicate `OpusRepacketizer` registration | Web | **Low** | `init_web.dart:28` |
+| 7 | ~~`OpusCustomMode` not registered on web~~ | Web | ~~**Medium**~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered in `init_web.dart` |
+| 8 | ~~Duplicate `OpusRepacketizer` registration~~ | Web | ~~**Low**~~ **Fixed** | See #7 |
 | 9 | No `NativeFinalizer` — leaked memory if `destroy()` skipped | All | **Medium** | All encoder/decoder classes |
 | 10 | `copyOutput = false` use-after-write | All | **Medium** | `StreamOpusEncoder`, `StreamOpusDecoder` |
 | 11 | FEC double-yield overwrites with `copyOutput = false` | All | **Medium** | `opus_dart_streaming.dart:321-327` |

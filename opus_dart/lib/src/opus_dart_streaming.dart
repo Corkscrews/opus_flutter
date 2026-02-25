@@ -271,7 +271,7 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
             sampleRate: sampleRate,
             channels: channels,
             maxOutputBufferSizeBytes:
-                (floats ? 2 : 4) * maxSamplesPerPacket(sampleRate, channels));
+                (floats ? 4 : 2) * maxSamplesPerPacket(sampleRate, channels));
 
   void _reportPacketLoss() {
     _decodeFec(false, loss: _decoder.lastPacketDurationMs);
