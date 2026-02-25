@@ -120,64 +120,110 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
             maxInputBufferSizeBytes: (floats ? 4 : 2) *
                 _calculateMaxSampleSize(sampleRate, channels, frameTime));
 
+  /// Transforms an incoming PCM stream into encoded opus packets.
+  ///
+  /// The pipeline works in three stages:
+  /// 1. **Map** — converts typed input ([Int16List], [Float32List], or
+  ///    [Uint8List]) into a uniform byte stream via [_mapStream].
+  /// 2. **Buffer & encode** — each byte chunk is fed into the encoder's
+  ///    fixed-size input buffer via [_processChunk]. Every time the buffer
+  ///    fills to exactly one frame, the frame is encoded and yielded.
+  /// 3. **Flush** — when the source stream closes, [_flushRemaining] handles
+  ///    the partial frame: either zero-pads and encodes it
+  ///    ([fillUpLastFrame] = true) or throws [UnfinishedFrameException].
+  ///
+  /// The encoder is always destroyed in the `finally` block, regardless of
+  /// whether the stream completes normally or with an error.
   @override
   Stream<Uint8List> bind(Stream<List<T>> stream) async* {
     try {
-      int dataIndex;
-      Uint8List bytes;
-      int available;
-      int max;
-      int use;
-      Uint8List inputBuffer = _encoder.inputBuffer;
-      Stream<Uint8List> mapped;
-      if (_expect == Int16List) {
-        mapped = stream.cast<Int16List>().map((Int16List s16le) =>
-            s16le.buffer.asUint8List(s16le.offsetInBytes, s16le.lengthInBytes));
-      } else if (_expect == Float32List) {
-        mapped = stream.cast<Float32List>().map((Float32List floats) => floats
-            .buffer
-            .asUint8List(floats.offsetInBytes, floats.lengthInBytes));
-      } else {
-        mapped = stream.cast<Uint8List>();
-      }
-      await for (Uint8List pcm in mapped) {
-        bytes = pcm;
-        dataIndex = 0;
-        available = bytes.lengthInBytes;
-        while (available > 0) {
-          max = _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex;
-          use = max < available ? max : available;
-          inputBuffer.setRange(_encoder.inputBufferIndex,
-              _encoder.inputBufferIndex + use, bytes, dataIndex);
-          dataIndex += use;
-          _encoder.inputBufferIndex += use;
-          available = bytes.lengthInBytes - dataIndex;
-          if (_encoder.inputBufferIndex == _encoder.maxInputBufferSizeBytes) {
-            Uint8List encoded =
-                floats ? _encoder.encodeFloat() : _encoder.encode();
-            yield Uint8List.fromList(encoded);
-            _encoder.inputBufferIndex = 0;
-          }
+      await for (Uint8List pcm in _mapStream(stream)) {
+        for (final packet in _processChunk(pcm)) {
+          yield packet;
         }
       }
-      if (_encoder.maxInputBufferSizeBytes != 0) {
-        if (!fillUpLastFrame) {
-          int missingSamples =
-              (_encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex) ~/
-                  (floats ? 4 : 2);
-          throw UnfinishedFrameException._(missingSamples: missingSamples);
-        }
-        _encoder.inputBuffer.setAll(
-            _encoder.inputBufferIndex,
-            Uint8List(
-                _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex));
-        _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
-        Uint8List encoded = floats ? _encoder.encodeFloat() : _encoder.encode();
-        yield Uint8List.fromList(encoded);
+      for (final packet in _flushRemaining()) {
+        yield packet;
       }
     } finally {
       destroy();
     }
+  }
+
+  /// Converts the typed input stream into a uniform [Stream<Uint8List>].
+  ///
+  /// [Int16List] and [Float32List] elements are reinterpreted as their raw
+  /// byte representation without copying. [Uint8List] elements pass through
+  /// unchanged.
+  Stream<Uint8List> _mapStream(Stream<List<T>> stream) {
+    if (_expect == Int16List) {
+      return stream.cast<Int16List>().map((s16le) =>
+          s16le.buffer.asUint8List(s16le.offsetInBytes, s16le.lengthInBytes));
+    }
+    if (_expect == Float32List) {
+      return stream.cast<Float32List>().map((f32) =>
+          f32.buffer.asUint8List(f32.offsetInBytes, f32.lengthInBytes));
+    }
+    return stream.cast<Uint8List>();
+  }
+
+  /// Feeds [pcm] bytes into the encoder's input buffer, encoding and yielding
+  /// a packet each time the buffer fills to one complete frame.
+  ///
+  /// A single chunk may span multiple frames (e.g. a large audio buffer), so
+  /// this may yield zero or more encoded packets. Leftover bytes that don't
+  /// complete a frame remain in the encoder's input buffer for the next chunk.
+  Iterable<Uint8List> _processChunk(Uint8List pcm) sync* {
+    int offset = 0;
+    int remaining = pcm.lengthInBytes;
+    while (remaining > 0) {
+      final space =
+          _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex;
+      final count = space < remaining ? space : remaining;
+      _encoder.inputBuffer.setRange(_encoder.inputBufferIndex,
+          _encoder.inputBufferIndex + count, pcm, offset);
+      offset += count;
+      _encoder.inputBufferIndex += count;
+      remaining -= count;
+      if (_encoder.inputBufferIndex == _encoder.maxInputBufferSizeBytes) {
+        yield _encodeCurrentBuffer();
+        _encoder.inputBufferIndex = 0;
+      }
+    }
+  }
+
+  /// Encodes the encoder's current input buffer and returns a Dart-heap copy
+  /// of the resulting opus packet.
+  Uint8List _encodeCurrentBuffer() {
+    final encoded = floats ? _encoder.encodeFloat() : _encoder.encode();
+    return Uint8List.fromList(encoded);
+  }
+
+  /// Handles the end-of-stream partial frame.
+  ///
+  /// If [fillUpLastFrame] is true, the remaining buffer space is zero-padded
+  /// to produce one final silent-padded frame. Otherwise, an
+  /// [UnfinishedFrameException] is thrown reporting how many samples are
+  /// missing.
+  Iterable<Uint8List> _flushRemaining() sync* {
+    if (_encoder.maxInputBufferSizeBytes == 0) return;
+    if (!fillUpLastFrame) {
+      final missingSamples =
+          (_encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex) ~/
+              (floats ? 4 : 2);
+      throw UnfinishedFrameException._(missingSamples: missingSamples);
+    }
+    _padInputBuffer();
+    yield _encodeCurrentBuffer();
+  }
+
+  /// Fills the remaining input buffer space with silence (zeros) and marks
+  /// the buffer as full.
+  void _padInputBuffer() {
+    final padding =
+        _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex;
+    _encoder.inputBuffer.setAll(_encoder.inputBufferIndex, Uint8List(padding));
+    _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
   }
 
   /// Manually destroys this encoder.

@@ -194,9 +194,11 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// The portion of the allocated output buffer that is currently filled with data.
   /// The data represents an opus packet in bytes.
   ///
-  /// This method does not copy data from native memory to dart memory but
-  /// rather gives a view backed by native memory.
-  Uint8List get outputBuffer => _outputBuffer.asTypedList(_outputBufferIndex);
+  /// Returns a copy of the native output buffer. This is safe across WASM
+  /// memory growth — the returned list remains valid even if subsequent
+  /// allocations replace the underlying ArrayBuffer.
+  Uint8List get outputBuffer =>
+      Uint8List.fromList(_outputBuffer.asTypedList(_outputBufferIndex));
 
   BufferedOpusEncoder._(
       this._opusEncoder,

@@ -650,7 +650,7 @@ _malloc, _free,
 _opus_get_version_string, _opus_strerror,
 _opus_encoder_get_size, _opus_encoder_create, _opus_encoder_init,
 _opus_encode, _opus_encode_float, _opus_encoder_destroy,
-_opus_encoder_ctl,
+_opus_encoder_ctl, _opus_encoder_ctl_int,
 _opus_decoder_get_size, _opus_decoder_create, _opus_decoder_init,
 _opus_decode, _opus_decode_float, _opus_decoder_destroy,
 _opus_packet_parse, _opus_packet_get_bandwidth,
@@ -671,7 +671,7 @@ _opus_decoder_get_nb_samples, _opus_pcm_soft_clip
 | `opus_encode` | Yes | Eager (constructor) |
 | `opus_encode_float` | Yes | Eager (constructor) |
 | `opus_encoder_destroy` | Yes | Eager (constructor) |
-| `opus_encoder_ctl` | Yes | Lazy (`late final`) |
+| `opus_encoder_ctl` / `opus_encoder_ctl_int` | Yes | Lazy (`late final` via `_resolveEncoderCtl`) — tries `opus_encoder_ctl_int` first, falls back to `opus_encoder_ctl` |
 | `opus_decoder_get_size` | Yes | Eager (constructor) |
 | `opus_decoder_create` | Yes | Eager (constructor) |
 | `opus_decoder_init` | Yes | Eager (constructor) |
@@ -721,42 +721,44 @@ annotations. The current binding bypasses this by using `lookup` + `asFunction` 
 which happens to work on most native platforms due to calling convention compatibility.
 The fallback in `_resolveEncoderCtl` preserves this existing behavior.
 
-### 12.8 Memory Growth and `asTypedList` Views
+### 12.8 Memory Growth and `asTypedList` Views — **Fixed**
 
 **wasm_ffi context:** The Dockerfile uses `-s ALLOW_MEMORY_GROWTH=1`. When WASM memory
 grows (e.g. due to a `malloc` that exceeds the current memory size), the underlying
 `ArrayBuffer` is replaced. Existing `TypedArray` views into the old buffer become
 **detached** (invalid).
 
-**Risk in this project:** The `Buffered*` implementations return `asTypedList` views:
+~~**Risk in this project:** The `Buffered*` implementations return `asTypedList` views:~~
+
+**Fix:** Output getters now return copies; input getters create fresh views per call.
 
 ```dart
+// Output getters return copies (safe across memory growth)
+Uint8List get outputBuffer =>
+    Uint8List.fromList(_outputBuffer.asTypedList(_outputBufferIndex));
+
+// Input getters create fresh views per call (safe if not cached by consumer)
 Uint8List get inputBuffer => _inputBuffer.asTypedList(maxInputBufferSizeBytes);
-Uint8List get outputBuffer => _outputBuffer.asTypedList(_outputBufferIndex);
 ```
 
-If a consumer holds a reference to `inputBuffer` or `outputBuffer`, and a subsequent
-allocation (e.g. creating another encoder/decoder, or any `opus.allocator.call`)
-triggers WASM memory growth, the held view becomes a detached `TypedArray`. Accessing
-it will throw or return garbage.
+~~If a consumer holds a reference to `inputBuffer` or `outputBuffer`, and a subsequent
+allocation triggers WASM memory growth, the held view becomes a detached `TypedArray`.~~
 
-On native `dart:ffi`, `asTypedList` returns a view into process memory that remains
-valid as long as the pointer is valid. This asymmetry means code that works on native
-may silently break on web.
+**Remaining caveat:** `inputBuffer` still returns a native-backed view (required for
+write-through semantics). Consumers must not cache the returned view across operations
+that could trigger WASM memory growth. Each call to the getter creates a fresh, valid
+view.
 
-**Affected code paths:**
+**Affected code paths (status):**
 
-1. `BufferedOpusEncoder.inputBuffer` — returned to user for writing samples.
-2. `BufferedOpusEncoder.outputBuffer` — returned to user after encoding.
-3. `BufferedOpusDecoder.inputBuffer` — returned to user for writing packets.
-4. `BufferedOpusDecoder.outputBuffer` — returned to user after decoding.
-5. `BufferedOpusDecoder.outputBufferAsInt16List` / `outputBufferAsFloat32List` — cast
-   views of the output buffer.
-6. `StreamOpusEncoder.bind` — caches `_encoder.inputBuffer` in a local variable at the
-   start of the stream, then reuses it across all iterations. If memory grows during
-   the stream, this cached view is stale.
-7. Any `asTypedList` call in `SimpleOpus*` encode/decode — these are short-lived
-   (freed in the same `finally` block), so the risk is lower.
+1. ~~`BufferedOpusEncoder.inputBuffer`~~ — fresh view per call (safe if not cached).
+2. ~~`BufferedOpusEncoder.outputBuffer`~~ — **Fixed**: returns copy.
+3. ~~`BufferedOpusDecoder.inputBuffer`~~ — fresh view per call (safe if not cached).
+4. ~~`BufferedOpusDecoder.outputBuffer`~~ — **Fixed**: returns copy.
+5. ~~`BufferedOpusDecoder.outputBufferAsInt16List` / `outputBufferAsFloat32List`~~ —
+   **Fixed**: return copies.
+6. ~~`StreamOpusEncoder.bind`~~ — **Fixed**: no longer caches `inputBuffer`.
+7. `SimpleOpus*` encode/decode — short-lived views, freed in same `finally` block (low risk).
 
 ### 12.9 `Memory.init()` and Global Memory
 
@@ -813,14 +815,14 @@ documentation:
 
 | # | Risk | Severity | Detail |
 |---|------|----------|--------|
-| W1 | **`opus_encoder_ctl` not exported from WASM** | Fixed | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile. |
+| W1 | ~~**`opus_encoder_ctl` not exported from WASM**~~ | ~~High~~ **Fixed** | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile. |
 | W2 | ~~**Variadic `opus_encoder_ctl` ABI mismatch**~~ | ~~High~~ **Fixed** | Non-variadic C wrapper (`opus_encoder_ctl_int`) compiled into WASM module; Dart binding tries wrapper first via `_resolveEncoderCtl`. |
-| W3 | **`asTypedList` views detach on memory growth** | Medium | `ALLOW_MEMORY_GROWTH=1` means `malloc` can trigger buffer replacement. Held `asTypedList` views (especially in `Buffered*` classes and `StreamOpusEncoder.bind`) become invalid. |
-| W4 | **`StreamOpusEncoder` caches stale buffer view** | Medium | `bind()` stores `_encoder.inputBuffer` in a local variable at stream start. If WASM memory grows during the stream, this view is detached. |
-| W5 | **`OpusCustomMode` not registered** | Fixed | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
+| W3 | ~~**`asTypedList` views detach on memory growth**~~ | ~~Medium~~ **Fixed** | Output getters (`outputBuffer`, `outputBufferAsInt16List`, `outputBufferAsFloat32List`) now return copies. `inputBuffer` getters create fresh views per call; `StreamOpusEncoder.bind` no longer caches. |
+| W4 | ~~**`StreamOpusEncoder` caches stale buffer view**~~ | ~~Medium~~ **Fixed** | `bind()` no longer caches `_encoder.inputBuffer`; it re-fetches the view on each use, so WASM memory growth cannot leave a stale view. |
+| W5 | ~~**`OpusCustomMode` not registered**~~ | ~~Medium~~ **Fixed** | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
 | W6 | **No function signature validation** | Low | `wasm_ffi` does not validate that Dart typedefs match WASM function signatures. A typedef error would cause silent data corruption on web while working on native. |
-| W7 | **`free(nullptr)` behavior unverified** | Fixed | Resolved by nullable `inputNative` — `free` is only called when the pointer is non-null. `free(nullptr)` no longer occurs. |
-| W8 | **`Pointer[i]` indexing in `_asString`** | Fixed | `_asString` now bounds the loop to `maxStringLength` (256) and throws `StateError` if no null terminator is found, preventing unbounded WASM memory walks. |
+| W7 | ~~**`free(nullptr)` behavior unverified**~~ | ~~Low~~ **Fixed** | Resolved by nullable `inputNative` — `free` is only called when the pointer is non-null. `free(nullptr)` no longer occurs. |
+| W8 | ~~**`Pointer[i]` indexing in `_asString`**~~ | ~~Low~~ **Fixed** | `_asString` now bounds the loop to `maxStringLength` (256) and throws `StateError` if no null terminator is found, preventing unbounded WASM memory walks. |
 
 ---
 
@@ -834,8 +836,8 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 2 | ~~Variadic `opus_encoder_ctl` ABI mismatch under WASM~~ | Web | ~~**High**~~ **Fixed** | Non-variadic wrapper `opus_encoder_ctl_int` + `_resolveEncoderCtl` fallback |
 | 3 | ~~Use-after-destroy (no `_destroyed` check in encode/decode)~~ | All | ~~**High**~~ **Fixed** | `SimpleOpus*`, `BufferedOpus*` — all public methods now throw `OpusDestroyedError` before touching native pointers |
 | 4 | ~~Output buffer sizing bug (samples vs bytes)~~ | All | ~~**High**~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
-| 5 | `asTypedList` views detach on WASM memory growth | Web | **Medium** | `BufferedOpus*` buffer getters |
-| 6 | `StreamOpusEncoder.bind` caches stale buffer view | Web | **Medium** | `opus_dart_streaming.dart:129` |
+| 5 | ~~`asTypedList` views detach on WASM memory growth~~ | Web | ~~**Medium**~~ **Fixed** | Output getters return copies; input getters create fresh views per call |
+| 6 | ~~`StreamOpusEncoder.bind` caches stale buffer view~~ | Web | ~~**Medium**~~ **Fixed** | `bind()` re-fetches `_encoder.inputBuffer` on each use |
 | 7 | ~~`OpusCustomMode` not registered on web~~ | Web | ~~**Medium**~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered in `init_web.dart` |
 | 8 | ~~Duplicate `OpusRepacketizer` registration~~ | Web | ~~**Low**~~ **Fixed** | See #7 |
 | 9 | ~~No `NativeFinalizer` — leaked memory if `destroy()` skipped~~ | All | ~~**Medium**~~ **Fixed** | All classes now use `Finalizer` for GC-driven cleanup |

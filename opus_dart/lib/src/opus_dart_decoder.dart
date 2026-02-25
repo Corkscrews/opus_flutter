@@ -274,17 +274,21 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// The data are pcm samples, either encoded as s16le or floats, depending on
   /// what method was used to decode the input packet.
   ///
-  /// This method does not copy data from native memory to dart memory but
-  /// rather gives a view backed by native memory.
-  Uint8List get outputBuffer => _outputBuffer.asTypedList(_outputBufferIndex);
+  /// Returns a copy of the native output buffer. This is safe across WASM
+  /// memory growth — the returned list remains valid even if subsequent
+  /// allocations replace the underlying ArrayBuffer.
+  Uint8List get outputBuffer =>
+      Uint8List.fromList(_outputBuffer.asTypedList(_outputBufferIndex));
 
   /// Convenience method to get the current output buffer as s16le.
-  Int16List get outputBufferAsInt16List =>
-      _outputBuffer.cast<Int16>().asTypedList(_outputBufferIndex ~/ 2);
+  /// Returns a copy safe across WASM memory growth.
+  Int16List get outputBufferAsInt16List => Int16List.fromList(
+      _outputBuffer.cast<Int16>().asTypedList(_outputBufferIndex ~/ 2));
 
   /// Convenience method to get the current output buffer as floats.
-  Float32List get outputBufferAsFloat32List =>
-      _outputBuffer.cast<Float>().asTypedList(_outputBufferIndex ~/ 4);
+  /// Returns a copy safe across WASM memory growth.
+  Float32List get outputBufferAsFloat32List => Float32List.fromList(
+      _outputBuffer.cast<Float>().asTypedList(_outputBufferIndex ~/ 4));
 
   final Pointer<Float> _softClipBuffer;
 
