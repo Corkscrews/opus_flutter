@@ -6,6 +6,12 @@ import '../wrappers/opus_libinfo.dart' as opus_libinfo;
 import '../wrappers/opus_encoder.dart' as opus_encoder;
 import '../wrappers/opus_decoder.dart' as opus_decoder;
 
+/// Byte width of a single s16le PCM sample (Int16).
+const int bytesPerInt16Sample = 2;
+
+/// Byte width of a single float PCM sample (Float32).
+const int bytesPerFloatSample = 4;
+
 /// Max bitstream size of a single opus packet.
 ///
 /// See [here](https://stackoverflow.com/questions/55698317/what-value-to-use-for-libopus-encoder-max-data-bytes-field)
