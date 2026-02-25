@@ -55,7 +55,9 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   /// Indicates if the input data is interpreted as floats (`true`) or as s16le (`false`).
   final bool floats;
 
-  /// If `true`, the encoded output is copied into dart memory befor passig it to any consumers.
+  /// Previously controlled whether output was copied into Dart memory.
+  /// Output is now always copied for safety (prevents use-after-write hazards
+  /// when the native buffer is overwritten on the next encode call).
   final bool copyOutput;
 
   /// The sample rate in Hz for this encoder.
@@ -151,9 +153,9 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
           _encoder.inputBufferIndex += use;
           available = bytes.lengthInBytes - dataIndex;
           if (_encoder.inputBufferIndex == _encoder.maxInputBufferSizeBytes) {
-            Uint8List bytes =
+            Uint8List encoded =
                 floats ? _encoder.encodeFloat() : _encoder.encode();
-            yield copyOutput ? Uint8List.fromList(bytes) : bytes;
+            yield Uint8List.fromList(encoded);
             _encoder.inputBufferIndex = 0;
           }
         }
@@ -170,8 +172,8 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
             Uint8List(
                 _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex));
         _encoder.inputBufferIndex = _encoder.maxInputBufferSizeBytes;
-        Uint8List bytes = floats ? _encoder.encodeFloat() : _encoder.encode();
-        yield copyOutput ? Uint8List.fromList(bytes) : bytes;
+        Uint8List encoded = floats ? _encoder.encodeFloat() : _encoder.encode();
+        yield Uint8List.fromList(encoded);
       }
     } finally {
       destroy();
@@ -204,7 +206,10 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   /// Indicates if the input data is decoded to floats (`true`) or to s16le (`false`).
   final bool floats;
 
-  /// If `true`, the decoded output is copied into dart memory befor passig it to any consumers.
+  /// Previously controlled whether output was copied into Dart memory.
+  /// Output is now always copied for safety (prevents use-after-write hazards
+  /// when the native buffer is overwritten on the next decode call, and prevents
+  /// data corruption in the FEC double-yield path).
   final bool copyOutput;
 
   /// The sample rate in Hz for this decoder.
@@ -286,10 +291,7 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   }
 
   List<num> _output() {
-    Uint8List output = _decoder.outputBuffer;
-    if (copyOutput) {
-      output = Uint8List.fromList(output);
-    }
+    Uint8List output = Uint8List.fromList(_decoder.outputBuffer);
     if (_outputType == Float32List) {
       return output.buffer
           .asFloat32List(output.offsetInBytes, output.lengthInBytes ~/ 4);

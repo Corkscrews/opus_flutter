@@ -75,7 +75,7 @@ ApiObject createApiObject(Object lib) {
 | Opaque type setup      | Not needed                       | `registerOpaqueType<T>()` required |
 | `DynamicLibrary` source| OS-level `.so`/`.dylib`/`.dll`   | Emscripten JS+WASM module          |
 | `nullptr` semantics    | Backed by address `0`            | `wasm_ffi` emulation               |
-| `free(nullptr)`        | Safe (C standard)                | Depends on `wasm_ffi` allocator    |
+| `free(nullptr)`        | No longer called                 | No longer called (fixed)           |
 
 ---
 
@@ -271,23 +271,21 @@ the `throw` path inside the `try` block only runs when `error.value != OPUS_OK`.
 
 ### 5.3 Pointer Lifetime in Streaming (`opus_dart_streaming.dart`)
 
+(**Fixed** — output is now always copied to the Dart heap regardless of `copyOutput`.)
+
 `StreamOpusEncoder` and `StreamOpusDecoder` wrap `BufferedOpusEncoder`/`BufferedOpusDecoder`.
-They expose `copyOutput` as a parameter:
+Previously they exposed `copyOutput` as a parameter that controlled whether the output
+was copied or yielded as a native memory view. The `copyOutput` parameter is retained
+for API compatibility but output is now always copied via `Uint8List.fromList`.
 
-- `copyOutput = true` (default): Output is copied to Dart heap via `Uint8List.fromList`.
-- `copyOutput = false`: Output is a `Uint8List` view backed by native memory.
-
-**Risk with `copyOutput = false`:** The view points into the preallocated native output
-buffer. On the next encode/decode call, this buffer is overwritten. If a consumer holds
-a reference to a previously yielded `Uint8List`, it will silently contain new data.
-This is a use-after-write hazard.
-
-The `StreamOpusDecoder` has an additional concern: when `forwardErrorCorrection` is
-enabled and a packet is lost then recovered, the decoder calls `_decodeFec(true)` and
-yields `_output()`, then immediately calls `_decodeFec(false)` and yields `_output()`
-again. With `copyOutput = false`, the first yield's data is overwritten by the second
-decode before the consumer processes it (in an `async*` generator, the consumer may
-not have consumed the first yield yet).
+This eliminates two hazards:
+1. **Use-after-write:** With `copyOutput = false`, yielded views pointed into the
+   preallocated native buffer and would silently contain stale data after the next
+   encode/decode call.
+2. **FEC double-yield corruption:** In `StreamOpusDecoder`, when FEC recovers a lost
+   packet, two yields happen in succession (`_decodeFec(true)` + `_decodeFec(false)`).
+   With `copyOutput = false`, the first yield's data was overwritten by the second
+   decode before the consumer could process it.
 
 ### 5.4 String Handling (`_asString`)
 
@@ -315,17 +313,17 @@ String _asString(Pointer<Uint8> pointer) {
 
 ### 5.5 `nullptr` Usage
 
-`nullptr` is used in two contexts:
+`nullptr` is used in one context:
 
-1. **Decoder packet loss:** When `input` is `null`, `inputNative` is set to `nullptr`
-   and passed to `opus_decode`/`opus_decode_float`. This is correct per the opus API
+1. **Decoder packet loss:** When `input` is `null`, `nullptr` is passed to
+   `opus_decode`/`opus_decode_float`. This is correct per the opus API
    (null data pointer signals packet loss).
 
-2. **Decoder free after packet loss:** After a null-input decode, the code
-   `opus.allocator.free(inputNative)` is called where `inputNative == nullptr`. In C,
-   `free(NULL)` is a no-op. The `dart:ffi` `malloc.free` from `package:ffi` also
-   handles this safely. Whether `wasm_ffi`'s allocator handles `free(nullptr)` safely
-   is implementation-dependent.
+(**Fixed** — previously `free(inputNative)` was called where `inputNative == nullptr`
+after a null-input decode. This was resolved as part of the "memory leak if second
+allocation throws" fix: `inputNative` is now a nullable `Pointer<Uint8>?` and the
+`finally` block uses `if (inputNative != null)` before calling `free`. The
+`free(nullptr)` call no longer occurs.)
 
 ---
 
@@ -455,14 +453,14 @@ argument is an integer. However:
 
 | # | Risk | Location | Severity | Detail |
 |---|------|----------|----------|--------|
-| 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | ~~Medium~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
+| 1 | ~~**Duplicate `registerOpaqueType` / missing `OpusCustomMode`**~~ | `init_web.dart:28` | ~~Medium~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
 | 2 | ~~**Memory leak if second allocation throws**~~ | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, float variants, `pcmSoftClip` | ~~Low~~ **Fixed** | All methods now wrap both allocations in `try/finally`; second pointer is nullable and only freed if allocated. |
 | 3 | ~~**No `NativeFinalizer`**~~ | All encoder/decoder classes | ~~Medium~~ **Fixed** | All classes now use `Finalizer` for GC-driven cleanup. `destroy()` detaches the finalizer to prevent double-free. |
 | 4 | ~~**Use-after-destroy (dangling pointer)**~~ | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | ~~High~~ **Fixed** | All public methods now check `_destroyed` and throw `OpusDestroyedError` before touching native pointers. |
-| 5 | **`copyOutput = false` use-after-write** | `StreamOpusEncoder`, `StreamOpusDecoder` | Medium | Yielded views point to native buffers that get overwritten on next call. |
-| 6 | **`StreamOpusDecoder` FEC double-yield overwrites** | `opus_dart_streaming.dart:321-327` | Medium | With `copyOutput = false` and FEC, the first yielded output is overwritten before the consumer reads it. |
+| 5 | ~~**`copyOutput = false` use-after-write**~~ | `StreamOpusEncoder`, `StreamOpusDecoder` | ~~Medium~~ **Fixed** | Output is now always copied to Dart heap regardless of `copyOutput`. |
+| 6 | ~~**`StreamOpusDecoder` FEC double-yield overwrites**~~ | `opus_dart_streaming.dart:321-327` | ~~Medium~~ **Fixed** | See #5 — always-copy eliminates the FEC double-yield corruption. |
 | 7 | ~~**Output buffer too small for float decode**~~ | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | ~~High~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
-| 8 | **`free(nullptr)` on web** | `SimpleOpusDecoder.decode` finally block | Low | After null-input decode, `free(nullptr)` is called. Safe on native; behavior on `wasm_ffi` depends on allocator implementation. |
+| 8 | ~~**`free(nullptr)` on web**~~ | `SimpleOpusDecoder.decode` finally block | ~~Low~~ **Fixed** | Resolved by nullable `inputNative` — `free` is only called when the pointer is non-null. |
 | 9 | ~~**`_asString` unbounded loop**~~ | `opus_dart_misc.dart` | ~~Low~~ **Fixed** | Now bounded by `maxStringLength` (256); throws `StateError` if no null terminator found. |
 | 10 | **`opus_encoder_ctl` variadic binding** | `opus_encoder.dart` | Low | Hardcoded to 3 int args. Getter CTLs (pointer arg) cannot be used correctly. |
 | 11 | **No `opus_decoder_ctl` binding** | `opus_decoder.dart` | Low | Decoder CTL operations are not exposed. |
@@ -814,7 +812,7 @@ documentation:
 | W4 | **`StreamOpusEncoder` caches stale buffer view** | Medium | `bind()` stores `_encoder.inputBuffer` in a local variable at stream start. If WASM memory grows during the stream, this view is detached. |
 | W5 | **`OpusCustomMode` not registered** | Fixed | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
 | W6 | **No function signature validation** | Low | `wasm_ffi` does not validate that Dart typedefs match WASM function signatures. A typedef error would cause silent data corruption on web while working on native. |
-| W7 | **`free(nullptr)` behavior unverified** | Low | After packet-loss decode, `free(nullptr)` is called. The WASM `_free` (Emscripten's `free`) should handle `NULL` safely per C standard, but this is not explicitly guaranteed by `wasm_ffi`. |
+| W7 | **`free(nullptr)` behavior unverified** | Fixed | Resolved by nullable `inputNative` — `free` is only called when the pointer is non-null. `free(nullptr)` no longer occurs. |
 | W8 | **`Pointer[i]` indexing in `_asString`** | Fixed | `_asString` now bounds the loop to `maxStringLength` (256) and throws `StateError` if no null terminator is found, preventing unbounded WASM memory walks. |
 
 ---
@@ -834,10 +832,10 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 7 | ~~`OpusCustomMode` not registered on web~~ | Web | ~~**Medium**~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered in `init_web.dart` |
 | 8 | ~~Duplicate `OpusRepacketizer` registration~~ | Web | ~~**Low**~~ **Fixed** | See #7 |
 | 9 | ~~No `NativeFinalizer` — leaked memory if `destroy()` skipped~~ | All | ~~**Medium**~~ **Fixed** | All classes now use `Finalizer` for GC-driven cleanup |
-| 10 | `copyOutput = false` use-after-write | All | **Medium** | `StreamOpusEncoder`, `StreamOpusDecoder` |
-| 11 | FEC double-yield overwrites with `copyOutput = false` | All | **Medium** | `opus_dart_streaming.dart:321-327` |
+| 10 | ~~`copyOutput = false` use-after-write~~ | All | ~~**Medium**~~ **Fixed** | Output always copied to Dart heap |
+| 11 | ~~FEC double-yield overwrites with `copyOutput = false`~~ | All | ~~**Medium**~~ **Fixed** | See #10 |
 | 12 | ~~Memory leak if second allocation throws~~ | All | ~~**Low**~~ **Fixed** | All `Simple*` methods and `pcmSoftClip` now wrap allocations in `try/finally` |
-| 13 | `free(nullptr)` behavior on web | Web | **Low** | `SimpleOpusDecoder.decode` finally |
+| 13 | ~~`free(nullptr)` behavior on web~~ | Web | ~~**Low**~~ **Fixed** | Resolved by nullable `inputNative` null check |
 | 14 | No function signature validation on web | Web | **Low** | All `lookupFunction` calls |
 | 15 | ~~`_asString` unbounded loop~~ | All | ~~**Low**~~ **Fixed** | Now bounded by `maxStringLength`; throws `StateError` on missing terminator |
 | 16 | `opus_encoder_ctl` variadic binding (native) | Native | **Low** | `opus_encoder.dart` |

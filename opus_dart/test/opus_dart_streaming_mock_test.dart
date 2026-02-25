@@ -412,7 +412,7 @@ void main() {
       expect(packets[0], [0x11, 0x22]);
     });
 
-    test('copyOutput=false yields buffer without copying', () async {
+    test('copyOutput=false still copies output for safety', () async {
       stubEncoderCreate();
       stubEncode([0x33, 0x44]);
 
@@ -428,11 +428,8 @@ void main() {
           .bind(Stream.value(Int16List(_samplesPerFrame)))
           .toList();
 
-      // With copyOutput=false all yielded lists share the same native buffer,
-      // so we can only verify the count and type — content is overwritten by
-      // the trailing flush.
       expect(packets, hasLength(2));
-      expect(packets[0], isA<Uint8List>());
+      expect(packets[0], [0x33, 0x44]);
     });
   });
 
@@ -503,8 +500,7 @@ void main() {
       verify(mockEncoder.opus_encode_float(any, any, any, any, any)).called(1);
     });
 
-    test('copyOutput=false with float encoder yields buffer directly',
-        () async {
+    test('copyOutput=false still copies output for safety', () async {
       stubEncoderCreate();
       stubEncodeFloat([0xDD]);
 
@@ -520,7 +516,7 @@ void main() {
       final packets = await encoder.bind(Stream.value(input)).toList();
 
       expect(packets, hasLength(2));
-      expect(packets[0], isA<Uint8List>());
+      expect(packets[0], [0xDD]);
     });
 
     test('works with FrameTime.ms20', () async {
@@ -812,7 +808,7 @@ void main() {
       verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(3);
     });
 
-    test('copyOutput=false yields buffer directly', () async {
+    test('copyOutput=false still copies output for safety', () async {
       stubDecoderCreate();
       stubDecode([42, 43]);
 
@@ -827,6 +823,7 @@ void main() {
 
       expect(results, hasLength(1));
       expect(results[0], isA<Int16List>());
+      expect(results[0], [42, 43]);
     });
   });
 
@@ -946,7 +943,7 @@ void main() {
       );
     });
 
-    test('copyOutput=false yields buffer directly', () async {
+    test('copyOutput=false still copies output for safety', () async {
       stubDecoderCreate();
       stubDecodeFloat([0.5]);
 
@@ -961,6 +958,7 @@ void main() {
 
       expect(results, hasLength(1));
       expect(results[0], isA<Float32List>());
+      expect(results[0], [0.5]);
     });
   });
 
