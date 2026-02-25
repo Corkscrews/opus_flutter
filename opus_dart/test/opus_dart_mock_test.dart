@@ -248,6 +248,25 @@ void main() {
       encoder.destroy();
       expect(encoder.destroyed, isTrue);
     });
+
+    test('encode after destroy throws OpusDestroyedError', () {
+      final encoder = createEncoder();
+      encoder.destroy();
+      expect(
+        () => encoder.encode(input: Int16List.fromList(List.filled(1920, 0))),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('encodeFloat after destroy throws OpusDestroyedError', () {
+      final encoder = createEncoder();
+      encoder.destroy();
+      expect(
+        () => encoder.encodeFloat(
+            input: Float32List.fromList(List.filled(1920, 0.0))),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -499,6 +518,24 @@ void main() {
       decoder.destroy();
       expect(decoder.destroyed, isTrue);
     });
+
+    test('decode after destroy throws OpusDestroyedError', () {
+      final decoder = createDecoder();
+      decoder.destroy();
+      expect(
+        () => decoder.decode(input: Uint8List.fromList([0x01])),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('decodeFloat after destroy throws OpusDestroyedError', () {
+      final decoder = createDecoder();
+      decoder.destroy();
+      expect(
+        () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -615,6 +652,30 @@ void main() {
       expect(encoder.destroyed, isFalse);
       encoder.destroy();
       expect(encoder.destroyed, isTrue);
+    });
+
+    test('encode after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.inputBufferIndex = 3840;
+      encoder.destroy();
+      expect(() => encoder.encode(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('encodeFloat after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.inputBufferIndex = 7680;
+      encoder.destroy();
+      expect(() => encoder.encodeFloat(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('encoderCtl after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.destroy();
+      expect(
+        () => encoder.encoderCtl(
+            request: OPUS_SET_BITRATE_REQUEST, value: 64000),
+        throwsA(isA<OpusDestroyedError>()),
+      );
     });
 
     test('respects custom buffer sizes', () {
@@ -949,6 +1010,27 @@ void main() {
       expect(decoder.destroyed, isFalse);
       decoder.destroy();
       expect(decoder.destroyed, isTrue);
+    });
+
+    test('decode after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.inputBufferIndex = 10;
+      decoder.destroy();
+      expect(() => decoder.decode(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('decodeFloat after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.inputBufferIndex = 10;
+      decoder.destroy();
+      expect(() => decoder.decodeFloat(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('pcmSoftClipOutputBuffer after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.destroy();
+      expect(() => decoder.pcmSoftClipOutputBuffer(),
+          throwsA(isA<OpusDestroyedError>()));
     });
 
     test('respects custom buffer sizes', () {

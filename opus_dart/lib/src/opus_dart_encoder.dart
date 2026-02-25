@@ -62,6 +62,7 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// [input] and the returned list are copied to and respectively from native memory.
   Uint8List encode(
       {required Int16List input, int maxOutputSizeBytes = maxDataBytes}) {
+    if (_destroyed) throw OpusDestroyedError.encoder();
     Pointer<Int16> inputNative = opus.allocator.call<Int16>(input.length);
     inputNative.asTypedList(input.length).setAll(0, input);
     Pointer<Uint8> outputNative =
@@ -85,6 +86,7 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// This method behaves just as [encode], so see there for more information.
   Uint8List encodeFloat(
       {required Float32List input, int maxOutputSizeBytes = maxDataBytes}) {
+    if (_destroyed) throw OpusDestroyedError.encoder();
     Pointer<Float> inputNative = opus.allocator.call<Float>(input.length);
     inputNative.asTypedList(input.length).setAll(0, input);
     Pointer<Uint8> outputNative =
@@ -240,6 +242,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   }
 
   int encoderCtl({required int request, required int value}) {
+    if (_destroyed) throw OpusDestroyedError.encoder();
     return opus.encoder.opus_encoder_ctl(_opusEncoder, request, value);
   }
 
@@ -255,6 +258,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   ///
   /// The returned list is actually just the [outputBuffer].
   Uint8List encode() {
+    if (_destroyed) throw OpusDestroyedError.encoder();
     int sampleCountPerChannel = inputBufferIndex ~/ (channels * 2);
     _outputBufferIndex = opus.encoder.opus_encode(
         _opusEncoder,
@@ -275,6 +279,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// Except that the sample count is calculated by dividing the [inputBufferIndex] by 4 and not by 2,
   /// this method behaves just as [encode], so see there for more information.
   Uint8List encodeFloat() {
+    if (_destroyed) throw OpusDestroyedError.encoder();
     int sampleCountPerChannel = inputBufferIndex ~/ (channels * 4);
     _outputBufferIndex = opus.encoder.opus_encode_float(
         _opusEncoder,

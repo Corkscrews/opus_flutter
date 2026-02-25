@@ -98,6 +98,7 @@ class SimpleOpusDecoder extends OpusDecoder {
   /// The input bytes need to represent a whole packet!
   @override
   Int16List decode({Uint8List? input, bool fec = false, int? loss}) {
+    if (_destroyed) throw OpusDestroyedError.decoder();
     Pointer<Int16> outputNative =
         opus.allocator.call<Int16>(_maxSamplesPerPacket);
     Pointer<Uint8> inputNative;
@@ -141,6 +142,7 @@ class SimpleOpusDecoder extends OpusDecoder {
       bool fec = false,
       bool autoSoftClip = false,
       int? loss}) {
+    if (_destroyed) throw OpusDestroyedError.decoder();
     Pointer<Float> outputNative =
         opus.allocator.call<Float>(_maxSamplesPerPacket);
     Pointer<Uint8> inputNative;
@@ -362,6 +364,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// The returned list is actually just the [outputBufferAsInt16List].
   @override
   Int16List decode({bool fec = false, int? loss}) {
+    if (_destroyed) throw OpusDestroyedError.decoder();
     Pointer<Uint8> inputNative;
     int frameSize;
     if (inputBufferIndex > 0) {
@@ -397,6 +400,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   @override
   Float32List decodeFloat(
       {bool autoSoftClip = false, bool fec = false, int? loss}) {
+    if (_destroyed) throw OpusDestroyedError.decoder();
     Pointer<Uint8> inputNative;
     int frameSize;
     if (inputBufferIndex > 0) {
@@ -440,6 +444,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   ///
   /// Behaves like the toplevel [pcmSoftClip] function, but without unnecessary copying.
   Float32List pcmSoftClipOutputBuffer() {
+    if (_destroyed) throw OpusDestroyedError.decoder();
     opus.decoder.opus_pcm_soft_clip(_outputBuffer.cast<Float>(),
         _outputBufferIndex ~/ (4 * channels), channels, _softClipBuffer);
     return outputBufferAsFloat32List;

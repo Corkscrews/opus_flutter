@@ -373,12 +373,11 @@ void destroy() {
 }
 ```
 
-**Concern:** While `destroy()` checks `_destroyed`, the `encode`/`decode`/`encodeFloat`/
-`decodeFloat` methods do **not** check `_destroyed` before using the native pointer.
-Calling `encode()` after `destroy()` passes a dangling pointer to opus, causing
-undefined behavior. The abstract base classes document that calling methods after
-`destroy()` should throw `OpusDestroyedError`, but this is not enforced in the
-`Simple*` or `Buffered*` implementations.
+All public methods (`encode`, `encodeFloat`, `decode`, `decodeFloat`, `encoderCtl`,
+`pcmSoftClipOutputBuffer`) now check `_destroyed` at the top and throw
+`OpusDestroyedError` before touching any native pointer. This matches the contract
+documented in the abstract base classes. (**Fixed** — previously these methods had no
+guard and would pass dangling pointers to opus after `destroy()`.)
 
 ---
 
@@ -481,7 +480,7 @@ argument is an integer. However:
 | 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | Medium | `OpusRepacketizer` registered twice; `OpusCustomMode` never registered. Using custom mode on web will fail. |
 | 2 | **Memory leak if second allocation throws** | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, and float variants | Low | If the second `allocator.call` throws, the first allocation is not freed. |
 | 3 | **No `NativeFinalizer`** | All encoder/decoder classes | Medium | If `destroy()` is never called, native memory leaks permanently. No GC-driven cleanup. |
-| 4 | **Use-after-destroy (dangling pointer)** | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | High | `encode()`/`decode()` do not check `_destroyed` before using the native pointer. Calling them after `destroy()` is undefined behavior. |
+| 4 | ~~**Use-after-destroy (dangling pointer)**~~ | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | ~~High~~ **Fixed** | All public methods now check `_destroyed` and throw `OpusDestroyedError` before touching native pointers. |
 | 5 | **`copyOutput = false` use-after-write** | `StreamOpusEncoder`, `StreamOpusDecoder` | Medium | Yielded views point to native buffers that get overwritten on next call. |
 | 6 | **`StreamOpusDecoder` FEC double-yield overwrites** | `opus_dart_streaming.dart:321-327` | Medium | With `copyOutput = false` and FEC, the first yielded output is overwritten before the consumer reads it. |
 | 7 | **Output buffer too small for float decode** | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | High | `maxOutputBufferSizeBytes` defaults to `maxSamplesPerPacket` (a sample count, not byte count). For float output (4 bytes/sample), the buffer is 4x too small. `StreamOpusDecoder` has an inverted multiplier. |
@@ -857,7 +856,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 |---|------|----------|----------|----------|
 | 1 | `opus_encoder_ctl` not exported from WASM | Web | **High** | `Dockerfile`, `opus_encoder.dart` |
 | 2 | Variadic `opus_encoder_ctl` ABI mismatch under WASM | Web | **High** | `opus_encoder.dart:212-217` |
-| 3 | Use-after-destroy (no `_destroyed` check in encode/decode) | All | **High** | `SimpleOpus*`, `BufferedOpus*` |
+| 3 | ~~Use-after-destroy (no `_destroyed` check in encode/decode)~~ | All | ~~**High**~~ **Fixed** | `SimpleOpus*`, `BufferedOpus*` — all public methods now throw `OpusDestroyedError` before touching native pointers |
 | 4 | Output buffer sizing bug (samples vs bytes) | All | **High** | `BufferedOpusDecoder` factory, `StreamOpusDecoder` ctor |
 | 5 | `asTypedList` views detach on WASM memory growth | Web | **Medium** | `BufferedOpus*` buffer getters |
 | 6 | `StreamOpusEncoder.bind` caches stale buffer view | Web | **Medium** | `opus_dart_streaming.dart:129` |
