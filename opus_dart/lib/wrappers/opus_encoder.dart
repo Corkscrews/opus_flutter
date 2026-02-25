@@ -215,16 +215,14 @@ class FunctionsAndGlobals implements OpusEncoderFunctions {
     try {
       return _lookup<
               ffi.NativeFunction<
-                  ffi.Int Function(
-                      ffi.Pointer<OpusEncoder>, ffi.Int, ffi.Int)>>(
-              'opus_encoder_ctl_int')
+                  ffi.Int Function(ffi.Pointer<OpusEncoder>, ffi.Int,
+                      ffi.Int)>>('opus_encoder_ctl_int')
           .asFunction<int Function(ffi.Pointer<OpusEncoder>, int, int)>();
     } catch (_) {
       return _lookup<
               ffi.NativeFunction<
-                  ffi.Int Function(
-                      ffi.Pointer<OpusEncoder>, ffi.Int, ffi.Int)>>(
-              'opus_encoder_ctl')
+                  ffi.Int Function(ffi.Pointer<OpusEncoder>, ffi.Int,
+                      ffi.Int)>>('opus_encoder_ctl')
           .asFunction<int Function(ffi.Pointer<OpusEncoder>, int, int)>();
     }
   }

@@ -166,9 +166,9 @@ class SimpleOpusDecoder extends OpusDecoder {
         input: input,
         fec: fec,
         loss: loss,
-        nativeDecode: (inputPtr, inputLen, frameSize) =>
-            opus.decoder.opus_decode(_opusDecoder, inputPtr, inputLen,
-                outputNative, frameSize, fec ? 1 : 0),
+        nativeDecode: (inputPtr, inputLen, frameSize) => opus.decoder
+            .opus_decode(_opusDecoder, inputPtr, inputLen, outputNative,
+                frameSize, fec ? 1 : 0),
       );
       return Int16List.fromList(
           outputNative.asTypedList(outputSamplesPerChannel * channels));
@@ -199,9 +199,9 @@ class SimpleOpusDecoder extends OpusDecoder {
         input: input,
         fec: fec,
         loss: loss,
-        nativeDecode: (inputPtr, inputLen, frameSize) =>
-            opus.decoder.opus_decode_float(_opusDecoder, inputPtr, inputLen,
-                outputNative, frameSize, fec ? 1 : 0),
+        nativeDecode: (inputPtr, inputLen, frameSize) => opus.decoder
+            .opus_decode_float(_opusDecoder, inputPtr, inputLen, outputNative,
+                frameSize, fec ? 1 : 0),
       );
       if (autoSoftClip) {
         opus.decoder.opus_pcm_soft_clip(outputNative,
@@ -305,13 +305,16 @@ class BufferedOpusDecoder extends OpusDecoder {
 
   /// Convenience method to get the current output buffer as s16le.
   /// Returns a copy safe across WASM memory growth.
-  Int16List get outputBufferAsInt16List => Int16List.fromList(
-      _outputBuffer.cast<Int16>().asTypedList(_outputBufferIndex ~/ bytesPerInt16Sample));
+  Int16List get outputBufferAsInt16List => Int16List.fromList(_outputBuffer
+      .cast<Int16>()
+      .asTypedList(_outputBufferIndex ~/ bytesPerInt16Sample));
 
   /// Convenience method to get the current output buffer as floats.
   /// Returns a copy safe across WASM memory growth.
-  Float32List get outputBufferAsFloat32List => Float32List.fromList(
-      _outputBuffer.cast<Float>().asTypedList(_outputBufferIndex ~/ bytesPerFloatSample));
+  Float32List get outputBufferAsFloat32List =>
+      Float32List.fromList(_outputBuffer
+          .cast<Float>()
+          .asTypedList(_outputBufferIndex ~/ bytesPerFloatSample));
 
   final Pointer<Float> _softClipBuffer;
 
@@ -365,7 +368,8 @@ class BufferedOpusDecoder extends OpusDecoder {
       int? maxInputBufferSizeBytes,
       int? maxOutputBufferSizeBytes}) {
     maxInputBufferSizeBytes ??= maxDataBytes;
-    maxOutputBufferSizeBytes ??= bytesPerFloatSample * maxSamplesPerPacket(sampleRate, channels);
+    maxOutputBufferSizeBytes ??=
+        bytesPerFloatSample * maxSamplesPerPacket(sampleRate, channels);
     final input = opus.allocator.call<Uint8>(maxInputBufferSizeBytes);
     Pointer<Uint8>? output;
     Pointer<Float>? softClipBuffer;
@@ -397,8 +401,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   void _decodeBuffer(
       {required bool useFloat, required bool fec, required int? loss}) {
     if (_destroyed) throw OpusDestroyedError.decoder();
-    final bytesPerSample =
-        useFloat ? bytesPerFloatSample : bytesPerInt16Sample;
+    final bytesPerSample = useFloat ? bytesPerFloatSample : bytesPerInt16Sample;
     Pointer<Uint8> inputNative;
     int frameSize;
     if (inputBufferIndex > 0) {
@@ -409,8 +412,12 @@ class BufferedOpusDecoder extends OpusDecoder {
       frameSize = _estimateLoss(loss, lastPacketDurationMs);
     }
     final outputSamplesPerChannel = useFloat
-        ? opus.decoder.opus_decode_float(_opusDecoder, inputNative,
-            inputBufferIndex, _outputBuffer.cast<Float>(), frameSize,
+        ? opus.decoder.opus_decode_float(
+            _opusDecoder,
+            inputNative,
+            inputBufferIndex,
+            _outputBuffer.cast<Float>(),
+            frameSize,
             fec ? 1 : 0)
         : opus.decoder.opus_decode(_opusDecoder, inputNative, inputBufferIndex,
             _outputBuffer.cast<Int16>(), frameSize, fec ? 1 : 0);
@@ -487,8 +494,11 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// Behaves like the toplevel [pcmSoftClip] function, but without unnecessary copying.
   Float32List pcmSoftClipOutputBuffer() {
     if (_destroyed) throw OpusDestroyedError.decoder();
-    opus.decoder.opus_pcm_soft_clip(_outputBuffer.cast<Float>(),
-        _outputBufferIndex ~/ (bytesPerFloatSample * channels), channels, _softClipBuffer);
+    opus.decoder.opus_pcm_soft_clip(
+        _outputBuffer.cast<Float>(),
+        _outputBufferIndex ~/ (bytesPerFloatSample * channels),
+        channels,
+        _softClipBuffer);
     return outputBufferAsFloat32List;
   }
 }

@@ -156,7 +156,8 @@ void main() {
     });
 
     test('maps Application.restrictedLowdelay correctly', () {
-      final encoder = createEncoder(application: Application.restrictedLowdelay);
+      final encoder =
+          createEncoder(application: Application.restrictedLowdelay);
       expect(encoder.application, Application.restrictedLowdelay);
       verify(mockEncoder.opus_encoder_create(
               any, any, OPUS_APPLICATION_RESTRICTED_LOWDELAY, any))
@@ -743,16 +744,11 @@ void main() {
         return OPUS_OK;
       });
 
-      encoder.encoderCtl(
-          request: OPUS_SET_BITRATE_REQUEST, value: 64000);
-      encoder.encoderCtl(
-          request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
-      encoder.encoderCtl(
-          request: OPUS_SET_VBR_REQUEST, value: 1);
-      encoder.encoderCtl(
-          request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
-      encoder.encoderCtl(
-          request: OPUS_SET_PACKET_LOSS_PERC_REQUEST, value: 25);
+      encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+      encoder.encoderCtl(request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
+      encoder.encoderCtl(request: OPUS_SET_VBR_REQUEST, value: 1);
+      encoder.encoderCtl(request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
+      encoder.encoderCtl(request: OPUS_SET_PACKET_LOSS_PERC_REQUEST, value: 25);
 
       expect(captured, [
         [OPUS_SET_BITRATE_REQUEST, 64000],
@@ -809,8 +805,8 @@ void main() {
       final encoder = createBufferedEncoder();
       encoder.destroy();
       expect(
-        () => encoder.encoderCtl(
-            request: OPUS_SET_BITRATE_REQUEST, value: 64000),
+        () =>
+            encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000),
         throwsA(isA<OpusDestroyedError>()),
       );
     });
@@ -855,15 +851,15 @@ void main() {
     test('default output buffer is large enough for float decode', () {
       final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
       // 4 bytes/float * maxSamplesPerPacket ensures a 120ms frame fits
-      expect(decoder.maxOutputBufferSizeBytes,
-          4 * maxSamplesPerPacket(48000, 2));
+      expect(
+          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(48000, 2));
       decoder.destroy();
     });
 
     test('default output buffer is large enough for float decode (mono)', () {
       final decoder = createBufferedDecoder(sampleRate: 8000, channels: 1);
-      expect(decoder.maxOutputBufferSizeBytes,
-          4 * maxSamplesPerPacket(8000, 1));
+      expect(
+          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(8000, 1));
       decoder.destroy();
     });
 
@@ -1316,8 +1312,8 @@ void main() {
       );
 
       expect(
-        () => pcmSoftClip(
-            input: Float32List.fromList([0.5, -0.5]), channels: 2),
+        () =>
+            pcmSoftClip(input: Float32List.fromList([0.5, -0.5]), channels: 2),
         throwsStateError,
       );
       expect(failAlloc.freedAddresses, hasLength(1));

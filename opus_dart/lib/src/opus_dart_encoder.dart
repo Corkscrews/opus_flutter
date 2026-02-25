@@ -79,8 +79,7 @@ class SimpleOpusEncoder extends OpusEncoder {
     final outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes);
     try {
       final sampleCountPerChannel = inputSampleCount ~/ channels;
-      final outputLength =
-          nativeEncode(sampleCountPerChannel, outputNative);
+      final outputLength = nativeEncode(sampleCountPerChannel, outputNative);
       if (outputLength < opus_defines.OPUS_OK) {
         throw OpusException(outputLength);
       }
@@ -302,10 +301,14 @@ class BufferedOpusEncoder extends OpusEncoder {
     final sampleCountPerChannel =
         inputBufferIndex ~/ (channels * bytesPerSample);
     _outputBufferIndex = useFloat
-        ? opus.encoder.opus_encode_float(_opusEncoder,
-            _inputBuffer.cast<Float>(), sampleCountPerChannel, _outputBuffer, maxOutputBufferSizeBytes)
-        : opus.encoder.opus_encode(_opusEncoder,
-            _inputBuffer.cast<Int16>(), sampleCountPerChannel, _outputBuffer, maxOutputBufferSizeBytes);
+        ? opus.encoder.opus_encode_float(
+            _opusEncoder,
+            _inputBuffer.cast<Float>(),
+            sampleCountPerChannel,
+            _outputBuffer,
+            maxOutputBufferSizeBytes)
+        : opus.encoder.opus_encode(_opusEncoder, _inputBuffer.cast<Int16>(),
+            sampleCountPerChannel, _outputBuffer, maxOutputBufferSizeBytes);
     if (_outputBufferIndex < opus_defines.OPUS_OK) {
       throw OpusException(_outputBufferIndex);
     }
