@@ -54,7 +54,7 @@ Float32List pcmSoftClip({required Float32List input, required int channels}) {
 /// An easy to use implementation of [OpusDecoder].
 /// Don't forget to call [destroy] once you are done with it.
 ///
-/// All method calls in this calls allocate their own memory everytime they are called.
+/// All method calls in this class allocate their own memory everytime they are called.
 /// See the [BufferedOpusDecoder] for an implementation with less allocation calls.
 class SimpleOpusDecoder extends OpusDecoder {
   static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
@@ -148,11 +148,11 @@ class SimpleOpusDecoder extends OpusDecoder {
   /// If you want to use forward error correction, don't report packet loss
   /// by calling this method with `null` as input (unless it is a real packet
   /// loss), but instead, wait for the next packet and call this method with
-  /// the recieved packet, [fec] set to `true` and [loss] to the missing duration
+  /// the received packet, [fec] set to `true` and [loss] to the missing duration
   /// of the missing audio in ms (as above). Then, call this method a second time with
   /// the same packet, but with [fec] set to `false`. You can read more about the
   /// correct usage of forward error correction [here](https://stackoverflow.com/questions/49427579/how-to-use-fec-feature-for-opus-codec).
-  /// Note: A real packet loss occurse if you lose two or more packets in a row.
+  /// Note: A real packet loss occurs if you lose two or more packets in a row.
   /// You are only able to restore the last lost packet and the other packets are
   /// really lost. So for them, you have to report packet loss.
   ///
@@ -230,9 +230,9 @@ class SimpleOpusDecoder extends OpusDecoder {
 ///
 /// The idea behind this implementation is to reduce the amount of memory allocation calls.
 /// Instead of allocating new buffers everytime something is decoded, the buffers are
-/// allocated at initalization. Then, an opus packet is directly written into the [inputBuffer],
+/// allocated at initialization. Then, an opus packet is directly written into the [inputBuffer],
 /// the [inputBufferIndex] is updated, based on how many bytes where written, and
-/// one of the deocde methods is called. The decoded pcm samples can then be accessed using
+/// one of the decode methods is called. The decoded pcm samples can then be accessed using
 /// the [outputBuffer] getter (or one of the [outputBufferAsInt16List] or [outputBufferAsFloat32List] convenience getters).
 /// ```
 /// BufferedOpusDecoder decoder;
@@ -267,7 +267,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   int? _lastPacketDurationMs;
 
   /// The size of the allocated the input buffer in bytes.
-  /// Should be choosen big enough to hold a maximal opus packet
+  /// Should be chosen big enough to hold a maximal opus packet
   /// with size of [maxDataBytes] bytes.
   final int maxInputBufferSizeBytes;
 
@@ -285,8 +285,8 @@ class BufferedOpusDecoder extends OpusDecoder {
   Uint8List get inputBuffer =>
       _inputBuffer.asTypedList(maxInputBufferSizeBytes);
 
-  /// The size of the allocated the output buffer. If this value is choosen
-  /// to small, this decoder will not be capable of decoding some packets.
+  /// The size of the allocated the output buffer. If this value is chosen
+  /// too small, this decoder will not be capable of decoding some packets.
   ///
   /// See the constructor for information, how to choose this.
   final int maxOutputBufferSizeBytes;
@@ -343,11 +343,11 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// The native allocated buffer size is determined by [maxInputBufferSizeBytes] and [maxOutputBufferSizeBytes].
   ///
   /// You should choose [maxInputBufferSizeBytes] big enough to put every opus packet you want to decode in it.
-  /// If you omit this parameter, [maxDataByes] is used, which guarantees that there is enough space for every
+  /// If you omit this parameter, [maxDataBytes] is used, which guarantees that there is enough space for every
   /// valid opus packet.
   ///
   /// [maxOutputBufferSizeBytes] is the size of the output buffer, which will hold the decoded frames.
-  /// If this value is choosen to small, this decoder will not be capable of decoding some packets.
+  /// If this value is chosen too small, this decoder will not be capable of decoding some packets.
   /// If you are unsure, just let it `null`, so the maximum size of resulting frames will be calculated
   /// Here is some more theory about that:
   /// A single opus packet may contain up to 120ms of audio, so assuming you are decoding
@@ -440,7 +440,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// in ms (as above). Then, call this method a second time with
   /// the same packet, but with [fec] set to `false`. You can read more about the
   /// correct usage of forward error correction [here](https://stackoverflow.com/questions/49427579/how-to-use-fec-feature-for-opus-codec).
-  /// Note: A real packet loss occurse if you lose two or more packets in a row.
+  /// Note: A real packet loss occurs if you lose two or more packets in a row.
   /// You are only able to restore the last lost packet and the other packets are
   /// really lost. So for them, you have to report packet loss.
   ///
@@ -457,7 +457,7 @@ class BufferedOpusDecoder extends OpusDecoder {
   /// opus packet and decodes them to float samples, stored in the [outputBuffer].
   /// Set [inputBufferIndex] to `0` to indicate packet loss.
   ///
-  /// If [autoSoftClip] is true, this decoders [pcmSoftClipOutputBuffer] method is automatically called.
+  /// If [autoSoftClip] is true, this decoder's [pcmSoftClipOutputBuffer] method is automatically called.
   ///
   /// Apart from that, this method behaves just as [decode], so see there for more information.
   @override
@@ -502,7 +502,7 @@ abstract class OpusDecoder {
   /// Number of channels, must be 1 for mono or 2 for stereo.
   int get channels;
 
-  /// Wheter this decoder was already destroyed by calling [destroy].
+  /// Whether this decoder was already destroyed by calling [destroy].
   /// If so, calling any method will result in an [OpusDestroyedError].
   bool get destroyed;
 
@@ -523,5 +523,5 @@ int _estimateLoss(int? loss, int? lastPacketDurationMs) {
   throw StateError(
       'Tried to estimate the loss based on the last packets duration, but there was no last packet!\n'
       'This happend because you called a decode function with no input (null as input in SimpleOpusDecoder or 0 as inputBufferIndex in BufferedOpusDecoder), but failed to specify how many milliseconds were lost.\n'
-      'And since there was no previous sucessfull decoded packet, the decoder could not estimate how many milliseconds are missing.');
+      'And since there was no previous successful decoded packet, the decoder could not estimate how many milliseconds are missing.');
 }

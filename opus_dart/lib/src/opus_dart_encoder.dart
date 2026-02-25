@@ -28,7 +28,7 @@ Pointer<opus_encoder.OpusEncoder> _createOpusEncoder({
 /// An easy to use implementation of [OpusEncoder].
 /// Don't forget to call [destroy] once you are done with it.
 ///
-/// All method calls in this calls allocate their own memory everytime they are called.
+/// All method calls in this class allocate their own memory everytime they are called.
 /// See the [BufferedOpusEncoder] for an implementation with less allocation calls.
 class SimpleOpusEncoder extends OpusEncoder {
   static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
@@ -99,10 +99,10 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// `input.length = 2 * 48000Hz * 0.02s = 1920`.
   ///
   /// [maxOutputSizeBytes] is used to allocate the output buffer. It can be used to impose an instant
-  /// upper limit on the bitrate, but must not be to small to hold the encoded data (or an exception will be thrown).
+  /// upper limit on the bitrate, but must not be too small to hold the encoded data (or an exception will be thrown).
   /// The default value of [maxDataBytes] ensures that there is enough space.
   ///
-  /// The returnes list contains the bytes of the encoded opus packet.
+  /// The returned list contains the bytes of the encoded opus packet.
   ///
   /// [input] and the returned list are copied to and respectively from native memory.
   Uint8List encode(
@@ -157,7 +157,7 @@ class SimpleOpusEncoder extends OpusEncoder {
 ///
 /// The idea behind this implementation is to reduce the amount of memory allocation calls.
 /// Instead of allocating new buffers everytime something is encoded, the buffers are
-/// allocated at initalization. Then, pcm  samples is directly written into the [inputBuffer],
+/// allocated at initialization. Then, pcm  samples is directly written into the [inputBuffer],
 /// the [inputBufferIndex] is updated, based on how many data where written, and
 /// one of the encode methods is called. The encoded opus packet can then be accessed using
 /// the [outputBuffer] getter.
@@ -196,7 +196,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   @override
   bool get destroyed => _destroyed;
 
-  /// The size of the allocated the input buffer in bytes (not sampels).
+  /// The size of the allocated the input buffer in bytes (not samples).
   final int maxInputBufferSizeBytes;
 
   /// Indicates, how many bytes of data are currently stored in the [inputBuffer].
@@ -214,8 +214,8 @@ class BufferedOpusEncoder extends OpusEncoder {
       _inputBuffer.asTypedList(maxInputBufferSizeBytes);
 
   /// The size of the allocated the output buffer. It can be used to impose an instant
-  /// upper limit on the bitrate, but must not be to small to hold the encoded data.
-  /// Otherwise, the enocde methods might throw an exception.
+  /// upper limit on the bitrate, but must not be too small to hold the encoded data.
+  /// Otherwise, the encode methods might throw an exception.
   /// The default value of [maxDataBytes] ensures that there is enough space.
   final int maxOutputBufferSizeBytes;
   int _outputBufferIndex;
@@ -260,7 +260,7 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// frame (120ms at 48000Hz) in float representation.
   /// If you know that you only use input data in s16le representation you can manually set this to [bytesPerInt16Sample] * [maxSamplesPerPacket].
   ///
-  /// [maxOutputBufferSizeBytes] defaults to [maxDataBytes] to guarantee that their is enough space in the
+  /// [maxOutputBufferSizeBytes] defaults to [maxDataBytes] to guarantee that there is enough space in the
   /// output buffer for any possible valid input.
   ///
   /// For the other parameters, see the matching fields for more information.
@@ -327,7 +327,7 @@ class BufferedOpusEncoder extends OpusEncoder {
 
   /// Interpets [inputBufferIndex] bytes of the [inputBuffer] as float pcm data, and encodes them to the [outputBuffer].
   /// This means, that this method encodes `[inputBufferIndex]/4` samples, since `inputBufferIndex` is in bytes,
-  /// and the float represntation uses two bytes per sample.
+  /// and the float representation uses four bytes per sample.
   ///
   /// Except that the sample count is calculated by dividing the [inputBufferIndex] by 4 and not by 2,
   /// this method behaves just as [encode], so see there for more information.
@@ -358,7 +358,7 @@ abstract class OpusEncoder {
   /// Setting the right application type can increase quality of the encoded frames.
   Application get application;
 
-  /// Wheter this encoder was already destroyed by calling [destroy].
+  /// Whether this encoder was already destroyed by calling [destroy].
   /// If so, calling any method will result in an [OpusDestroyedError].
   bool get destroyed;
 

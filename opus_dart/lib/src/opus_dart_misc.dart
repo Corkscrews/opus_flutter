@@ -18,7 +18,7 @@ const int bytesPerFloatSample = 4;
 /// for an explanation how this was calculated.
 const int maxDataBytes = 3 * 1275;
 
-/// Calculates, how much sampels a single opus package at [sampleRate] with [channels] may contain.
+/// Calculates, how many samples a single opus packet at [sampleRate] with [channels] may contain.
 ///
 /// A single package may contain up 120ms of audio. This value is reached by combining up to 3 frames of 40ms audio.
 int maxSamplesPerPacket(int sampleRate, int channels) =>
@@ -56,7 +56,7 @@ class OpusException implements Exception {
   }
 }
 
-/// Thrown when attempting to call an method on an already destroyed encoder or decoder.
+/// Thrown when attempting to call a method on an already destroyed encoder or decoder.
 class OpusDestroyedError extends StateError {
   OpusDestroyedError.encoder()
       : super(
