@@ -38,6 +38,7 @@ FLUTTER_PACKAGES=(
   "opus_flutter_ios"
   "opus_flutter_linux"
   "opus_flutter_macos"
+  "opus_flutter_web"
   "opus_flutter_windows"
   "opus_flutter"
 )

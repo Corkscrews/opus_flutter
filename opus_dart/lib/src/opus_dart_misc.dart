@@ -57,9 +57,12 @@ class OpusException implements Exception {
 
 /// Thrown when attempting to call a method on an already destroyed encoder or decoder.
 class OpusDestroyedError extends StateError {
+  /// Creates an error indicating a destroyed encoder was used.
   OpusDestroyedError.encoder()
       : super(
             'OpusDestroyedException: This OpusEncoder was already destroyed!');
+
+  /// Creates an error indicating a destroyed decoder was used.
   OpusDestroyedError.decoder()
       : super(
             'OpusDestroyedException: This OpusDecoder was already destroyed!');

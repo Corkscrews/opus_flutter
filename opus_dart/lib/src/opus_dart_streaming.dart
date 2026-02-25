@@ -9,15 +9,20 @@ import 'opus_dart_misc.dart';
 enum FrameTime {
   /// 2.5ms
   ms2_5,
-  // 5ms
+
+  /// 5ms
   ms5,
-  // 10ms
+
+  /// 10ms
   ms10,
-  // 20ms
+
+  /// 20ms
   ms20,
-  // 40ms
+
+  /// 40ms
   ms40,
-  // 60ms
+
+  /// 60ms
   ms60
 }
 

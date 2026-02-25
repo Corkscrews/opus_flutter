@@ -6,6 +6,7 @@ import 'package:wasm_ffi/ffi.dart';
 
 /// An implementation of [OpusFlutterPlatform] for web.
 class OpusFlutterWeb extends OpusFlutterPlatform {
+  /// Registers this class as the default instance of [OpusFlutterPlatform].
   static void registerWith(Registrar registrar) {
     OpusFlutterPlatform.instance = OpusFlutterWeb();
   }
