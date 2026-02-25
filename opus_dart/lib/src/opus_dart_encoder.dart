@@ -64,20 +64,20 @@ class SimpleOpusEncoder extends OpusEncoder {
       {required Int16List input, int maxOutputSizeBytes = maxDataBytes}) {
     if (_destroyed) throw OpusDestroyedError.encoder();
     Pointer<Int16> inputNative = opus.allocator.call<Int16>(input.length);
-    inputNative.asTypedList(input.length).setAll(0, input);
-    Pointer<Uint8> outputNative =
-        opus.allocator.call<Uint8>(maxOutputSizeBytes);
-    int sampleCountPerChannel = input.length ~/ channels;
-    int outputLength = opus.encoder.opus_encode(_opusEncoder, inputNative,
-        sampleCountPerChannel, outputNative, maxOutputSizeBytes);
+    Pointer<Uint8>? outputNative;
     try {
+      inputNative.asTypedList(input.length).setAll(0, input);
+      outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes);
+      int sampleCountPerChannel = input.length ~/ channels;
+      int outputLength = opus.encoder.opus_encode(_opusEncoder, inputNative,
+          sampleCountPerChannel, outputNative, maxOutputSizeBytes);
       if (outputLength < opus_defines.OPUS_OK) {
         throw OpusException(outputLength);
       }
       return Uint8List.fromList(outputNative.asTypedList(outputLength));
     } finally {
+      if (outputNative != null) opus.allocator.free(outputNative);
       opus.allocator.free(inputNative);
-      opus.allocator.free(outputNative);
     }
   }
 
@@ -88,20 +88,20 @@ class SimpleOpusEncoder extends OpusEncoder {
       {required Float32List input, int maxOutputSizeBytes = maxDataBytes}) {
     if (_destroyed) throw OpusDestroyedError.encoder();
     Pointer<Float> inputNative = opus.allocator.call<Float>(input.length);
-    inputNative.asTypedList(input.length).setAll(0, input);
-    Pointer<Uint8> outputNative =
-        opus.allocator.call<Uint8>(maxOutputSizeBytes);
-    int sampleCountPerChannel = input.length ~/ channels;
-    int outputLength = opus.encoder.opus_encode_float(_opusEncoder, inputNative,
-        sampleCountPerChannel, outputNative, maxOutputSizeBytes);
+    Pointer<Uint8>? outputNative;
     try {
+      inputNative.asTypedList(input.length).setAll(0, input);
+      outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes);
+      int sampleCountPerChannel = input.length ~/ channels;
+      int outputLength = opus.encoder.opus_encode_float(_opusEncoder,
+          inputNative, sampleCountPerChannel, outputNative, maxOutputSizeBytes);
       if (outputLength < opus_defines.OPUS_OK) {
         throw OpusException(outputLength);
       }
       return Uint8List.fromList(outputNative.asTypedList(outputLength));
     } finally {
+      if (outputNative != null) opus.allocator.free(outputNative);
       opus.allocator.free(inputNative);
-      opus.allocator.free(outputNative);
     }
   }
 

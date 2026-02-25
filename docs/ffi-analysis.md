@@ -223,26 +223,21 @@ try {
 
 Every method call allocates and frees. This is safe but has higher overhead.
 
-**Concern in SimpleOpusEncoder.encode/encodeFloat:** The `opus_encode` call happens
-_before_ the `try` block. If `opus_encode` itself throws (not an opus error code, but
-an actual Dart exception from FFI — e.g. segfault translated to an exception), then the
-`finally` block still runs and frees the buffers. However, if the `allocator.call`
-for `outputNative` throws after `inputNative` was already allocated, `inputNative` leaks.
-The same pattern exists in the decoder.
-
-Specifically in `SimpleOpusEncoder.encode`:
+(**Fixed** — all `Simple*` encode/decode methods and `pcmSoftClip` now wrap both
+allocations in a single `try/finally`. The second pointer is nullable and only freed
+if it was successfully allocated, ensuring the first allocation is always cleaned up.)
 
 ```dart
-Pointer<Int16> inputNative = opus.allocator.call<Int16>(input.length);    // (1)
-inputNative.asTypedList(input.length).setAll(0, input);
-Pointer<Uint8> outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes); // (2)
-// If (2) throws, (1) is leaked — no finally covers (1) at this point
-int outputLength = opus.encoder.opus_encode(...);
+Pointer<Int16> inputNative = opus.allocator.call<Int16>(input.length);
+Pointer<Uint8>? outputNative;
 try {
+  inputNative.asTypedList(input.length).setAll(0, input);
+  outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes);
+  int outputLength = opus.encoder.opus_encode(...);
   // ...
 } finally {
-  opus.allocator.free(inputNative);   // only reached if opus_encode didn't throw
-  opus.allocator.free(outputNative);
+  if (outputNative != null) opus.allocator.free(outputNative);
+  opus.allocator.free(inputNative);
 }
 ```
 
@@ -459,7 +454,7 @@ argument is an integer. However:
 | # | Risk | Location | Severity | Detail |
 |---|------|----------|----------|--------|
 | 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | Fixed | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
-| 2 | **Memory leak if second allocation throws** | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, and float variants | Low | If the second `allocator.call` throws, the first allocation is not freed. |
+| 2 | ~~**Memory leak if second allocation throws**~~ | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, float variants, `pcmSoftClip` | ~~Low~~ **Fixed** | All methods now wrap both allocations in `try/finally`; second pointer is nullable and only freed if allocated. |
 | 3 | **No `NativeFinalizer`** | All encoder/decoder classes | Medium | If `destroy()` is never called, native memory leaks permanently. No GC-driven cleanup. |
 | 4 | ~~**Use-after-destroy (dangling pointer)**~~ | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | ~~High~~ **Fixed** | All public methods now check `_destroyed` and throw `OpusDestroyedError` before touching native pointers. |
 | 5 | **`copyOutput = false` use-after-write** | `StreamOpusEncoder`, `StreamOpusDecoder` | Medium | Yielded views point to native buffers that get overwritten on next call. |
@@ -839,7 +834,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 9 | No `NativeFinalizer` — leaked memory if `destroy()` skipped | All | **Medium** | All encoder/decoder classes |
 | 10 | `copyOutput = false` use-after-write | All | **Medium** | `StreamOpusEncoder`, `StreamOpusDecoder` |
 | 11 | FEC double-yield overwrites with `copyOutput = false` | All | **Medium** | `opus_dart_streaming.dart:321-327` |
-| 12 | Memory leak if second allocation throws | All | **Low** | `SimpleOpus*.encode/decode` |
+| 12 | ~~Memory leak if second allocation throws~~ | All | ~~**Low**~~ **Fixed** | All `Simple*` methods and `pcmSoftClip` now wrap allocations in `try/finally` |
 | 13 | `free(nullptr)` behavior on web | Web | **Low** | `SimpleOpusDecoder.decode` finally |
 | 14 | No function signature validation on web | Web | **Low** | All `lookupFunction` calls |
 | 15 | ~~`_asString` unbounded loop~~ | All | ~~**Low**~~ **Fixed** | Now bounded by `maxStringLength`; throws `StateError` on missing terminator |

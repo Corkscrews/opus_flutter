@@ -22,6 +22,29 @@ Pointer<Uint8> _allocNullTerminated(String s) {
   return ptr;
 }
 
+class _FailingAllocator implements Allocator {
+  final int failOnCall;
+  int _callCount = 0;
+  final List<int> freedAddresses = [];
+
+  _FailingAllocator(this.failOnCall);
+
+  @override
+  Pointer<T> allocate<T extends NativeType>(int byteCount, {int? alignment}) {
+    _callCount++;
+    if (_callCount == failOnCall) {
+      throw StateError('Simulated allocation failure');
+    }
+    return malloc.allocate<T>(byteCount, alignment: alignment);
+  }
+
+  @override
+  void free(Pointer<NativeType> pointer) {
+    freedAddresses.add(pointer.address);
+    malloc.free(pointer);
+  }
+}
+
 @GenerateMocks([
   opus_decoder.OpusDecoderFunctions,
   opus_encoder.OpusEncoderFunctions,
@@ -266,6 +289,41 @@ void main() {
             input: Float32List.fromList(List.filled(1920, 0.0))),
         throwsA(isA<OpusDestroyedError>()),
       );
+    });
+
+    test('encode frees input buffer when output allocation throws', () {
+      final encoder = createEncoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => encoder.encode(input: Int16List.fromList([1, 2, 3, 4])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
+    });
+
+    test('encodeFloat frees input buffer when output allocation throws', () {
+      final encoder = createEncoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => encoder.encodeFloat(
+            input: Float32List.fromList([0.1, 0.2, 0.3, 0.4])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
     });
   });
 
@@ -535,6 +593,40 @@ void main() {
         () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
         throwsA(isA<OpusDestroyedError>()),
       );
+    });
+
+    test('decode frees output buffer when input allocation throws', () {
+      final decoder = createDecoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => decoder.decode(input: Uint8List.fromList([0x01])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
+    });
+
+    test('decodeFloat frees output buffer when input allocation throws', () {
+      final decoder = createDecoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
     });
   });
 
@@ -1167,6 +1259,23 @@ void main() {
       pcmSoftClip(input: input, channels: 1);
 
       verify(mockDecoder.opus_pcm_soft_clip(any, 3, 1, any)).called(1);
+    });
+
+    test('frees pcm buffer when scratch allocation throws', () {
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => pcmSoftClip(
+            input: Float32List.fromList([0.5, -0.5]), channels: 2),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
     });
   });
 
