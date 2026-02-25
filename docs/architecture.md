@@ -4,7 +4,9 @@ This document explains how the opus_flutter library works, from high-level desig
 
 ## Overview
 
-opus_flutter is a **federated Flutter plugin** whose sole purpose is to load the [Opus audio codec](https://opus-codec.org/) as a `DynamicLibrary` so it can be consumed by the vendored `opus_dart` package. It does not expose Opus encoding/decoding APIs directly -- that responsibility belongs to opus_dart.
+opus_flutter (published as `opus_codec`) is a **federated Flutter plugin** whose sole purpose is to load the [Opus audio codec](https://opus-codec.org/) as a `DynamicLibrary` so it can be consumed by the vendored `opus_dart` package (published as `opus_codec_dart`). It does not expose Opus encoding/decoding APIs directly -- that responsibility belongs to opus_dart.
+
+> **Note:** Packages have been renamed from `opus_flutter_*` to `opus_codec_*` in their pubspec names for pub.dev, while directory names remain `opus_flutter_*` in the repository.
 
 `opus_dart` was originally an [external package](https://github.com/EPNW/opus_dart) but has been vendored into this repository to reduce external dependency complexity and allow direct maintenance (Dart 3 compatibility fixes, type safety improvements, etc.).
 
@@ -146,11 +148,11 @@ The Android build uses `FetchContent` in `CMakeLists.txt` to download opus sourc
 
 | Aspect | Detail |
 |--------|--------|
-| Language | Swift + Objective-C (plugin stub) |
+| Language | Swift (plugin stub) |
 | Library loading | `DynamicLibrary.process()` (opus is statically linked via the vendored framework) |
 | Opus distribution | Pre-built `opus.xcframework` with slices for `ios-arm64` (device) and `ios-arm64_x86_64-simulator` |
 | Build script | `build_xcframework.sh` clones opus, builds with CMake, wraps as dynamic framework, assembles xcframework |
-| Plugin class | `OpusFlutterIosPlugin` (ObjC) bridges to `SwiftOpusFlutterIosPlugin` (Swift) -- both are empty stubs |
+| Plugin class | `OpusFlutterIosPlugin` -- empty Swift stub. Supports CocoaPods and Swift Package Manager |
 
 Since opus is linked into the process, `DynamicLibrary.process()` finds the symbols without needing a file path.
 
@@ -195,8 +197,8 @@ At runtime, the Linux implementation:
 At runtime, the Windows implementation:
 
 1. Uses `path_provider` to get a temp directory.
-2. Copies the correct DLL (x64 or x86 based on `Platform.version`) from assets to disk.
-3. Also copies the opus license file.
+2. Detects architecture via `Abi.current()` (`windowsX64` or `windowsIA32`).
+3. Copies the correct DLL and the opus license file from assets to disk.
 4. Opens the DLL with `DynamicLibrary.open()`.
 
 ### Web
@@ -253,7 +255,7 @@ flowchart TB
 
 ## Opus Version
 
-All platforms build from or bundle **libopus v1.5.2**, fetched from https://github.com/xiph/opus. On Linux, the system-installed version is used.
+All platforms build from or bundle **libopus v1.5.2**, fetched from https://github.com/xiph/opus. On Linux, a bundled shared library is preferred, with the system-installed `libopus.so.0` used as a fallback.
 
 ## Data Flow
 
@@ -293,13 +295,13 @@ sequenceDiagram
 
 ## Example App
 
-The example app (`opus_flutter/example`) demonstrates:
+The example app (`opus_flutter/example`) is a full record-and-playback demo using the BLoC pattern:
 
-1. Loading opus via `opus_flutter.load()` (returns `Future<Object>`).
-2. Passing the result directly to `initOpus()` -- no cast needed.
-3. Reading a raw PCM audio file from assets.
-4. Streaming it through `StreamOpusEncoder` then `StreamOpusDecoder`.
-5. Wrapping the result in a WAV header.
-6. Sharing the output file via `share_plus`.
+1. **Initialization**: Loads opus via `opus_flutter.load()` and passes the result to `initOpus()`.
+2. **Recording**: Captures microphone audio via the `record` package in Opus format.
+3. **Decoding**: Decodes the recorded Opus packets back to PCM via `StreamOpusDecoder` and wraps the output in a WAV header.
+4. **Playback**: Plays the decoded WAV file via `audioplayers`.
+
+The architecture follows `flutter_bloc` with clear separation into app, bloc, core, data, and presentation layers. Storage is abstracted with `FileRecordingStorage` on native platforms and `MemoryRecordingStorage` on web.
 
 The example depends on the vendored `opus_dart` via a path dependency (`path: ../../opus_dart`).
