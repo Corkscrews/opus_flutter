@@ -16,6 +16,7 @@ const int bytesPerFloatSample = 4;
 ///
 /// See [here](https://stackoverflow.com/questions/55698317/what-value-to-use-for-libopus-encoder-max-data-bytes-field)
 /// for an explanation how this was calculated.
+/// Last validated on 2026-02-25 against RFC 6716.
 const int maxDataBytes = 3 * 1275;
 
 /// Calculates, how many samples a single opus packet at [sampleRate] with [channels] may contain.
@@ -25,9 +26,7 @@ int maxSamplesPerPacket(int sampleRate, int channels) =>
     ((sampleRate * channels * 120) / 1000).ceil();
 
 /// Returns the version of the native libopus library.
-String getOpusVersion() {
-  return _asString(opus.libinfo.opus_get_version_string());
-}
+String getOpusVersion() => _asString(opus.libinfo.opus_get_version_string());
 
 /// Upper bound for null-terminated string scans to prevent unbounded loops
 /// when a pointer is invalid or lacks a terminator.
