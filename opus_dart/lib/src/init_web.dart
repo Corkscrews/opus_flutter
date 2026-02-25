@@ -25,6 +25,6 @@ ApiObject createApiObject(Object lib) {
   registerOpaqueType<opus_projection.OpusProjectionEncoder>();
   registerOpaqueType<opus_projection.OpusProjectionDecoder>();
   registerOpaqueType<opus_repacketizer.OpusRepacketizer>();
-  registerOpaqueType<opus_repacketizer.OpusRepacketizer>();
+  registerOpaqueType<opus_custom.OpusCustomMode>();
   return ApiObject(library, library.allocator);
 }

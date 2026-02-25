@@ -10,15 +10,15 @@ This monorepo contains a federated Flutter plugin that loads libopus on each sup
 
 | Package | Directory | Version |
 |---------|-----------|---------|
-| [opus_codec](https://pub.dev/packages/opus_codec) | [opus_flutter](./opus_flutter) | 3.0.4 |
-| [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) | [opus_dart](./opus_dart) | 3.0.4 |
-| [opus_codec_platform_interface](https://pub.dev/packages/opus_codec_platform_interface) | [opus_flutter_platform_interface](./opus_flutter_platform_interface) | 3.0.4 |
-| [opus_codec_android](https://pub.dev/packages/opus_codec_android) | [opus_flutter_android](./opus_flutter_android) | 3.0.4 |
-| [opus_codec_ios](https://pub.dev/packages/opus_codec_ios) | [opus_flutter_ios](./opus_flutter_ios) | 3.0.4 |
-| [opus_codec_linux](https://pub.dev/packages/opus_codec_linux) | [opus_flutter_linux](./opus_flutter_linux) | 3.0.4 |
-| [opus_codec_macos](https://pub.dev/packages/opus_codec_macos) | [opus_flutter_macos](./opus_flutter_macos) | 3.0.4 |
-| [opus_codec_web](https://pub.dev/packages/opus_codec_web) | [opus_flutter_web](./opus_flutter_web) | 3.0.4 |
-| [opus_codec_windows](https://pub.dev/packages/opus_codec_windows) | [opus_flutter_windows](./opus_flutter_windows) | 3.0.4 |
+| [opus_codec](https://pub.dev/packages/opus_codec) | [opus_flutter](./opus_flutter) | 3.0.5 |
+| [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) | [opus_dart](./opus_dart) | 3.0.5 |
+| [opus_codec_platform_interface](https://pub.dev/packages/opus_codec_platform_interface) | [opus_flutter_platform_interface](./opus_flutter_platform_interface) | 3.0.5 |
+| [opus_codec_android](https://pub.dev/packages/opus_codec_android) | [opus_flutter_android](./opus_flutter_android) | 3.0.5 |
+| [opus_codec_ios](https://pub.dev/packages/opus_codec_ios) | [opus_flutter_ios](./opus_flutter_ios) | 3.0.5 |
+| [opus_codec_linux](https://pub.dev/packages/opus_codec_linux) | [opus_flutter_linux](./opus_flutter_linux) | 3.0.5 |
+| [opus_codec_macos](https://pub.dev/packages/opus_codec_macos) | [opus_flutter_macos](./opus_flutter_macos) | 3.0.5 |
+| [opus_codec_web](https://pub.dev/packages/opus_codec_web) | [opus_flutter_web](./opus_flutter_web) | 3.0.5 |
+| [opus_codec_windows](https://pub.dev/packages/opus_codec_windows) | [opus_flutter_windows](./opus_flutter_windows) | 3.0.5 |
 
 ## Platform support
 
@@ -32,8 +32,8 @@ Add `opus_codec` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  opus_codec: ^3.0.4
-  opus_codec_dart: ^3.0.4
+  opus_codec: ^3.0.5
+  opus_codec_dart: ^3.0.5
 ```
 
 Platform packages are automatically included through the federated plugin system -- you don't need to add them individually.

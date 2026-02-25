@@ -6,27 +6,40 @@ import '../wrappers/opus_libinfo.dart' as opus_libinfo;
 import '../wrappers/opus_encoder.dart' as opus_encoder;
 import '../wrappers/opus_decoder.dart' as opus_decoder;
 
+/// Byte width of a single s16le PCM sample (Int16).
+const int bytesPerInt16Sample = 2;
+
+/// Byte width of a single float PCM sample (Float32).
+const int bytesPerFloatSample = 4;
+
 /// Max bitstream size of a single opus packet.
 ///
 /// See [here](https://stackoverflow.com/questions/55698317/what-value-to-use-for-libopus-encoder-max-data-bytes-field)
 /// for an explanation how this was calculated.
+/// Last validated on 2026-02-25 against RFC 6716.
 const int maxDataBytes = 3 * 1275;
 
-/// Calculates, how much sampels a single opus package at [sampleRate] with [channels] may contain.
+/// Calculates, how many samples a single opus packet at [sampleRate] with [channels] may contain.
 ///
 /// A single package may contain up 120ms of audio. This value is reached by combining up to 3 frames of 40ms audio.
 int maxSamplesPerPacket(int sampleRate, int channels) =>
     ((sampleRate * channels * 120) / 1000).ceil();
 
 /// Returns the version of the native libopus library.
-String getOpusVersion() {
-  return _asString(opus.libinfo.opus_get_version_string());
-}
+String getOpusVersion() => _asString(opus.libinfo.opus_get_version_string());
+
+/// Upper bound for null-terminated string scans to prevent unbounded loops
+/// when a pointer is invalid or lacks a terminator.
+const int maxStringLength = 256;
 
 String _asString(Pointer<Uint8> pointer) {
   int i = 0;
-  while (pointer[i] != 0) {
+  while (i < maxStringLength && pointer[i] != 0) {
     i++;
+  }
+  if (i == maxStringLength) {
+    throw StateError(
+        '_asString: no null terminator found within $maxStringLength bytes');
   }
   return utf8.decode(pointer.asTypedList(i));
 }
@@ -42,7 +55,7 @@ class OpusException implements Exception {
   }
 }
 
-/// Thrown when attempting to call an method on an already destroyed encoder or decoder.
+/// Thrown when attempting to call a method on an already destroyed encoder or decoder.
 class OpusDestroyedError extends StateError {
   OpusDestroyedError.encoder()
       : super(

@@ -1,3 +1,11 @@
+## 3.0.5
+
+* Bump all package versions
+
+## 3.0.4
+
+* Bump version
+
 ## 3.0.3
 * Depend on newer web_ffi version
 

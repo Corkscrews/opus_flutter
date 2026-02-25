@@ -148,10 +148,10 @@ void main() {
       expect(Application.values.length, 3);
     });
 
-    test('contains voip, audio, restrictedLowdely', () {
+    test('contains voip, audio, restrictedLowdelay', () {
       expect(Application.values, contains(Application.voip));
       expect(Application.values, contains(Application.audio));
-      expect(Application.values, contains(Application.restrictedLowdely));
+      expect(Application.values, contains(Application.restrictedLowdelay));
     });
 
     test('voip maps to OPUS_APPLICATION_VOIP (2048)', () {
@@ -163,7 +163,7 @@ void main() {
     });
 
     test(
-        'restrictedLowdely maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
+        'restrictedLowdelay maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
         () {
       expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051);
     });

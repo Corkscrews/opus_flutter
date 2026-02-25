@@ -4,12 +4,12 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'opus_codec_macos'
-  s.version          = '3.0.4'
+  s.version          = '3.0.5'
   s.summary          = 'libopus wrappers for flutter on macOS.'
   s.description      = <<-DESC
   libopus wrappers for flutter on macOS.
                        DESC
-  s.homepage         = 'https://github.com/ppamorim/opus_codec'
+  s.homepage         = 'https://github.com/Corkscrews/opus_codec'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Corkscrews' => '' }
   s.source           = { :path => '.' }

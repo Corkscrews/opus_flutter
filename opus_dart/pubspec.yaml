@@ -1,8 +1,9 @@
 name: opus_codec_dart
-version: 3.0.4
+version: 3.0.5
 description: >
   Wraps libopus in dart, and additionally provides a dart friendly API for
   encoding and decoding.
+repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_dart
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

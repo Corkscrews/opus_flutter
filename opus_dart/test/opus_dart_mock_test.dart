@@ -22,6 +22,29 @@ Pointer<Uint8> _allocNullTerminated(String s) {
   return ptr;
 }
 
+class _FailingAllocator implements Allocator {
+  final int failOnCall;
+  int _callCount = 0;
+  final List<int> freedAddresses = [];
+
+  _FailingAllocator(this.failOnCall);
+
+  @override
+  Pointer<T> allocate<T extends NativeType>(int byteCount, {int? alignment}) {
+    _callCount++;
+    if (_callCount == failOnCall) {
+      throw StateError('Simulated allocation failure');
+    }
+    return malloc.allocate<T>(byteCount, alignment: alignment);
+  }
+
+  @override
+  void free(Pointer<NativeType> pointer) {
+    freedAddresses.add(pointer.address);
+    malloc.free(pointer);
+  }
+}
+
 @GenerateMocks([
   opus_decoder.OpusDecoderFunctions,
   opus_encoder.OpusEncoderFunctions,
@@ -132,9 +155,10 @@ void main() {
       encoder.destroy();
     });
 
-    test('maps Application.restrictedLowdely correctly', () {
-      final encoder = createEncoder(application: Application.restrictedLowdely);
-      expect(encoder.application, Application.restrictedLowdely);
+    test('maps Application.restrictedLowdelay correctly', () {
+      final encoder =
+          createEncoder(application: Application.restrictedLowdelay);
+      expect(encoder.application, Application.restrictedLowdelay);
       verify(mockEncoder.opus_encoder_create(
               any, any, OPUS_APPLICATION_RESTRICTED_LOWDELAY, any))
           .called(1);
@@ -247,6 +271,60 @@ void main() {
       expect(encoder.destroyed, isFalse);
       encoder.destroy();
       expect(encoder.destroyed, isTrue);
+    });
+
+    test('encode after destroy throws OpusDestroyedError', () {
+      final encoder = createEncoder();
+      encoder.destroy();
+      expect(
+        () => encoder.encode(input: Int16List.fromList(List.filled(1920, 0))),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('encodeFloat after destroy throws OpusDestroyedError', () {
+      final encoder = createEncoder();
+      encoder.destroy();
+      expect(
+        () => encoder.encodeFloat(
+            input: Float32List.fromList(List.filled(1920, 0.0))),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('encode frees input buffer when output allocation throws', () {
+      final encoder = createEncoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => encoder.encode(input: Int16List.fromList([1, 2, 3, 4])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
+    });
+
+    test('encodeFloat frees input buffer when output allocation throws', () {
+      final encoder = createEncoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => encoder.encodeFloat(
+            input: Float32List.fromList([0.1, 0.2, 0.3, 0.4])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
     });
   });
 
@@ -499,6 +577,58 @@ void main() {
       decoder.destroy();
       expect(decoder.destroyed, isTrue);
     });
+
+    test('decode after destroy throws OpusDestroyedError', () {
+      final decoder = createDecoder();
+      decoder.destroy();
+      expect(
+        () => decoder.decode(input: Uint8List.fromList([0x01])),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('decodeFloat after destroy throws OpusDestroyedError', () {
+      final decoder = createDecoder();
+      decoder.destroy();
+      expect(
+        () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
+        throwsA(isA<OpusDestroyedError>()),
+      );
+    });
+
+    test('decode frees output buffer when input allocation throws', () {
+      final decoder = createDecoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => decoder.decode(input: Uint8List.fromList([0x01])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
+    });
+
+    test('decodeFloat frees output buffer when input allocation throws', () {
+      final decoder = createDecoder();
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -602,6 +732,46 @@ void main() {
       encoder.destroy();
     });
 
+    test('encoderCtl forwards exact argument values for multiple CTL types',
+        () {
+      final encoder = createBufferedEncoder();
+      final captured = <List<int>>[];
+      when(mockEncoder.opus_encoder_ctl(any, any, any)).thenAnswer((inv) {
+        captured.add([
+          inv.positionalArguments[1] as int,
+          inv.positionalArguments[2] as int,
+        ]);
+        return OPUS_OK;
+      });
+
+      encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+      encoder.encoderCtl(request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
+      encoder.encoderCtl(request: OPUS_SET_VBR_REQUEST, value: 1);
+      encoder.encoderCtl(request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
+      encoder.encoderCtl(request: OPUS_SET_PACKET_LOSS_PERC_REQUEST, value: 25);
+
+      expect(captured, [
+        [OPUS_SET_BITRATE_REQUEST, 64000],
+        [OPUS_SET_COMPLEXITY_REQUEST, 10],
+        [OPUS_SET_VBR_REQUEST, 1],
+        [OPUS_SET_INBAND_FEC_REQUEST, 1],
+        [OPUS_SET_PACKET_LOSS_PERC_REQUEST, 25],
+      ]);
+      encoder.destroy();
+    });
+
+    test('encoderCtl returns native error codes faithfully', () {
+      final encoder = createBufferedEncoder();
+      when(mockEncoder.opus_encoder_ctl(any, any, any))
+          .thenReturn(OPUS_UNIMPLEMENTED);
+
+      final result = encoder.encoderCtl(
+          request: OPUS_SET_BANDWIDTH_REQUEST, value: OPUS_BANDWIDTH_FULLBAND);
+
+      expect(result, OPUS_UNIMPLEMENTED);
+      encoder.destroy();
+    });
+
     test('destroy calls opus_encoder_destroy exactly once', () {
       when(mockEncoder.opus_encoder_destroy(any)).thenReturn(null);
       final encoder = createBufferedEncoder();
@@ -615,6 +785,30 @@ void main() {
       expect(encoder.destroyed, isFalse);
       encoder.destroy();
       expect(encoder.destroyed, isTrue);
+    });
+
+    test('encode after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.inputBufferIndex = 3840;
+      encoder.destroy();
+      expect(() => encoder.encode(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('encodeFloat after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.inputBufferIndex = 7680;
+      encoder.destroy();
+      expect(() => encoder.encodeFloat(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('encoderCtl after destroy throws OpusDestroyedError', () {
+      final encoder = createBufferedEncoder();
+      encoder.destroy();
+      expect(
+        () =>
+            encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000),
+        throwsA(isA<OpusDestroyedError>()),
+      );
     });
 
     test('respects custom buffer sizes', () {
@@ -651,6 +845,35 @@ void main() {
       expect(decoder.destroyed, isFalse);
       expect(decoder.lastPacketDurationMs, isNull);
       expect(decoder.maxInputBufferSizeBytes, maxDataBytes);
+      decoder.destroy();
+    });
+
+    test('default output buffer is large enough for float decode', () {
+      final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
+      // 4 bytes/float * maxSamplesPerPacket ensures a 120ms frame fits
+      expect(
+          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(48000, 2));
+      decoder.destroy();
+    });
+
+    test('default output buffer is large enough for float decode (mono)', () {
+      final decoder = createBufferedDecoder(sampleRate: 8000, channels: 1);
+      expect(
+          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(8000, 1));
+      decoder.destroy();
+    });
+
+    test('decodeFloat succeeds with max frame size using default buffer', () {
+      final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
+      // 120ms at 48kHz stereo = 5760 samples per channel
+      const samplesPerChannel = 5760;
+      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
+          .thenReturn(samplesPerChannel);
+
+      decoder.inputBufferIndex = 10;
+      final result = decoder.decodeFloat();
+
+      expect(result, hasLength(samplesPerChannel * 2));
       decoder.destroy();
     });
 
@@ -951,6 +1174,27 @@ void main() {
       expect(decoder.destroyed, isTrue);
     });
 
+    test('decode after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.inputBufferIndex = 10;
+      decoder.destroy();
+      expect(() => decoder.decode(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('decodeFloat after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.inputBufferIndex = 10;
+      decoder.destroy();
+      expect(() => decoder.decodeFloat(), throwsA(isA<OpusDestroyedError>()));
+    });
+
+    test('pcmSoftClipOutputBuffer after destroy throws OpusDestroyedError', () {
+      final decoder = createBufferedDecoder();
+      decoder.destroy();
+      expect(() => decoder.pcmSoftClipOutputBuffer(),
+          throwsA(isA<OpusDestroyedError>()));
+    });
+
     test('respects custom buffer sizes', () {
       when(mockDecoder.opus_decoder_create(any, any, any)).thenAnswer((inv) {
         (inv.positionalArguments[2] as Pointer<Int32>).value = OPUS_OK;
@@ -984,6 +1228,41 @@ void main() {
       verify(mockLibInfo.opus_get_version_string()).called(1);
 
       malloc.free(versionPtr);
+    });
+
+    test('returns empty string when pointer starts with null terminator', () {
+      final ptr = _allocNullTerminated('');
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(getOpusVersion(), '');
+
+      malloc.free(ptr);
+    });
+
+    test('throws StateError when string exceeds maxStringLength', () {
+      final ptr = malloc.call<Uint8>(maxStringLength + 1);
+      for (int i = 0; i < maxStringLength + 1; i++) {
+        ptr[i] = 0x41; // 'A', no null terminator
+      }
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(() => getOpusVersion(), throwsStateError);
+
+      malloc.free(ptr);
+    });
+
+    test('succeeds when string is exactly maxStringLength - 1 chars', () {
+      final len = maxStringLength - 1;
+      final ptr = malloc.call<Uint8>(len + 1);
+      for (int i = 0; i < len; i++) {
+        ptr[i] = 0x42; // 'B'
+      }
+      ptr[len] = 0;
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(getOpusVersion(), 'B' * len);
+
+      malloc.free(ptr);
     });
   });
 
@@ -1021,6 +1300,23 @@ void main() {
       pcmSoftClip(input: input, channels: 1);
 
       verify(mockDecoder.opus_pcm_soft_clip(any, 3, 1, any)).called(1);
+    });
+
+    test('frees pcm buffer when scratch allocation throws', () {
+      final failAlloc = _FailingAllocator(2);
+      opus = ApiObject.test(
+        libinfo: mockLibInfo,
+        encoder: mockEncoder,
+        decoder: mockDecoder,
+        allocator: failAlloc,
+      );
+
+      expect(
+        () =>
+            pcmSoftClip(input: Float32List.fromList([0.5, -0.5]), channels: 2),
+        throwsStateError,
+      );
+      expect(failAlloc.freedAddresses, hasLength(1));
     });
   });
 
