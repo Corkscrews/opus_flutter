@@ -10,6 +10,8 @@ import 'opus_dart_misc.dart';
 /// All method calls in this calls allocate their own memory everytime they are called.
 /// See the [BufferedOpusEncoder] for an implementation with less allocation calls.
 class SimpleOpusEncoder extends OpusEncoder {
+  static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
+
   final Pointer<opus_encoder.OpusEncoder> _opusEncoder;
   @override
   final int sampleRate;
@@ -23,7 +25,12 @@ class SimpleOpusEncoder extends OpusEncoder {
 
   SimpleOpusEncoder._(
       this._opusEncoder, this.sampleRate, this.channels, this.application)
-      : _destroyed = false;
+      : _destroyed = false {
+    final encoder = _opusEncoder;
+    _finalizer.attach(this, () {
+      opus.encoder.opus_encoder_destroy(encoder);
+    }, detach: this);
+  }
 
   /// Creates an new [SimpleOpusEncoder] based on the [sampleRate], [channels] and [application] type.
   /// See the matching fields for more information about these parameters.
@@ -110,6 +117,7 @@ class SimpleOpusEncoder extends OpusEncoder {
     if (!_destroyed) {
       _destroyed = true;
       opus.encoder.opus_encoder_destroy(_opusEncoder);
+      _finalizer.detach(this);
     }
   }
 }
@@ -144,6 +152,8 @@ class SimpleOpusEncoder extends OpusEncoder {
 /// }
 /// ```
 class BufferedOpusEncoder extends OpusEncoder {
+  static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
+
   final Pointer<opus_encoder.OpusEncoder> _opusEncoder;
   @override
   final int sampleRate;
@@ -199,7 +209,16 @@ class BufferedOpusEncoder extends OpusEncoder {
       this.maxOutputBufferSizeBytes)
       : _destroyed = false,
         inputBufferIndex = 0,
-        _outputBufferIndex = 0;
+        _outputBufferIndex = 0 {
+    final encoder = _opusEncoder;
+    final input = _inputBuffer;
+    final output = _outputBuffer;
+    _finalizer.attach(this, () {
+      opus.encoder.opus_encoder_destroy(encoder);
+      opus.allocator.free(input);
+      opus.allocator.free(output);
+    }, detach: this);
+  }
 
   /// Creates an new [BufferedOpusEncoder] based on the [sampleRate], [channels] and [application] type.
   /// The native allocated buffer size is determined by [maxInputBufferSizeBytes] and [maxOutputBufferSizeBytes].
@@ -300,6 +319,7 @@ class BufferedOpusEncoder extends OpusEncoder {
       opus.encoder.opus_encoder_destroy(_opusEncoder);
       opus.allocator.free(_inputBuffer);
       opus.allocator.free(_outputBuffer);
+      _finalizer.detach(this);
     }
   }
 }

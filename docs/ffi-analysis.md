@@ -259,9 +259,11 @@ destroy():
     free input, output, (softClipBuffer)
 ```
 
-**Concern:** If `destroy()` is never called, all native memory leaks. There is no
-Dart finalizer attached. `NativeFinalizer` (available since Dart 2.17) is not used
-anywhere in the project.
+(**Fixed** — all four classes now attach a `Finalizer` in their private constructor.
+The finalizer callback captures only the raw native pointers (not `this`) and
+performs the same cleanup as `destroy()`. Calling `destroy()` explicitly detaches
+the finalizer to prevent double-cleanup. If `destroy()` is never called, the GC
+will eventually trigger the finalizer and release native resources.)
 
 **Concern in BufferedOpusEncoder factory:** If `opus_encoder_create` itself throws
 (as opposed to returning an error code), the `input` and `output` buffers leak because
@@ -453,9 +455,9 @@ argument is an integer. However:
 
 | # | Risk | Location | Severity | Detail |
 |---|------|----------|----------|--------|
-| 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | Fixed | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
+| 1 | **Duplicate `registerOpaqueType` / missing `OpusCustomMode`** | `init_web.dart:28` | ~~Medium~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered. |
 | 2 | ~~**Memory leak if second allocation throws**~~ | `SimpleOpusEncoder.encode`, `SimpleOpusDecoder.decode`, float variants, `pcmSoftClip` | ~~Low~~ **Fixed** | All methods now wrap both allocations in `try/finally`; second pointer is nullable and only freed if allocated. |
-| 3 | **No `NativeFinalizer`** | All encoder/decoder classes | Medium | If `destroy()` is never called, native memory leaks permanently. No GC-driven cleanup. |
+| 3 | ~~**No `NativeFinalizer`**~~ | All encoder/decoder classes | ~~Medium~~ **Fixed** | All classes now use `Finalizer` for GC-driven cleanup. `destroy()` detaches the finalizer to prevent double-free. |
 | 4 | ~~**Use-after-destroy (dangling pointer)**~~ | `SimpleOpusEncoder`, `SimpleOpusDecoder`, `BufferedOpusEncoder`, `BufferedOpusDecoder` | ~~High~~ **Fixed** | All public methods now check `_destroyed` and throw `OpusDestroyedError` before touching native pointers. |
 | 5 | **`copyOutput = false` use-after-write** | `StreamOpusEncoder`, `StreamOpusDecoder` | Medium | Yielded views point to native buffers that get overwritten on next call. |
 | 6 | **`StreamOpusDecoder` FEC double-yield overwrites** | `opus_dart_streaming.dart:321-327` | Medium | With `copyOutput = false` and FEC, the first yielded output is overwritten before the consumer reads it. |
@@ -831,7 +833,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 6 | `StreamOpusEncoder.bind` caches stale buffer view | Web | **Medium** | `opus_dart_streaming.dart:129` |
 | 7 | ~~`OpusCustomMode` not registered on web~~ | Web | ~~**Medium**~~ **Fixed** | Duplicate `OpusRepacketizer` removed; `OpusCustomMode` now registered in `init_web.dart` |
 | 8 | ~~Duplicate `OpusRepacketizer` registration~~ | Web | ~~**Low**~~ **Fixed** | See #7 |
-| 9 | No `NativeFinalizer` — leaked memory if `destroy()` skipped | All | **Medium** | All encoder/decoder classes |
+| 9 | ~~No `NativeFinalizer` — leaked memory if `destroy()` skipped~~ | All | ~~**Medium**~~ **Fixed** | All classes now use `Finalizer` for GC-driven cleanup |
 | 10 | `copyOutput = false` use-after-write | All | **Medium** | `StreamOpusEncoder`, `StreamOpusDecoder` |
 | 11 | FEC double-yield overwrites with `copyOutput = false` | All | **Medium** | `opus_dart_streaming.dart:321-327` |
 | 12 | ~~Memory leak if second allocation throws~~ | All | ~~**Low**~~ **Fixed** | All `Simple*` methods and `pcmSoftClip` now wrap allocations in `try/finally` |

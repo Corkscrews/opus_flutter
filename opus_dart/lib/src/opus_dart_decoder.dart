@@ -37,6 +37,8 @@ Float32List pcmSoftClip({required Float32List input, required int channels}) {
 /// All method calls in this calls allocate their own memory everytime they are called.
 /// See the [BufferedOpusDecoder] for an implementation with less allocation calls.
 class SimpleOpusDecoder extends OpusDecoder {
+  static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
+
   final Pointer<opus_decoder.OpusDecoder> _opusDecoder;
   @override
   final int sampleRate;
@@ -56,7 +58,14 @@ class SimpleOpusDecoder extends OpusDecoder {
   SimpleOpusDecoder._(
       this._opusDecoder, this.sampleRate, this.channels, this._softClipBuffer)
       : _destroyed = false,
-        _maxSamplesPerPacket = maxSamplesPerPacket(sampleRate, channels);
+        _maxSamplesPerPacket = maxSamplesPerPacket(sampleRate, channels) {
+    final decoder = _opusDecoder;
+    final softClip = _softClipBuffer;
+    _finalizer.attach(this, () {
+      opus.decoder.opus_decoder_destroy(decoder);
+      opus.allocator.free(softClip);
+    }, detach: this);
+  }
 
   /// Creates an new [SimpleOpusDecoder] based on the [sampleRate] and [channels].
   /// See the matching fields for more information about these parameters.
@@ -188,6 +197,7 @@ class SimpleOpusDecoder extends OpusDecoder {
       _destroyed = true;
       opus.decoder.opus_decoder_destroy(_opusDecoder);
       opus.allocator.free(_softClipBuffer);
+      _finalizer.detach(this);
     }
   }
 }
@@ -219,6 +229,8 @@ class SimpleOpusDecoder extends OpusDecoder {
 /// }
 /// ```
 class BufferedOpusDecoder extends OpusDecoder {
+  static final _finalizer = Finalizer<void Function()>((cleanup) => cleanup());
+
   final Pointer<opus_decoder.OpusDecoder> _opusDecoder;
   @override
   final int sampleRate;
@@ -287,7 +299,18 @@ class BufferedOpusDecoder extends OpusDecoder {
       this._softClipBuffer)
       : _destroyed = false,
         inputBufferIndex = 0,
-        _outputBufferIndex = 0;
+        _outputBufferIndex = 0 {
+    final decoder = _opusDecoder;
+    final input = _inputBuffer;
+    final output = _outputBuffer;
+    final softClip = _softClipBuffer;
+    _finalizer.attach(this, () {
+      opus.decoder.opus_decoder_destroy(decoder);
+      opus.allocator.free(input);
+      opus.allocator.free(output);
+      opus.allocator.free(softClip);
+    }, detach: this);
+  }
 
   /// Creates an new [BufferedOpusDecoder] based on the [sampleRate] and [channels].
   /// The native allocated buffer size is determined by [maxInputBufferSizeBytes] and [maxOutputBufferSizeBytes].
@@ -444,6 +467,7 @@ class BufferedOpusDecoder extends OpusDecoder {
       opus.allocator.free(_inputBuffer);
       opus.allocator.free(_outputBuffer);
       opus.allocator.free(_softClipBuffer);
+      _finalizer.detach(this);
     }
   }
 
