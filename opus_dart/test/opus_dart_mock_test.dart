@@ -731,6 +731,51 @@ void main() {
       encoder.destroy();
     });
 
+    test('encoderCtl forwards exact argument values for multiple CTL types',
+        () {
+      final encoder = createBufferedEncoder();
+      final captured = <List<int>>[];
+      when(mockEncoder.opus_encoder_ctl(any, any, any)).thenAnswer((inv) {
+        captured.add([
+          inv.positionalArguments[1] as int,
+          inv.positionalArguments[2] as int,
+        ]);
+        return OPUS_OK;
+      });
+
+      encoder.encoderCtl(
+          request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+      encoder.encoderCtl(
+          request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
+      encoder.encoderCtl(
+          request: OPUS_SET_VBR_REQUEST, value: 1);
+      encoder.encoderCtl(
+          request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
+      encoder.encoderCtl(
+          request: OPUS_SET_PACKET_LOSS_PERC_REQUEST, value: 25);
+
+      expect(captured, [
+        [OPUS_SET_BITRATE_REQUEST, 64000],
+        [OPUS_SET_COMPLEXITY_REQUEST, 10],
+        [OPUS_SET_VBR_REQUEST, 1],
+        [OPUS_SET_INBAND_FEC_REQUEST, 1],
+        [OPUS_SET_PACKET_LOSS_PERC_REQUEST, 25],
+      ]);
+      encoder.destroy();
+    });
+
+    test('encoderCtl returns native error codes faithfully', () {
+      final encoder = createBufferedEncoder();
+      when(mockEncoder.opus_encoder_ctl(any, any, any))
+          .thenReturn(OPUS_UNIMPLEMENTED);
+
+      final result = encoder.encoderCtl(
+          request: OPUS_SET_BANDWIDTH_REQUEST, value: OPUS_BANDWIDTH_FULLBAND);
+
+      expect(result, OPUS_UNIMPLEMENTED);
+      encoder.destroy();
+    });
+
     test('destroy calls opus_encoder_destroy exactly once', () {
       when(mockEncoder.opus_encoder_destroy(any)).thenReturn(null);
       final encoder = createBufferedEncoder();

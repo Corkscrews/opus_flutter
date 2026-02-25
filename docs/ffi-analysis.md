@@ -137,16 +137,20 @@ Functions resolved via `lookupFunction`:
 | `opus_encode` | `int Function(Pointer<OpusEncoder>, Pointer<Int16>, int, Pointer<Uint8>, int)` | Returns encoded byte count or error |
 | `opus_encode_float` | `int Function(Pointer<OpusEncoder>, Pointer<Float>, int, Pointer<Uint8>, int)` | |
 | `opus_encoder_destroy` | `void Function(Pointer<OpusEncoder>)` | |
-| `opus_encoder_ctl` | `int Function(Pointer<OpusEncoder>, int, int)` | Variadic in C, bound with fixed 3 args |
+| `opus_encoder_ctl` | `int Function(Pointer<OpusEncoder>, int, int)` | ~~Variadic in C, bound with fixed 3 args~~ **Fixed** — WASM ABI mismatch resolved via non-variadic C wrapper (`opus_encoder_ctl_int`); Dart binding tries wrapper first, falls back to variadic lookup on native. |
 
 **`opus_encoder_ctl` binding concern:** The C function `opus_encoder_ctl` is variadic.
 The binding hardcodes it to accept exactly `(st, request, va)` — three arguments.
 This works for CTL requests that take a single `int` argument, but CTL requests that
 take a pointer argument (e.g. `OPUS_GET_*` requests that write to an out-pointer)
 cannot be used through this binding. The `int va` parameter would need to be a pointer
-address cast to `int`, which is fragile and non-portable. On web/WASM, pointer addresses
-in the WASM linear memory space are 32-bit offsets, so passing them as `int` might work
-by accident, but this pattern is error-prone.
+address cast to `int`, which is fragile and non-portable.
+
+~~On web/WASM, pointer addresses in the WASM linear memory space are 32-bit offsets,
+so passing them as `int` might work by accident, but this pattern is error-prone.~~
+**Fixed:** A non-variadic C wrapper (`opus_encoder_ctl_int`) is now compiled into the
+WASM module. The Dart binding (`_resolveEncoderCtl`) tries the wrapper first and falls
+back to the variadic symbol on native platforms where the ABI is compatible.
 
 ### 4.3 Decoder Bindings (`opus_decoder.dart`)
 
@@ -427,7 +431,7 @@ less space for float (which needs more). Fixed to `(floats ? 4 : 2)`.
 
 ---
 
-## 9. `opus_encoder_ctl` Variadic Binding
+## 9. `opus_encoder_ctl` Variadic Binding — **Fixed**
 
 The C function `opus_encoder_ctl(OpusEncoder *st, int request, ...)` is variadic.
 The Dart binding defines it with a fixed signature:
@@ -437,14 +441,18 @@ int opus_encoder_ctl(Pointer<OpusEncoder> st, int request, int va);
 ```
 
 This works for setter-style CTLs like `OPUS_SET_BITRATE(value)` where the third
-argument is an integer. However:
+argument is an integer.
+
+**WASM ABI fix:** A non-variadic C wrapper (`opus_encoder_ctl_int`) is compiled into
+the WASM module (`opus_ctl_wrapper.c`), exported alongside the original function, and
+the Dart binding (`FunctionsAndGlobals._resolveEncoderCtl`) tries the wrapper symbol
+first, falling back to the variadic symbol on native platforms.
+
+Remaining limitations:
 
 - **Getter-style CTLs** (e.g. `OPUS_GET_BITRATE`) expect a `Pointer<Int32>` as the
   third argument. Passing a pointer address as `int` is technically possible but
   non-portable and bypasses Dart's type safety.
-- **On WASM:** Pointer values are offsets into WASM linear memory (32-bit). Passing
-  them as Dart `int` (64-bit) and having the C side interpret them as `opus_int32*`
-  requires that the upper 32 bits are zero, which should hold but is fragile.
 - **No decoder_ctl:** There is no `opus_decoder_ctl` binding at all.
 
 ---
@@ -462,7 +470,7 @@ argument is an integer. However:
 | 7 | ~~**Output buffer too small for float decode**~~ | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | ~~High~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
 | 8 | ~~**`free(nullptr)` on web**~~ | `SimpleOpusDecoder.decode` finally block | ~~Low~~ **Fixed** | Resolved by nullable `inputNative` — `free` is only called when the pointer is non-null. |
 | 9 | ~~**`_asString` unbounded loop**~~ | `opus_dart_misc.dart` | ~~Low~~ **Fixed** | Now bounded by `maxStringLength` (256); throws `StateError` if no null terminator found. |
-| 10 | **`opus_encoder_ctl` variadic binding** | `opus_encoder.dart` | Low | Hardcoded to 3 int args. Getter CTLs (pointer arg) cannot be used correctly. |
+| 10 | ~~**`opus_encoder_ctl` variadic binding**~~ | `opus_encoder.dart` | ~~Low~~ **Fixed** | WASM ABI mismatch resolved via non-variadic C wrapper (`opus_encoder_ctl_int`). Getter CTLs (pointer arg) remain unsupported. |
 | 11 | **No `opus_decoder_ctl` binding** | `opus_decoder.dart` | Low | Decoder CTL operations are not exposed. |
 | 12 | **`late` global `opus` without guard** | `opus_dart_misc.dart:55` | Low | Access before `initOpus()` gives unhelpful `LateInitializationError`. |
 | 13 | **Linux/Windows temp dir library lifetime** | `opus_flutter_linux`, `opus_flutter_windows` | Low | If temp dir is cleaned while app runs, native calls will segfault. |
@@ -683,11 +691,11 @@ _opus_decoder_get_nb_samples, _opus_pcm_soft_clip
 Dockerfile. The symbol is now exported from the WASM binary and will be found when
 `_opus_encoder_ctlPtr` performs its lazy lookup on first use.)
 
-Note: the variadic ABI concern (see 12.7) is a separate issue. Exporting the symbol
-ensures the lookup succeeds; whether the variadic calling convention works correctly
-under WASM depends on Emscripten's ABI handling.
+Note: the variadic ABI concern (see 12.7) was a separate issue, now also fixed.
+Exporting the symbol ensures the lookup succeeds; the non-variadic wrapper
+(`opus_encoder_ctl_int`) ensures correct argument passing under WASM.
 
-### 12.7 Variadic Functions Under WASM
+### 12.7 Variadic Functions Under WASM — **Fixed**
 
 **wasm_ffi context:** Emscripten compiles variadic C functions to WASM using a specific
 ABI where variadic arguments are passed via a stack-allocated buffer. The compiled WASM
@@ -698,21 +706,20 @@ function signature may not match what a simple `lookupFunction` binding expects.
 int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 ```
 
-The Dart binding treats it as a fixed 3-argument function:
-```dart
-int Function(Pointer<OpusEncoder>, int, int)
-```
+~~The Dart binding treats it as a fixed 3-argument function:~~
+~~`int Function(Pointer<OpusEncoder>, int, int)`~~
 
-**Problem on WASM:** When Emscripten compiles a variadic function, the resulting WASM
-function may take a different number of parameters than the Dart side expects (often a
-pointer to the variadic argument buffer). Since `wasm_ffi` performs no type checking on
-lookups, this mismatch would not be caught — the Dart side would call the WASM function
-with the wrong number/types of arguments, causing undefined behavior.
+**Fix:** A non-variadic C wrapper (`opus_encoder_ctl_int`) is compiled into the WASM
+module via `opus_ctl_wrapper.c`. This wrapper has a fixed `(OpusEncoder*, int, int)`
+signature and internally forwards to the real variadic `opus_encoder_ctl`. The Dart
+binding (`FunctionsAndGlobals._resolveEncoderCtl`) tries `opus_encoder_ctl_int` first
+(succeeds on WASM) and falls back to `opus_encoder_ctl` (works on native due to ABI
+compatibility).
 
 On native `dart:ffi`, variadic function support was added in Dart 3.0 with specific
 annotations. The current binding bypasses this by using `lookup` + `asFunction` directly,
-which happens to work on most native platforms due to calling convention compatibility,
-but is technically incorrect and non-portable.
+which happens to work on most native platforms due to calling convention compatibility.
+The fallback in `_resolveEncoderCtl` preserves this existing behavior.
 
 ### 12.8 Memory Growth and `asTypedList` Views
 
@@ -807,7 +814,7 @@ documentation:
 | # | Risk | Severity | Detail |
 |---|------|----------|--------|
 | W1 | **`opus_encoder_ctl` not exported from WASM** | Fixed | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile. |
-| W2 | **Variadic `opus_encoder_ctl` ABI mismatch** | High | Even if exported, Emscripten's variadic function ABI may not match the Dart binding's fixed 3-arg signature. The WASM function likely expects a pointer to a variadic arg buffer, not direct arguments. |
+| W2 | ~~**Variadic `opus_encoder_ctl` ABI mismatch**~~ | ~~High~~ **Fixed** | Non-variadic C wrapper (`opus_encoder_ctl_int`) compiled into WASM module; Dart binding tries wrapper first via `_resolveEncoderCtl`. |
 | W3 | **`asTypedList` views detach on memory growth** | Medium | `ALLOW_MEMORY_GROWTH=1` means `malloc` can trigger buffer replacement. Held `asTypedList` views (especially in `Buffered*` classes and `StreamOpusEncoder.bind`) become invalid. |
 | W4 | **`StreamOpusEncoder` caches stale buffer view** | Medium | `bind()` stores `_encoder.inputBuffer` in a local variable at stream start. If WASM memory grows during the stream, this view is detached. |
 | W5 | **`OpusCustomMode` not registered** | Fixed | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
@@ -824,7 +831,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | # | Risk | Platform | Severity | Location |
 |---|------|----------|----------|----------|
 | 1 | ~~`opus_encoder_ctl` not exported from WASM~~ | Web | ~~**High**~~ **Fixed** | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile |
-| 2 | Variadic `opus_encoder_ctl` ABI mismatch under WASM | Web | **High** | `opus_encoder.dart:212-217` |
+| 2 | ~~Variadic `opus_encoder_ctl` ABI mismatch under WASM~~ | Web | ~~**High**~~ **Fixed** | Non-variadic wrapper `opus_encoder_ctl_int` + `_resolveEncoderCtl` fallback |
 | 3 | ~~Use-after-destroy (no `_destroyed` check in encode/decode)~~ | All | ~~**High**~~ **Fixed** | `SimpleOpus*`, `BufferedOpus*` — all public methods now throw `OpusDestroyedError` before touching native pointers |
 | 4 | ~~Output buffer sizing bug (samples vs bytes)~~ | All | ~~**High**~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
 | 5 | `asTypedList` views detach on WASM memory growth | Web | **Medium** | `BufferedOpus*` buffer getters |
@@ -838,7 +845,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 13 | ~~`free(nullptr)` behavior on web~~ | Web | ~~**Low**~~ **Fixed** | Resolved by nullable `inputNative` null check |
 | 14 | No function signature validation on web | Web | **Low** | All `lookupFunction` calls |
 | 15 | ~~`_asString` unbounded loop~~ | All | ~~**Low**~~ **Fixed** | Now bounded by `maxStringLength`; throws `StateError` on missing terminator |
-| 16 | `opus_encoder_ctl` variadic binding (native) | Native | **Low** | `opus_encoder.dart` |
+| 16 | ~~`opus_encoder_ctl` variadic binding (native)~~ | Native | ~~**Low**~~ **Fixed** | `_resolveEncoderCtl` falls back to direct variadic lookup (ABI-compatible on native) |
 | 17 | No `opus_decoder_ctl` binding | All | **Low** | `opus_decoder.dart` |
 | 18 | `late` global `opus` without guard | All | **Low** | `opus_dart_misc.dart:55` |
 | 19 | Linux/Windows temp dir library lifetime | Native | **Low** | Platform packages |
