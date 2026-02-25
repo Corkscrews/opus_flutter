@@ -31,8 +31,9 @@ dependencies:
   ...
 ```
 
-## How opus is contained in this package
-The instructions from [libopus-Android.mk](https://github.com/EPNW/libopus-Android.mk) where used to set up opus for Android. Then, the `.git` folder of the cloned opus was deleted, so that the opus source files are included in this repo.
+## How opus is included
 
+Opus is built from source at compile time using CMake's `FetchContent` module, which downloads a pinned release tag from the official repository. The build commands are in [`CMakeLists.txt`][2].
 
 [1]: ../opus_flutter
+[2]: ./android/src/main/CMakeLists.txt

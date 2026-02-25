@@ -287,6 +287,10 @@ class BufferedOpusEncoder extends OpusEncoder {
     }
   }
 
+  /// Sends a CTL request to the underlying Opus encoder.
+  ///
+  /// Import `opus_defines.dart` for request constants such as
+  /// `OPUS_SET_BITRATE_REQUEST` or `OPUS_SET_VBR_REQUEST`.
   int encoderCtl({required int request, required int value}) {
     if (_destroyed) throw OpusDestroyedError.encoder();
     return opus.encoder.opus_encoder_ctl(_opusEncoder, request, value);

@@ -31,8 +31,9 @@ dependencies:
   ...
 ```
 
-## How opus is contained in this package
-[Emscripten](https://emscripten.org) was used to build WebAssembly and the JavaScript glue. The build commands can be found in the [Dockerfile](./Dockerfile). Then, both, the WebAssembly and JavaScript file are added as Flutter assets and used from there. See [wasm_ffi's documentation](https://pub.dev/packages/wasm_ffi) for more information on how WebAssembly can be loaded.
+## How opus is included
 
+Opus is compiled to WebAssembly using [Emscripten](https://emscripten.org) via Docker. The build commands are in the [`Dockerfile`][2]. The resulting `libopus.js` and `libopus.wasm` files are shipped as Flutter assets and loaded at runtime via [`wasm_ffi`](https://pub.dev/packages/wasm_ffi).
 
 [1]: ../opus_flutter
+[2]: ./Dockerfile
