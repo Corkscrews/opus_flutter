@@ -294,23 +294,27 @@ not have consumed the first yield yet).
 
 ### 5.4 String Handling (`_asString`)
 
+(**Fixed** — `_asString` now has a `maxStringLength` (256) guard.)
+
 ```dart
 String _asString(Pointer<Uint8> pointer) {
   int i = 0;
-  while (pointer[i] != 0) {
+  while (i < maxStringLength && pointer[i] != 0) {
     i++;
+  }
+  if (i == maxStringLength) {
+    throw StateError(
+        '_asString: no null terminator found within $maxStringLength bytes');
   }
   return utf8.decode(pointer.asTypedList(i));
 }
 ```
 
-- Walks memory byte-by-byte until it finds a null terminator.
-- No bounds checking — if the pointer is invalid or the string is not null-terminated,
-  this loops until it hits a zero byte or causes a segfault.
+- Walks memory byte-by-byte until it finds a null terminator, up to `maxStringLength`.
+- Throws `StateError` if no null terminator is found within the limit, preventing
+  unbounded loops with invalid pointers.
 - Only used with `opus_get_version_string()` and `opus_strerror()`, which return
-  pointers to static C strings in libopus. These are guaranteed to be null-terminated
-  by the C library, so the risk is low in practice.
-- Does not use `package:ffi`'s `Utf8` utilities, which could also handle this.
+  pointers to static C strings in libopus. These are well within the 256-byte limit.
 
 ### 5.5 `nullptr` Usage
 
@@ -462,7 +466,7 @@ argument is an integer. However:
 | 6 | **`StreamOpusDecoder` FEC double-yield overwrites** | `opus_dart_streaming.dart:321-327` | Medium | With `copyOutput = false` and FEC, the first yielded output is overwritten before the consumer reads it. |
 | 7 | ~~**Output buffer too small for float decode**~~ | `BufferedOpusDecoder` factory, `StreamOpusDecoder` constructor | ~~High~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
 | 8 | **`free(nullptr)` on web** | `SimpleOpusDecoder.decode` finally block | Low | After null-input decode, `free(nullptr)` is called. Safe on native; behavior on `wasm_ffi` depends on allocator implementation. |
-| 9 | **`_asString` unbounded loop** | `opus_dart_misc.dart:26-31` | Low | If pointer is invalid, loops until segfault. Only used with trusted libopus static strings. |
+| 9 | ~~**`_asString` unbounded loop**~~ | `opus_dart_misc.dart` | ~~Low~~ **Fixed** | Now bounded by `maxStringLength` (256); throws `StateError` if no null terminator found. |
 | 10 | **`opus_encoder_ctl` variadic binding** | `opus_encoder.dart` | Low | Hardcoded to 3 int args. Getter CTLs (pointer arg) cannot be used correctly. |
 | 11 | **No `opus_decoder_ctl` binding** | `opus_decoder.dart` | Low | Decoder CTL operations are not exposed. |
 | 12 | **`late` global `opus` without guard** | `opus_dart_misc.dart:55` | Low | Access before `initOpus()` gives unhelpful `LateInitializationError`. |
@@ -643,6 +647,7 @@ _malloc, _free,
 _opus_get_version_string, _opus_strerror,
 _opus_encoder_get_size, _opus_encoder_create, _opus_encoder_init,
 _opus_encode, _opus_encode_float, _opus_encoder_destroy,
+_opus_encoder_ctl,
 _opus_decoder_get_size, _opus_decoder_create, _opus_decoder_init,
 _opus_decode, _opus_decode_float, _opus_decoder_destroy,
 _opus_packet_parse, _opus_packet_get_bandwidth,
@@ -663,7 +668,7 @@ _opus_decoder_get_nb_samples, _opus_pcm_soft_clip
 | `opus_encode` | Yes | Eager (constructor) |
 | `opus_encode_float` | Yes | Eager (constructor) |
 | `opus_encoder_destroy` | Yes | Eager (constructor) |
-| **`opus_encoder_ctl`** | **No** | **Lazy (`late final`)** |
+| `opus_encoder_ctl` | Yes | Lazy (`late final`) |
 | `opus_decoder_get_size` | Yes | Eager (constructor) |
 | `opus_decoder_create` | Yes | Eager (constructor) |
 | `opus_decoder_init` | Yes | Eager (constructor) |
@@ -679,22 +684,13 @@ _opus_decoder_get_nb_samples, _opus_pcm_soft_clip
 | `opus_decoder_get_nb_samples` | Yes | Eager (constructor) |
 | `opus_pcm_soft_clip` | Yes | Eager (constructor) |
 
-**Bug: `opus_encoder_ctl` is not exported from the WASM binary.** The binding uses a
-`late final` field, so the lookup is deferred until first use. This means:
+(**Fixed** — `_opus_encoder_ctl` has been added to `EXPORTED_FUNCTIONS` in the
+Dockerfile. The symbol is now exported from the WASM binary and will be found when
+`_opus_encoder_ctlPtr` performs its lazy lookup on first use.)
 
-- Library loading succeeds.
-- Creating encoders/decoders works fine.
-- Encoding/decoding works fine.
-- The **first call** to `BufferedOpusEncoder.encoderCtl()` on web will throw when
-  `_opus_encoder_ctlPtr` tries to look up `opus_encoder_ctl` in the WASM module.
-
-This is a **latent bug** — it only surfaces when a consumer actually calls `encoderCtl`,
-which may not happen in typical usage but will crash any advanced use case that tries
-to set bitrate, complexity, or other encoder parameters on web.
-
-**Fix required in two places:**
-1. Add `"_opus_encoder_ctl"` to `EXPORTED_FUNCTIONS` in the Dockerfile.
-2. Consider whether the variadic binding even works correctly under WASM (see 12.7).
+Note: the variadic ABI concern (see 12.7) is a separate issue. Exporting the symbol
+ensures the lookup succeeds; whether the variadic calling convention works correctly
+under WASM depends on Emscripten's ABI handling.
 
 ### 12.7 Variadic Functions Under WASM
 
@@ -801,10 +797,10 @@ Checking the Dockerfile against `wasm_ffi` requirements:
 | `EXPORTED_RUNTIME_METHODS=["HEAPU8"]` | Present | **Required** by `wasm_ffi` for memory access |
 | `_malloc` in `EXPORTED_FUNCTIONS` | Present | Required for allocator |
 | `_free` in `EXPORTED_FUNCTIONS` | Present | Required for allocator |
-| All used C functions exported | **Partial** | `_opus_encoder_ctl` missing |
+| All used C functions exported | Yes | (**Fixed** — `_opus_encoder_ctl` was missing, now exported.) |
 
-**Verdict:** Build configuration is correct except for the missing `_opus_encoder_ctl`
-export.
+**Verdict:** Compliant. Build configuration is correct and all used C functions are
+exported.
 
 ---
 
@@ -815,14 +811,14 @@ documentation:
 
 | # | Risk | Severity | Detail |
 |---|------|----------|--------|
-| W1 | **`opus_encoder_ctl` not exported from WASM** | High | Calling `encoderCtl()` on web will throw. The symbol is missing from the Dockerfile's `EXPORTED_FUNCTIONS`. |
+| W1 | **`opus_encoder_ctl` not exported from WASM** | Fixed | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile. |
 | W2 | **Variadic `opus_encoder_ctl` ABI mismatch** | High | Even if exported, Emscripten's variadic function ABI may not match the Dart binding's fixed 3-arg signature. The WASM function likely expects a pointer to a variadic arg buffer, not direct arguments. |
 | W3 | **`asTypedList` views detach on memory growth** | Medium | `ALLOW_MEMORY_GROWTH=1` means `malloc` can trigger buffer replacement. Held `asTypedList` views (especially in `Buffered*` classes and `StreamOpusEncoder.bind`) become invalid. |
 | W4 | **`StreamOpusEncoder` caches stale buffer view** | Medium | `bind()` stores `_encoder.inputBuffer` in a local variable at stream start. If WASM memory grows during the stream, this view is detached. |
 | W5 | **`OpusCustomMode` not registered** | Fixed | `registerOpaqueType<OpusCustomMode>()` was missing and `OpusRepacketizer` was registered twice. Fixed: duplicate removed, `OpusCustomMode` registered. |
 | W6 | **No function signature validation** | Low | `wasm_ffi` does not validate that Dart typedefs match WASM function signatures. A typedef error would cause silent data corruption on web while working on native. |
 | W7 | **`free(nullptr)` behavior unverified** | Low | After packet-loss decode, `free(nullptr)` is called. The WASM `_free` (Emscripten's `free`) should handle `NULL` safely per C standard, but this is not explicitly guaranteed by `wasm_ffi`. |
-| W8 | **`Pointer[i]` indexing in `_asString`** | Low | `_asString` uses `pointer[i]` to walk memory byte-by-byte. This should work identically on `wasm_ffi` (linear memory indexing), but the lack of bounds checking means an invalid pointer walks arbitrary WASM memory rather than segfaulting. |
+| W8 | **`Pointer[i]` indexing in `_asString`** | Fixed | `_asString` now bounds the loop to `maxStringLength` (256) and throws `StateError` if no null terminator is found, preventing unbounded WASM memory walks. |
 
 ---
 
@@ -832,7 +828,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 
 | # | Risk | Platform | Severity | Location |
 |---|------|----------|----------|----------|
-| 1 | `opus_encoder_ctl` not exported from WASM | Web | **High** | `Dockerfile`, `opus_encoder.dart` |
+| 1 | ~~`opus_encoder_ctl` not exported from WASM~~ | Web | ~~**High**~~ **Fixed** | `_opus_encoder_ctl` added to `EXPORTED_FUNCTIONS` in Dockerfile |
 | 2 | Variadic `opus_encoder_ctl` ABI mismatch under WASM | Web | **High** | `opus_encoder.dart:212-217` |
 | 3 | ~~Use-after-destroy (no `_destroyed` check in encode/decode)~~ | All | ~~**High**~~ **Fixed** | `SimpleOpus*`, `BufferedOpus*` — all public methods now throw `OpusDestroyedError` before touching native pointers |
 | 4 | ~~Output buffer sizing bug (samples vs bytes)~~ | All | ~~**High**~~ **Fixed** | `BufferedOpusDecoder` default now uses `4 * maxSamplesPerPacket`. `StreamOpusDecoder` multiplier corrected to `(floats ? 4 : 2)`. |
@@ -846,7 +842,7 @@ Merging the original findings (Section 10) with web-specific findings (Section 1
 | 12 | Memory leak if second allocation throws | All | **Low** | `SimpleOpus*.encode/decode` |
 | 13 | `free(nullptr)` behavior on web | Web | **Low** | `SimpleOpusDecoder.decode` finally |
 | 14 | No function signature validation on web | Web | **Low** | All `lookupFunction` calls |
-| 15 | `_asString` unbounded loop | All | **Low** | `opus_dart_misc.dart:26-31` |
+| 15 | ~~`_asString` unbounded loop~~ | All | ~~**Low**~~ **Fixed** | Now bounded by `maxStringLength`; throws `StateError` on missing terminator |
 | 16 | `opus_encoder_ctl` variadic binding (native) | Native | **Low** | `opus_encoder.dart` |
 | 17 | No `opus_decoder_ctl` binding | All | **Low** | `opus_decoder.dart` |
 | 18 | `late` global `opus` without guard | All | **Low** | `opus_dart_misc.dart:55` |

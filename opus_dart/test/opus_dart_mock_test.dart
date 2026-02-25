@@ -1096,6 +1096,41 @@ void main() {
 
       malloc.free(versionPtr);
     });
+
+    test('returns empty string when pointer starts with null terminator', () {
+      final ptr = _allocNullTerminated('');
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(getOpusVersion(), '');
+
+      malloc.free(ptr);
+    });
+
+    test('throws StateError when string exceeds maxStringLength', () {
+      final ptr = malloc.call<Uint8>(maxStringLength + 1);
+      for (int i = 0; i < maxStringLength + 1; i++) {
+        ptr[i] = 0x41; // 'A', no null terminator
+      }
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(() => getOpusVersion(), throwsStateError);
+
+      malloc.free(ptr);
+    });
+
+    test('succeeds when string is exactly maxStringLength - 1 chars', () {
+      final len = maxStringLength - 1;
+      final ptr = malloc.call<Uint8>(len + 1);
+      for (int i = 0; i < len; i++) {
+        ptr[i] = 0x42; // 'B'
+      }
+      ptr[len] = 0;
+      when(mockLibInfo.opus_get_version_string()).thenReturn(ptr);
+
+      expect(getOpusVersion(), 'B' * len);
+
+      malloc.free(ptr);
+    });
   });
 
   group('OpusException.toString', () {

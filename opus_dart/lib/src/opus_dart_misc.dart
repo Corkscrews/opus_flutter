@@ -23,10 +23,18 @@ String getOpusVersion() {
   return _asString(opus.libinfo.opus_get_version_string());
 }
 
+/// Upper bound for null-terminated string scans to prevent unbounded loops
+/// when a pointer is invalid or lacks a terminator.
+const int maxStringLength = 256;
+
 String _asString(Pointer<Uint8> pointer) {
   int i = 0;
-  while (pointer[i] != 0) {
+  while (i < maxStringLength && pointer[i] != 0) {
     i++;
+  }
+  if (i == maxStringLength) {
+    throw StateError(
+        '_asString: no null terminator found within $maxStringLength bytes');
   }
   return utf8.decode(pointer.asTypedList(i));
 }
