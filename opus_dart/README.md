@@ -96,7 +96,7 @@ SimpleOpusEncoder createCbrEncoder() {
   final encoder = SimpleOpusEncoder(
     sampleRate: 8000,
     channels: 1,
-    application: Application.restrictedLowdely,
+    application: Application.restrictedLowdelay,
   );
   encoder.encoderCtl(request: OPUS_SET_VBR_REQUEST, value: 0);
   encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 15200);

@@ -155,9 +155,9 @@ void main() {
       encoder.destroy();
     });
 
-    test('maps Application.restrictedLowdely correctly', () {
-      final encoder = createEncoder(application: Application.restrictedLowdely);
-      expect(encoder.application, Application.restrictedLowdely);
+    test('maps Application.restrictedLowdelay correctly', () {
+      final encoder = createEncoder(application: Application.restrictedLowdelay);
+      expect(encoder.application, Application.restrictedLowdelay);
       verify(mockEncoder.opus_encoder_create(
               any, any, OPUS_APPLICATION_RESTRICTED_LOWDELAY, any))
           .called(1);

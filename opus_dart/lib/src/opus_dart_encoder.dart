@@ -367,13 +367,13 @@ abstract class OpusEncoder {
   void destroy();
 }
 
-/// Represents the different apllication types an [OpusEncoder] supports.
-/// Setting the right apllication type when creating an encoder can improve quality.
-enum Application { voip, audio, restrictedLowdely }
+/// Represents the different application types an [OpusEncoder] supports.
+/// Setting the right application type when creating an encoder can improve quality.
+enum Application { voip, audio, restrictedLowdelay }
 
 const Map<Application, int> _applicationCodes = <Application, int>{
   Application.voip: opus_defines.OPUS_APPLICATION_VOIP,
   Application.audio: opus_defines.OPUS_APPLICATION_AUDIO,
-  Application.restrictedLowdely:
+  Application.restrictedLowdelay:
       opus_defines.OPUS_APPLICATION_RESTRICTED_LOWDELAY
 };
