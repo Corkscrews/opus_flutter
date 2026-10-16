@@ -64,6 +64,17 @@ jobs:
         with:
           flutter-version: ${{ matrix.flutter.version }}
           channel: stable
+      # CI-only patches; the example keeps its checked-in toolchain.
+      # Latest Flutter requires Gradle >= 8.14.
+      - name: Patch Gradle for latest Flutter
+        if: matrix.flutter.name == 'latest'
+        working-directory: opus_flutter/example/android
+        run: sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+      # record_android needs minSdk 23; Flutter 3.27 defaults to 21.
+      - name: Patch minSdk for oldest Flutter
+        if: matrix.flutter.name == 'oldest'
+        working-directory: opus_flutter/example/android
+        run: sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' app/build.gradle
       - name: Build APK
         working-directory: opus_flutter/example
         run: flutter pub get && flutter build apk --debug
@@ -114,7 +125,8 @@ jobs:
 
   build-example-windows:
     name: Build example (Windows, Flutter ${{ matrix.flutter.name }})
-    runs-on: windows-latest
+    # Flutter 3.27 doesn't detect Visual Studio 2026 (windows-latest).
+    runs-on: ${{ matrix.flutter.name == 'oldest' && 'windows-2022' || 'windows-latest' }}
     needs: analyze-and-test
     strategy:
       fail-fast: false
@@ -127,6 +139,10 @@ jobs:
           channel: stable
       - name: Build Windows
         working-directory: opus_flutter/example
+        # audioplayers_windows includes <experimental/coroutine>, which newer
+        # MSVC rejects unless silenced. cl.exe reads extra flags from CL.
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: flutter pub get && flutter build windows --debug
 
   deploy-web:
@@ -136,14 +152,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: *flutter-matrix
-    permissions:
-      pages: write
-      id-token: write
-    # Only claim the protected environment when deploying, so PR builds aren't
-    # rejected by its branch rules.
-    environment:
-      name: ${{ github.event_name == 'push' && matrix.flutter.name == 'latest' && 'github-pages' || '' }}
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
@@ -159,7 +167,20 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: opus_flutter/example/build/web
+
+  # Separate job so PR builds never claim the protected environment.
+  deploy-pages:
+    name: Deploy web to GitHub Pages
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: deploy-web
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && matrix.flutter.name == 'latest'
         id: deployment
         uses: actions/deploy-pages@v4
