@@ -137,23 +137,15 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   ///    the partial frame: either zero-pads and encodes it
   ///    ([fillUpLastFrame] = true) or throws [UnfinishedFrameException].
   ///
-  /// The encoder is always destroyed in the `finally` block, regardless of
-  /// whether the stream completes normally or with an error.
+  /// The encoder is destroyed when the stream completes, errors, or the
+  /// listener cancels its subscription.
   @override
-  Stream<Uint8List> bind(Stream<List<T>> stream) async* {
-    try {
-      await for (Uint8List pcm in _mapStream(stream)) {
-        for (final packet in _processChunk(pcm)) {
-          yield packet;
-        }
-      }
-      for (final packet in _flushRemaining()) {
-        yield packet;
-      }
-    } finally {
-      destroy();
-    }
-  }
+  Stream<Uint8List> bind(Stream<List<T>> stream) => _bindNative(
+        _mapStream(stream),
+        onData: (pcm, sink) => _processChunk(pcm).forEach(sink.add),
+        onDone: (sink) => _flushRemaining().forEach(sink.add),
+        cleanup: destroy,
+      );
 
   /// Converts the typed input stream into a uniform [Stream<Uint8List>].
   ///
@@ -354,30 +346,91 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
     return output;
   }
 
+  /// The decoder is destroyed when the stream completes, errors, or the
+  /// listener cancels its subscription.
   @override
-  Stream<List<num>> bind(Stream<Uint8List?> stream) async* {
-    await for (Uint8List? packet in stream) {
-      if (packet == null) {
-        if (forwardErrorCorrection) {
-          _decoder.inputBufferIndex = 0;
-          if (_lastPacketLost) {
-            _reportPacketLoss();
-          }
-        } else {
+  Stream<List<num>> bind(Stream<Uint8List?> stream) => _bindNative(
+        stream,
+        onData: _onPacket,
+        cleanup: destroy,
+      );
+
+  void _onPacket(Uint8List? packet, EventSink<List<num>> sink) {
+    if (packet == null) {
+      if (forwardErrorCorrection) {
+        _decoder.inputBufferIndex = 0;
+        if (_lastPacketLost) {
           _reportPacketLoss();
         }
-        _lastPacketLost = true;
-        continue;
+      } else {
+        _reportPacketLoss();
       }
-      _decoder.inputBuffer.setAll(0, packet);
-      _decoder.inputBufferIndex = packet.length;
-      if (_lastPacketLost && forwardErrorCorrection) {
-        _decodeFec(true);
-        yield _output();
-      }
-      _lastPacketLost = false;
-      _decodeFec(false);
-      yield _output();
+      _lastPacketLost = true;
+      return;
     }
+    _decoder.inputBuffer.setAll(0, packet);
+    _decoder.inputBufferIndex = packet.length;
+    if (_lastPacketLost && forwardErrorCorrection) {
+      _decodeFec(true);
+      sink.add(_output());
+    }
+    _lastPacketLost = false;
+    _decodeFec(false);
+    sink.add(_output());
   }
+
+  /// Manually destroys this decoder.
+  void destroy() => _decoder.destroy();
+}
+
+/// Binds [source] through [onData]/[onDone], ending the stream on the first
+/// error, and calls [cleanup] once the listener is gone (done, error or cancel).
+///
+/// Not an `async*` generator on purpose: a generator parked in `await for`
+/// only sees a cancel when the next upstream event arrives, so cancelling
+/// while the source is idle would hang and leak the native codec.
+Stream<R> _bindNative<S, R>(
+  Stream<S> source, {
+  required void Function(S event, EventSink<R> sink) onData,
+  void Function(EventSink<R> sink)? onDone,
+  required void Function() cleanup,
+}) {
+  late StreamSubscription<S> upstream;
+  late StreamController<R> controller;
+  void fail(Object error, StackTrace stackTrace) {
+    upstream.cancel();
+    controller
+      ..addError(error, stackTrace)
+      ..close();
+  }
+
+  controller = StreamController<R>(
+    onListen: () {
+      upstream = source.listen(
+        (event) {
+          try {
+            onData(event, controller);
+          } catch (e, s) {
+            fail(e, s);
+          }
+        },
+        onError: fail,
+        onDone: () {
+          try {
+            onDone?.call(controller);
+          } catch (e, s) {
+            return fail(e, s);
+          }
+          controller.close();
+        },
+      );
+    },
+    onPause: () => upstream.pause(),
+    onResume: () => upstream.resume(),
+    onCancel: () {
+      cleanup();
+      return upstream.cancel();
+    },
+  );
+  return controller.stream;
 }
