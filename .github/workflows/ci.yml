@@ -65,11 +65,15 @@ jobs:
           flutter-version: ${{ matrix.flutter.version }}
           channel: stable
       # CI-only patches; the example keeps its checked-in toolchain.
-      # Latest Flutter requires Gradle >= 8.14.
-      - name: Patch Gradle for latest Flutter
+      # Latest Flutter requires Gradle >= 8.14, AGP >= 8.11.1 and Kotlin >= 2.2.20.
+      - name: Patch Gradle, AGP and Kotlin for latest Flutter
         if: matrix.flutter.name == 'latest'
         working-directory: opus_flutter/example/android
-        run: sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+        run: |
+          sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/"com.android.application" version "8.7.0"/"com.android.application" version "8.11.1"/' settings.gradle
+          sed -i 's/"org.jetbrains.kotlin.android" version "2.1.0"/"org.jetbrains.kotlin.android" version "2.2.20"/' settings.gradle
+          grep -q '8.11.1' settings.gradle && grep -q '2.2.20' settings.gradle
       # record_android needs minSdk 23; Flutter 3.27 defaults to 21.
       - name: Patch minSdk for oldest Flutter
         if: matrix.flutter.name == 'oldest'
