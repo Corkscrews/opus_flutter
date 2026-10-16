@@ -109,6 +109,75 @@ void main() {
       decoder.destroy();
     });
 
+    test('conceals and FEC-recovers exactly the lost duration in stereo', () {
+      final encoder = SimpleOpusEncoder(
+        sampleRate: _sampleRate,
+        channels: 2,
+        application: Application.audio,
+      );
+      final packet = encoder.encode(input: Int16List(_frameSize * 2));
+      encoder.destroy();
+
+      final simple = SimpleOpusDecoder(sampleRate: _sampleRate, channels: 2);
+      simple.decode(input: packet);
+      expect(simple.lastPacketDurationMs, 20);
+      expect(simple.decode().length, _frameSize * 2);
+      expect(simple.decode(loss: 10).length, _frameSize);
+      simple.destroy();
+
+      final buffered = BufferedOpusDecoder(
+        sampleRate: _sampleRate,
+        channels: 2,
+      );
+      buffered.inputBuffer.setAll(0, packet);
+      buffered.inputBufferIndex = packet.length;
+      buffered.decode();
+      buffered.inputBufferIndex = 0;
+      expect(buffered.decode().length, _frameSize * 2);
+      buffered.inputBufferIndex = packet.length;
+      expect(buffered.decode(fec: true, loss: 20).length, _frameSize * 2);
+      // More loss than the output buffer holds must not reach libopus.
+      buffered.inputBufferIndex = 0;
+      expect(() => buffered.decode(loss: 1000), throwsRangeError);
+      buffered.destroy();
+    });
+
+    test('rejects an empty packet instead of reading past it', () {
+      expect(
+        () => OpusPacketUtils.getBandwidth(packet: Uint8List(0)),
+        throwsA(isA<OpusException>()),
+      );
+    });
+
+    test('a stream ending on a frame boundary needs no padding', () async {
+      final packets = await StreamOpusEncoder.s16le(
+        frameTime: FrameTime.ms20,
+        sampleRate: _sampleRate,
+        channels: 1,
+        application: Application.audio,
+        fillUpLastFrame: false,
+      ).bind(Stream.value(Int16List(_frameSize))).toList();
+      expect(packets, hasLength(1));
+    });
+
+    test('a streamed loss yields concealment of the same length', () async {
+      final encoder = SimpleOpusEncoder(
+        sampleRate: _sampleRate,
+        channels: 1,
+        application: Application.audio,
+      );
+      final packet = encoder.encode(input: Int16List(_frameSize));
+      encoder.destroy();
+
+      final pcm = await StreamOpusDecoder.s16le(
+        sampleRate: _sampleRate,
+        channels: 1,
+      ).bind(Stream.fromIterable(<Uint8List?>[null, packet, null])).toList();
+
+      // The leading loss has nothing to continue; the later one is concealed.
+      expect(pcm.map((frame) => frame.length), [_frameSize, _frameSize]);
+    });
+
     test('accepts integer setter CTLs and rejects getters', () {
       final encoder = BufferedOpusEncoder(
         sampleRate: _sampleRate,

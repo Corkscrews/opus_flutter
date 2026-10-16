@@ -65,6 +65,19 @@ libopus **1.6.1** is vendored in [opus_dart/native](./opus_dart/native) and pinn
 | Android, iOS, Linux, macOS, Windows | Compiled from the vendored sources by `opus_codec_dart`'s build hook and bundled as a code asset |
 | Web      | Compiled to WebAssembly from the same sources with Emscripten (`./build_wasm.sh`) |
 
+### Why libopus is vendored
+
+`opus_codec_dart` keeps a copy of the libopus sources in [`opus_dart/native/vendor/opus`](./opus_dart/native/vendor/opus), taken from Xiph's official release archive. Keeping the copy in the repository means:
+
+- **It works however you depend on the package.** The build hook compiles the copy that ships inside the package, whether you install it from pub.dev, a path or a git URL. Nothing is downloaded during the build.
+- **It is verified.** The archive is checked against the SHA-256 that Xiph publishes, and every file is pinned in `native/checksums.sha256`. CI runs `scripts/vendor_libopus.py --check` and fails if anything is changed, added or missing.
+- **Only what is compiled ships.** The copy holds just the sources and headers the build uses (about 270 files), not upstream's tests, docs and tooling.
+- **Builds are reproducible.** Native and web compile the same files with the same settings, and a libopus update arrives as one reviewable PR.
+
+#### Why not a git submodule?
+
+Pub does not fetch git submodules. If an app depends on `opus_codec_dart` through a `git:` dependency, pub clones the repository without them, so `native/vendor/opus` is empty and the build hook has nothing to compile. Submodules would also mean every clone and CI checkout needs `--recurse-submodules`. A submodule also points at upstream's git tag rather than the release archive, so it lacks the files the release archive adds and can't be checked against Xiph's published SHA-256.
+
 ### Updating libopus
 
 The [Update libopus](./.github/workflows/update-libopus.yml) workflow checks Xiph's releases weekly and opens a PR with the new pin, re-vendored sources, regenerated bindings and rebuilt WASM. To do it locally:

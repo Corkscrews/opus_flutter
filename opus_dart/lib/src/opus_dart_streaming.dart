@@ -239,7 +239,8 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   /// [UnfinishedFrameException] is thrown reporting how many samples are
   /// missing.
   Iterable<Uint8List> _flushRemaining() sync* {
-    if (_encoder.maxInputBufferSizeBytes == 0) return;
+    // Nothing buffered: the input ended on a frame boundary.
+    if (_encoder.inputBufferIndex == 0) return;
     if (!fillUpLastFrame) {
       final missingSamples =
           (_encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex) ~/
@@ -277,7 +278,8 @@ class UnfinishedFrameException implements Exception {
 
 /// Used to decode a stream of opus packets to pcm data.
 /// Each element in the input stream MUST contain a whole opus packet.
-/// A `null` element in the input stream is interpreted as packet loss.
+/// A `null` element in the input stream is interpreted as packet loss, and
+/// yields concealment audio as long as the previous packet (see [bind]).
 class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   /// If forward error correction (fec) should be enabled.
   final bool forwardErrorCorrection;
@@ -373,16 +375,24 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
             (floats ? 4 : 2) * maxSamplesPerPacket(sampleRate, channels),
       );
 
-  void _reportPacketLoss() {
-    _decodeFec(false, loss: _decoder.lastPacketDurationMs);
-  }
-
-  void _decodeFec(bool fec, {int? loss}) {
+  /// Decodes the input buffer; with no loss given, the decoder sizes a
+  /// concealed or recovered packet like the last one, to the exact sample.
+  void _decodeFec(bool fec) {
     if (floats) {
-      _decoder.decodeFloat(fec: fec, loss: loss, autoSoftClip: autoSoftClip);
+      _decoder.decodeFloat(fec: fec, autoSoftClip: autoSoftClip);
       return;
     }
-    _decoder.decode(fec: fec, loss: loss);
+    _decoder.decode(fec: fec);
+  }
+
+  /// Emits concealment audio for one lost packet, as long as the last one.
+  /// Before the first decoded packet there is no length to conceal and no
+  /// audio to continue, so nothing is emitted.
+  void _conceal(EventSink<List<num>> sink) {
+    if (_decoder.lastPacketDurationMs == null) return;
+    _decoder.inputBufferIndex = 0;
+    _decodeFec(false);
+    sink.add(_output());
   }
 
   List<num> _output() {
@@ -404,26 +414,34 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
 
   /// The decoder is destroyed when the stream completes, errors, or the
   /// listener cancels its subscription.
+  ///
+  /// Every lost packet yields concealment audio of the last packet's length,
+  /// so the output keeps its timing. With [forwardErrorCorrection], a loss is
+  /// held until the next packet, which may carry its audio; a loss still
+  /// pending when the input ends is concealed then.
   @override
-  Stream<List<num>> bind(Stream<Uint8List?> stream) =>
-      _bindNative(stream, onData: _onPacket, cleanup: destroy);
+  Stream<List<num>> bind(Stream<Uint8List?> stream) => _bindNative(
+    stream,
+    onData: _onPacket,
+    onDone: (sink) {
+      if (forwardErrorCorrection && _lastPacketLost) _conceal(sink);
+    },
+    cleanup: destroy,
+  );
 
   void _onPacket(Uint8List? packet, EventSink<List<num>> sink) {
     if (packet == null) {
-      if (forwardErrorCorrection) {
-        _decoder.inputBufferIndex = 0;
-        if (_lastPacketLost) {
-          _reportPacketLoss();
-        }
-      } else {
-        _reportPacketLoss();
-      }
+      // With FEC, only the earlier of two consecutive losses is concealed
+      // here; the latest may still be recovered from the next packet.
+      if (!forwardErrorCorrection || _lastPacketLost) _conceal(sink);
       _lastPacketLost = true;
       return;
     }
     _decoder.inputBuffer.setAll(0, packet);
     _decoder.inputBufferIndex = packet.length;
-    if (_lastPacketLost && forwardErrorCorrection) {
+    if (_lastPacketLost &&
+        forwardErrorCorrection &&
+        _decoder.lastPacketDurationMs != null) {
       _decodeFec(true);
       sink.add(_output());
     }

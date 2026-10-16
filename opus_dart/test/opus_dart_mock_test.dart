@@ -398,11 +398,11 @@ void main() {
       final decoder = createDecoder(sampleRate: 48000, channels: 2);
       when(
         mockDecoder.opus_decode(any, any, any, any, any, any),
-      ).thenReturn(960); // 960 samples/ch = 10ms at 48kHz stereo
+      ).thenReturn(960); // 960 samples per channel = 20ms at 48kHz
 
       decoder.decode(input: Uint8List.fromList([0x01]));
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
@@ -452,7 +452,7 @@ void main() {
 
       decoder.decode(input: null, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
@@ -464,7 +464,7 @@ void main() {
 
       decoder.decode(input: Uint8List.fromList([0x01]), fec: true, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 1, any, 20, 1)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 1, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
@@ -513,7 +513,8 @@ void main() {
         autoSoftClip: true,
       );
 
-      verify(mockDecoder.opus_pcm_soft_clip(any, any, 2, any)).called(1);
+      // frame_size is per channel: all 960 samples of each channel.
+      verify(mockDecoder.opus_pcm_soft_clip(any, 960, 2, any)).called(1);
       decoder.destroy();
     });
 
@@ -567,7 +568,7 @@ void main() {
 
       decoder.decodeFloat(input: null, loss: 20);
 
-      verify(mockDecoder.opus_decode_float(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode_float(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
@@ -583,7 +584,7 @@ void main() {
         loss: 20,
       );
 
-      verify(mockDecoder.opus_decode_float(any, any, 1, any, 20, 1)).called(1);
+      verify(mockDecoder.opus_decode_float(any, any, 1, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
@@ -595,7 +596,7 @@ void main() {
 
       decoder.decodeFloat(input: Uint8List.fromList([0x01]));
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
@@ -981,7 +982,7 @@ void main() {
       decoder.inputBufferIndex = 10;
       decoder.decode();
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
@@ -1062,9 +1063,10 @@ void main() {
       ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
-      decoder.decode(fec: true);
+      decoder.decode(fec: true, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 10, any, any, 1)).called(1);
+      // FEC recovers exactly the lost duration: 20ms at 48kHz.
+      verify(mockDecoder.opus_decode(any, any, 10, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
@@ -1077,7 +1079,7 @@ void main() {
       decoder.inputBufferIndex = 0;
       decoder.decode(loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
@@ -1117,7 +1119,7 @@ void main() {
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat();
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
@@ -1161,7 +1163,7 @@ void main() {
         decoder.decodeFloat(loss: 20);
 
         verify(
-          mockDecoder.opus_decode_float(any, any, 0, any, 20, 0),
+          mockDecoder.opus_decode_float(any, any, 0, any, 960, 0),
         ).called(1);
         decoder.destroy();
       },
@@ -1174,10 +1176,10 @@ void main() {
       ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
-      decoder.decodeFloat(fec: true);
+      decoder.decodeFloat(fec: true, loss: 20);
 
       verify(
-        mockDecoder.opus_decode_float(any, any, 10, any, any, 1),
+        mockDecoder.opus_decode_float(any, any, 10, any, 960, 1),
       ).called(1);
       decoder.destroy();
     });

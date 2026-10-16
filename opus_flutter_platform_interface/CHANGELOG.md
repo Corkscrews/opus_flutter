@@ -23,6 +23,15 @@
 ### Bug Fixes
 
 * Zero the soft-clip state before use. `pcmSoftClip` and decoders with `autoSoftClip` could output values far outside [-1, 1] when the allocator returned uninitialised memory.
+* Packet-loss concealment works. A missing packet (`null` input, or `inputBufferIndex = 0`) passed the loss in milliseconds where libopus expects samples, so it always failed with `OPUS_BAD_ARG`.
+* `BufferedOpusDecoder` FEC recovers only the lost duration. It used to decode the whole output buffer (240 ms at 48 kHz stereo) and ignored `loss`. This also affected `StreamOpusDecoder` with `forwardErrorCorrection`.
+* `lastPacketDurationMs` is correct for stereo; it reported half the real duration.
+* `SimpleOpusDecoder.decodeFloat(autoSoftClip: true)` clips the whole stereo frame, not only its first half.
+* A `loss` larger than the output buffer throws `RangeError` instead of letting libopus write past the buffer.
+* `OpusPacketUtils` rejects an empty packet with `OPUS_BAD_ARG` instead of reading past it.
+* `StreamOpusEncoder` no longer emits an extra silent frame when the input ends on a frame boundary, and with `fillUpLastFrame: false` no longer throws `UnfinishedFrameException` in that case.
+* **`StreamOpusDecoder` emits concealment audio for lost packets** (breaking). Each `null` element now yields audio as long as the previous packet, so the output keeps its timing. Before, the concealed audio was decoded and dropped. Without FEC, it also wasn't concealment: the decoder decoded the previous packet a second time. With `forwardErrorCorrection`, a loss still pending when the input ends is concealed then.
+* **A lost packet before the first decoded packet no longer ends a `StreamOpusDecoder` stream** (breaking). It used to fail with `StateError`. There is nothing to conceal yet, so it is skipped and decoding continues.
 
 ## 3.1.0
 

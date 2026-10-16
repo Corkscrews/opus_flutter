@@ -11,6 +11,8 @@ abstract class OpusPacketUtils {
     Uint8List packet,
     int Function(Pointer<Uint8> data) operation,
   ) {
+    // Some of these libopus calls read the TOC byte without a length check.
+    if (packet.isEmpty) throw const OpusException(opus_defines.OPUS_BAD_ARG);
     Pointer<Uint8> data = opus.allocator.call<Uint8>(packet.length);
     data.asTypedList(packet.length).setAll(0, packet);
     try {
