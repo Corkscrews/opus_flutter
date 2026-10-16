@@ -187,7 +187,8 @@ jobs:
         # MSVC rejects unless silenced. cl.exe reads extra flags from CL.
         env:
           CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
-        run: flutter pub get && flutter build windows --debug
+        # -v prints the build hook output when native assets fail.
+        run: flutter pub get && flutter build windows --debug -v
 
   deploy-web:
     name: Build web (Flutter ${{ matrix.flutter.name }})
