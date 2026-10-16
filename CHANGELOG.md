@@ -6,6 +6,10 @@
 
 * Move `opus.xcframework` inside the Swift package so Flutter 3.47+ can resolve it (iOS and macOS).
 
+### Breaking Changes
+
+* Require Flutter 3.27 / Dart 3.6 or newer (was Flutter 3.22 / Dart 3.4). The `wasm_ffi` dependency already needed Dart 3.6.
+
 ## 3.0.5
 
 ### Bug Fixes
