@@ -139,8 +139,10 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    # Only claim the protected environment when deploying, so PR builds aren't
+    # rejected by its branch rules.
     environment:
-      name: github-pages
+      name: ${{ github.event_name == 'push' && matrix.flutter.name == 'latest' && 'github-pages' || '' }}
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
