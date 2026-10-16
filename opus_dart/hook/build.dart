@@ -50,10 +50,22 @@ void main(List<String> args) async {
         ...(group as List<dynamic>).cast<String>(),
     ];
 
+    // native_toolchain_c before 0.19.3 runs cl.exe through cmd.exe, which
+    // caps a command at 8191 characters; the absolute source paths alone
+    // exceed that. cl reads them from a response file instead. 0.19.2 is what
+    // Flutter 3.38 to 3.44 resolve, because they pin meta below 1.19.
+    final sourceUris = [for (final f in files) input.packageRoot.resolve(f)];
+    final responseFile = input.outputDirectory.resolve('sources.rsp');
+    if (isWindows) {
+      File.fromUri(responseFile).writeAsStringSync(
+        [for (final uri in sourceUris) '"${uri.toFilePath()}"'].join('\n'),
+      );
+    }
+
     final library = CLibrary(
       name: 'opus_codec',
       assetName: _assetName,
-      sources: files,
+      sources: isWindows ? const [] : files,
       includes: (sources['include_dirs'] as List<dynamic>).cast<String>(),
       defines: {
         'OPUS_BUILD': null,
@@ -79,9 +91,14 @@ void main(List<String> args) async {
         // ELF only: keep internal calls inside this library even when another
         // libopus with the same symbols is already loaded in the process.
         if (isElf) '-Wl,-Bsymbolic',
+        // cl applies options to every source wherever they appear.
+        if (isWindows) '@${responseFile.toFilePath()}',
       ],
     );
     await library.build(input: input, output: output);
+
+    // Sources passed through the response file are not tracked by CBuilder.
+    if (isWindows) output.dependencies.addAll(sourceUris);
 
     // Inputs the compiler does not see: the build still depends on them.
     for (final relative in [
