@@ -9,3 +9,4 @@ build/
 **/*.mocks.dart
 opus_flutter/.vscode/
 opus_flutter/example/.vscode/
+__pycache__/

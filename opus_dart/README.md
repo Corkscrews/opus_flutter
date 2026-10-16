@@ -4,7 +4,7 @@ Wraps [libopus](https://opus-codec.org/) in Dart, providing both raw FFI binding
 
 Originally based on [EPNW/opus_dart](https://github.com/EPNW/opus_dart) (v3.0.1) and updated for Dart 3 and `wasm_ffi` 2.x compatibility.
 
-**Bundled opus version: 1.5.2**
+**Bundled libopus: 1.6.1**, built from the sources in [native/](./native) (pinned in `native/libopus.json`).
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ All encoder/decoder instances **must** be destroyed by calling `destroy()` to re
 
 ### With Flutter (recommended)
 
-Use `opus_codec` to load the native library, then pass it to `initOpus()`:
+Use `opus_codec`'s `initializeOpus()`, which calls `initOpus()` for the platform:
 
 ```dart
 import 'package:opus_codec_dart/opus_codec_dart.dart';
@@ -49,13 +49,38 @@ import 'package:opus_codec/opus_codec.dart' as opus_codec;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initOpus(await opus_codec.load());
+  await opus_codec.initializeOpus();
   print(getOpusVersion());
   runApp(const MyApp());
 }
 ```
 
-`opus_codec` handles loading the correct binary for each platform (Android, iOS, macOS, Linux, Windows, Web).
+### Standalone Dart
+
+On native platforms, libopus is a code asset built from the package's vendored sources when your app builds. Call `initOpus()` with no arguments:
+
+```dart
+import 'package:opus_codec_dart/opus_codec_dart.dart';
+
+void main() {
+  initOpus();
+  print(getOpusVersion());
+}
+```
+
+Building needs a C compiler on the build machine: Xcode on Apple platforms, the Android NDK on Android, gcc or clang on Linux, MSVC on Windows. This includes `dart test` and `flutter test` runs on the host.
+
+### Supported native targets
+
+| Platform | Architectures |
+|----------|---------------|
+| macOS | arm64, x64 |
+| iOS | arm64 (device and simulator), x64 (simulator) |
+| Android | arm, arm64, x64 |
+| Linux | x64, arm64 |
+| Windows | x64 |
+
+Other combinations fail the build with an `UnsupportedError`. Windows x86 was built by 3.x and is not built by this release.
 
 ### Bindings Only
 
@@ -82,7 +107,7 @@ void init(DynamicLibrary lib) {
 export 'dart:ffi' if (dart.library.js_interop) 'package:wasm_ffi/ffi.dart';
 ```
 
-All source files import `proxy_ffi.dart` instead of `dart:ffi` directly, so the correct types are resolved at compile time. On native, `initOpus()` receives a `dart:ffi` `DynamicLibrary`; on web, a `wasm_ffi` `DynamicLibrary`. The parameter is typed as `Object` to avoid requiring callers to cast.
+All source files import `proxy_ffi.dart` instead of `dart:ffi` directly, so the correct types are resolved at compile time. On native, libopus is bound to the bundled code asset and `initOpus()` takes no argument. On web, `initOpus()` takes a `wasm_ffi` `DynamicLibrary`, typed as `Object`.
 
 ## Encoder CTL
 

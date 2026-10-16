@@ -15,11 +15,7 @@ class OpusampLcdSurface extends StatelessWidget {
         color: const Color(0xFF0A0A0A),
         border: Border.all(color: const Color(0xFF444444)),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0xFF000000),
-            blurRadius: 2,
-            spreadRadius: -1,
-          ),
+          BoxShadow(color: Color(0xFF000000), blurRadius: 2, spreadRadius: -1),
         ],
       ),
       child: ClipRect(

@@ -1,7 +1,7 @@
 /// A Dart-friendly API for encoding and decoding Opus audio packets.
 ///
-/// Call [initOpus] with a loaded `DynamicLibrary` before using any
-/// encoder, decoder, or stream transformer.
+/// Call [initOpus] before using any encoder, decoder, or stream transformer.
+/// On native platforms it takes no arguments; libopus is a bundled code asset.
 
 export 'src/opus_dart_decoder.dart';
 export 'src/opus_dart_encoder.dart';

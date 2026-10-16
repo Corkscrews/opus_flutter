@@ -43,10 +43,7 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
   ) async {
     if (!state.phase.isIdle) return;
 
-    emit(state.copyWith(
-      phase: RecorderPhase.starting,
-      error: () => null,
-    ));
+    emit(state.copyWith(phase: RecorderPhase.starting, error: () => null));
 
     try {
       final hasPermission = await _recorder.hasPermission();
@@ -54,31 +51,34 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         throw StateError('Microphone permission denied.');
       }
 
-      final opusStorage =
-          await RecordingStorage.create('recorded_audio.opuspack');
+      final opusStorage = await RecordingStorage.create(
+        'recorded_audio.opuspack',
+      );
       final wavStorage = await RecordingStorage.create('decoded_audio.wav');
 
       if (await opusStorage.exists()) await opusStorage.delete();
       if (await wavStorage.exists()) await wavStorage.delete();
 
-      final pcmStream = await _recorder.startStream(const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: demoSampleRate,
-        numChannels: demoChannels,
-      ));
+      final pcmStream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: demoSampleRate,
+          numChannels: demoChannels,
+        ),
+      );
 
       final sink = opusStorage.openWrite();
       final encoded = pcmStream.cast<List<int>>().transform(
-            StreamOpusEncoder.bytes(
-              floatInput: false,
-              frameTime: FrameTime.ms20,
-              sampleRate: demoSampleRate,
-              channels: demoChannels,
-              application: Application.audio,
-              copyOutput: true,
-              fillUpLastFrame: true,
-            ),
-          );
+        StreamOpusEncoder.bytes(
+          floatInput: false,
+          frameTime: FrameTime.ms20,
+          sampleRate: demoSampleRate,
+          channels: demoChannels,
+          application: Application.audio,
+          copyOutput: true,
+          fillUpLastFrame: true,
+        ),
+      );
 
       _opusSink = sink;
       _encoderSubscription = encoded.listen(
@@ -90,31 +90,34 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
         (_) => add(const RecordingTickEvent()),
       );
 
-      emit(state.copyWith(
-        phase: RecorderPhase.recording,
-        opusStorage: () => opusStorage,
-        wavStorage: () => wavStorage,
-        wavReady: false,
-        recordingDuration: Duration.zero,
-      ));
+      emit(
+        state.copyWith(
+          phase: RecorderPhase.recording,
+          opusStorage: () => opusStorage,
+          wavStorage: () => wavStorage,
+          wavReady: false,
+          recordingDuration: Duration.zero,
+        ),
+      );
     } catch (error) {
       // ignore: avoid_print
       print('Failed to start recording: $error');
-      emit(state.copyWith(
-        phase: RecorderPhase.idle,
-        error: () => 'Failed to start recording: $error',
-      ));
+      emit(
+        state.copyWith(
+          phase: RecorderPhase.idle,
+          error: () => 'Failed to start recording: $error',
+        ),
+      );
     }
   }
 
-  void _onRecordingTick(
-    RecordingTickEvent event,
-    Emitter<RecorderState> emit,
-  ) {
+  void _onRecordingTick(RecordingTickEvent event, Emitter<RecorderState> emit) {
     if (!state.phase.isRecording) return;
-    emit(state.copyWith(
-      recordingDuration: state.recordingDuration + const Duration(seconds: 1),
-    ));
+    emit(
+      state.copyWith(
+        recordingDuration: state.recordingDuration + const Duration(seconds: 1),
+      ),
+    );
   }
 
   Future<void> _onStopRecording(
@@ -126,10 +129,7 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     _recordingTimer?.cancel();
     _recordingTimer = null;
 
-    emit(state.copyWith(
-      phase: RecorderPhase.stopping,
-      error: () => null,
-    ));
+    emit(state.copyWith(phase: RecorderPhase.stopping, error: () => null));
 
     try {
       await _recorder.stop();
@@ -156,16 +156,15 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     if (opusStorage == null ||
         wavStorage == null ||
         !await opusStorage.exists()) {
-      emit(state.copyWith(
-        error: () => 'No Opus recording found. Record audio first.',
-      ));
+      emit(
+        state.copyWith(
+          error: () => 'No Opus recording found. Record audio first.',
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(
-      phase: RecorderPhase.decoding,
-      error: () => null,
-    ));
+    emit(state.copyWith(phase: RecorderPhase.decoding, error: () => null));
 
     try {
       final bytes = await opusStorage.readAsBytes();
@@ -177,10 +176,12 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
       await wavSink.close();
       emit(state.copyWith(phase: RecorderPhase.idle, wavReady: true));
     } catch (error) {
-      emit(state.copyWith(
-        phase: RecorderPhase.idle,
-        error: () => 'Failed to decode Opus file: $error',
-      ));
+      emit(
+        state.copyWith(
+          phase: RecorderPhase.idle,
+          error: () => 'Failed to decode Opus file: $error',
+        ),
+      );
     }
   }
 
@@ -192,27 +193,33 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
     final wavStorage = state.wavStorage;
 
     if (wavStorage == null || !await wavStorage.exists()) {
-      emit(state.copyWith(
-        error: () => 'No decoded WAV found. Decode from disk first.',
-      ));
+      emit(
+        state.copyWith(
+          error: () => 'No decoded WAV found. Decode from disk first.',
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(
-      phase: RecorderPhase.playing,
-      playbackDuration: Duration.zero,
-      totalPlaybackDuration: () => null,
-      error: () => null,
-    ));
+    emit(
+      state.copyWith(
+        phase: RecorderPhase.playing,
+        playbackDuration: Duration.zero,
+        totalPlaybackDuration: () => null,
+        error: () => null,
+      ),
+    );
 
     try {
       await _player.stop();
 
-      _playerCompleteSubscription = _player.onPlayerComplete
-          .listen((_) => add(const PlaybackCompleteEvent()));
+      _playerCompleteSubscription = _player.onPlayerComplete.listen(
+        (_) => add(const PlaybackCompleteEvent()),
+      );
 
-      _playerDurationSubscription = _player.onDurationChanged
-          .listen((d) => add(PlaybackTotalDurationEvent(d)));
+      _playerDurationSubscription = _player.onDurationChanged.listen(
+        (d) => add(PlaybackTotalDurationEvent(d)),
+      );
 
       _playbackTimer = Timer.periodic(
         const Duration(seconds: 1),
@@ -227,21 +234,22 @@ class RecordBloc extends Bloc<RecordEvent, RecorderState> {
       }
     } catch (error) {
       _cancelPlayback();
-      emit(state.copyWith(
-        phase: RecorderPhase.idle,
-        error: () => 'Failed to play decoded audio: $error',
-      ));
+      emit(
+        state.copyWith(
+          phase: RecorderPhase.idle,
+          error: () => 'Failed to play decoded audio: $error',
+        ),
+      );
     }
   }
 
-  void _onPlaybackTick(
-    PlaybackTickEvent event,
-    Emitter<RecorderState> emit,
-  ) {
+  void _onPlaybackTick(PlaybackTickEvent event, Emitter<RecorderState> emit) {
     if (!state.phase.isPlaying) return;
-    emit(state.copyWith(
-      playbackDuration: state.playbackDuration + const Duration(seconds: 1),
-    ));
+    emit(
+      state.copyWith(
+        playbackDuration: state.playbackDuration + const Duration(seconds: 1),
+      ),
+    );
   }
 
   void _onPlaybackComplete(

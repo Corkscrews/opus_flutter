@@ -34,12 +34,7 @@ log_header()  { echo -e "\n${BOLD}$1${NC}"; }
 
 FLUTTER_PACKAGES=(
   "opus_flutter_platform_interface"
-  "opus_flutter_android"
-  "opus_flutter_ios"
-  "opus_flutter_linux"
-  "opus_flutter_macos"
   "opus_flutter_web"
-  "opus_flutter_windows"
   "opus_flutter"
 )
 

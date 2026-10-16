@@ -29,11 +29,7 @@ class OpusampPixelText extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(_pixelWidth, _pixelHeight),
-      painter: _PixelTextPainter(
-        text: text,
-        color: color,
-        cellSize: cellSize,
-      ),
+      painter: _PixelTextPainter(text: text, color: color, cellSize: cellSize),
     );
   }
 }

@@ -63,7 +63,7 @@ void main() {
     mockDecoder = MockOpusDecoderFunctions();
     mockEncoder = MockOpusEncoderFunctions();
     mockLibInfo = MockOpusLibInfoFunctions();
-    opus = ApiObject.test(
+    opus = ApiObject.fromFunctions(
       libinfo: mockLibInfo,
       encoder: mockEncoder,
       decoder: mockDecoder,
@@ -91,10 +91,7 @@ void main() {
     );
   }
 
-  SimpleOpusDecoder createDecoder({
-    int sampleRate = 48000,
-    int channels = 2,
-  }) {
+  SimpleOpusDecoder createDecoder({int sampleRate = 48000, int channels = 2}) {
     when(mockDecoder.opus_decoder_create(any, any, any)).thenAnswer((inv) {
       (inv.positionalArguments[2] as Pointer<Int32>).value = OPUS_OK;
       return Pointer<opus_decoder.OpusDecoder>.fromAddress(0xDEAD);
@@ -140,40 +137,50 @@ void main() {
       expect(encoder.channels, 2);
       expect(encoder.application, Application.voip);
       expect(encoder.destroyed, isFalse);
-      verify(mockEncoder.opus_encoder_create(
-              48000, 2, OPUS_APPLICATION_VOIP, any))
-          .called(1);
+      verify(
+        mockEncoder.opus_encoder_create(48000, 2, OPUS_APPLICATION_VOIP, any),
+      ).called(1);
       encoder.destroy();
     });
 
     test('maps Application.audio correctly', () {
       final encoder = createEncoder(application: Application.audio);
       expect(encoder.application, Application.audio);
-      verify(mockEncoder.opus_encoder_create(
-              any, any, OPUS_APPLICATION_AUDIO, any))
-          .called(1);
+      verify(
+        mockEncoder.opus_encoder_create(any, any, OPUS_APPLICATION_AUDIO, any),
+      ).called(1);
       encoder.destroy();
     });
 
     test('maps Application.restrictedLowdelay correctly', () {
-      final encoder =
-          createEncoder(application: Application.restrictedLowdelay);
+      final encoder = createEncoder(
+        application: Application.restrictedLowdelay,
+      );
       expect(encoder.application, Application.restrictedLowdelay);
-      verify(mockEncoder.opus_encoder_create(
-              any, any, OPUS_APPLICATION_RESTRICTED_LOWDELAY, any))
-          .called(1);
+      verify(
+        mockEncoder.opus_encoder_create(
+          any,
+          any,
+          OPUS_APPLICATION_RESTRICTED_LOWDELAY,
+          any,
+        ),
+      ).called(1);
       encoder.destroy();
     });
 
     test('throws OpusException when native returns an error', () {
-      when(mockEncoder.opus_encoder_create(any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encoder_create(any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_BAD_ARG;
         return Pointer<opus_encoder.OpusEncoder>.fromAddress(0);
       });
       expect(
         () => SimpleOpusEncoder(
-            sampleRate: 48000, channels: 2, application: Application.voip),
+          sampleRate: 48000,
+          channels: 2,
+          application: Application.voip,
+        ),
         throwsA(isA<OpusException>()),
       );
     });
@@ -195,15 +202,17 @@ void main() {
       expect(result[0], 0xAA);
       expect(result[1], 0xBB);
       expect(result[2], 0xCC);
-      verify(mockEncoder.opus_encode(any, any, 960, any, maxDataBytes))
-          .called(1);
+      verify(
+        mockEncoder.opus_encode(any, any, 960, any, maxDataBytes),
+      ).called(1);
       encoder.destroy();
     });
 
     test('encode throws OpusException on native error', () {
       final encoder = createEncoder();
-      when(mockEncoder.opus_encode(any, any, any, any, any))
-          .thenReturn(OPUS_INTERNAL_ERROR);
+      when(
+        mockEncoder.opus_encode(any, any, any, any, any),
+      ).thenReturn(OPUS_INTERNAL_ERROR);
 
       expect(
         () => encoder.encode(input: Int16List.fromList(List.filled(1920, 0))),
@@ -214,8 +223,9 @@ void main() {
 
     test('encodeFloat returns encoded bytes', () {
       final encoder = createEncoder();
-      when(mockEncoder.opus_encode_float(any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encode_float(any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         final outputPtr = inv.positionalArguments[3] as Pointer<Uint8>;
         outputPtr[0] = 0x11;
         outputPtr[1] = 0x22;
@@ -228,19 +238,22 @@ void main() {
       expect(result, hasLength(2));
       expect(result[0], 0x11);
       expect(result[1], 0x22);
-      verify(mockEncoder.opus_encode_float(any, any, 960, any, maxDataBytes))
-          .called(1);
+      verify(
+        mockEncoder.opus_encode_float(any, any, 960, any, maxDataBytes),
+      ).called(1);
       encoder.destroy();
     });
 
     test('encodeFloat throws OpusException on native error', () {
       final encoder = createEncoder();
-      when(mockEncoder.opus_encode_float(any, any, any, any, any))
-          .thenReturn(OPUS_BUFFER_TOO_SMALL);
+      when(
+        mockEncoder.opus_encode_float(any, any, any, any, any),
+      ).thenReturn(OPUS_BUFFER_TOO_SMALL);
 
       expect(
         () => encoder.encodeFloat(
-            input: Float32List.fromList(List.filled(1920, 0.0))),
+          input: Float32List.fromList(List.filled(1920, 0.0)),
+        ),
         throwsA(isA<OpusException>()),
       );
       encoder.destroy();
@@ -251,8 +264,9 @@ void main() {
       when(mockEncoder.opus_encode(any, any, any, any, any)).thenReturn(1);
 
       encoder.encode(
-          input: Int16List.fromList(List.filled(1920, 0)),
-          maxOutputSizeBytes: 512);
+        input: Int16List.fromList(List.filled(1920, 0)),
+        maxOutputSizeBytes: 512,
+      );
 
       verify(mockEncoder.opus_encode(any, any, any, any, 512)).called(1);
       encoder.destroy();
@@ -287,7 +301,8 @@ void main() {
       encoder.destroy();
       expect(
         () => encoder.encodeFloat(
-            input: Float32List.fromList(List.filled(1920, 0.0))),
+          input: Float32List.fromList(List.filled(1920, 0.0)),
+        ),
         throwsA(isA<OpusDestroyedError>()),
       );
     });
@@ -295,7 +310,7 @@ void main() {
     test('encode frees input buffer when output allocation throws', () {
       final encoder = createEncoder();
       final failAlloc = _FailingAllocator(2);
-      opus = ApiObject.test(
+      opus = ApiObject.fromFunctions(
         libinfo: mockLibInfo,
         encoder: mockEncoder,
         decoder: mockDecoder,
@@ -312,7 +327,7 @@ void main() {
     test('encodeFloat frees input buffer when output allocation throws', () {
       final encoder = createEncoder();
       final failAlloc = _FailingAllocator(2);
-      opus = ApiObject.test(
+      opus = ApiObject.fromFunctions(
         libinfo: mockLibInfo,
         encoder: mockEncoder,
         decoder: mockDecoder,
@@ -321,7 +336,8 @@ void main() {
 
       expect(
         () => encoder.encodeFloat(
-            input: Float32List.fromList([0.1, 0.2, 0.3, 0.4])),
+          input: Float32List.fromList([0.1, 0.2, 0.3, 0.4]),
+        ),
         throwsStateError,
       );
       expect(failAlloc.freedAddresses, hasLength(1));
@@ -356,8 +372,9 @@ void main() {
 
     test('decode returns Int16List with correct samples', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockDecoder.opus_decode(any, any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Int16>;
         pcmPtr[0] = 100;
         pcmPtr[1] = 200;
@@ -379,19 +396,21 @@ void main() {
 
     test('decode updates lastPacketDurationMs', () {
       final decoder = createDecoder(sampleRate: 48000, channels: 2);
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960); // 960 samples/ch = 10ms at 48kHz stereo
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960); // 960 samples per channel = 20ms at 48kHz
 
       decoder.decode(input: Uint8List.fromList([0x01]));
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
     test('decode throws OpusException on native error', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => decoder.decode(input: Uint8List.fromList([0x01])),
@@ -403,56 +422,57 @@ void main() {
     test('decode with null input signals packet loss', () {
       final decoder = createDecoder();
       // First decode a real packet to set lastPacketDurationMs
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
       decoder.decode(input: Uint8List.fromList([0x01]));
 
       // Now signal packet loss with null input
       decoder.decode(input: null);
 
       // The second call should pass nullptr and fec=0
-      final calls =
-          verify(mockDecoder.opus_decode(any, any, any, any, any, any))
-              .callCount;
+      final calls = verify(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).callCount;
       expect(calls, 2);
       decoder.destroy();
     });
 
     test('decode with null input and no prior packet throws StateError', () {
       final decoder = createDecoder();
-      expect(
-        () => decoder.decode(input: null),
-        throwsA(isA<StateError>()),
-      );
+      expect(() => decoder.decode(input: null), throwsA(isA<StateError>()));
       decoder.destroy();
     });
 
     test('decode with null input uses explicit loss parameter', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decode(input: null, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
     test('decode with fec=true passes fec flag to native', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decode(input: Uint8List.fromList([0x01]), fec: true, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 1, any, 20, 1)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 1, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
     test('decodeFloat returns Float32List with correct samples', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenAnswer((inv) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Float>;
         pcmPtr[0] = 0.5;
         pcmPtr[1] = -0.5;
@@ -470,8 +490,9 @@ void main() {
 
     test('decodeFloat throws OpusException on native error', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => decoder.decodeFloat(input: Uint8List.fromList([0x01])),
@@ -482,21 +503,26 @@ void main() {
 
     test('decodeFloat with autoSoftClip calls opus_pcm_soft_clip', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
       when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.decodeFloat(
-          input: Uint8List.fromList([0x01]), autoSoftClip: true);
+        input: Uint8List.fromList([0x01]),
+        autoSoftClip: true,
+      );
 
-      verify(mockDecoder.opus_pcm_soft_clip(any, any, 2, any)).called(1);
+      // frame_size is per channel: all 960 samples of each channel.
+      verify(mockDecoder.opus_pcm_soft_clip(any, 960, 2, any)).called(1);
       decoder.destroy();
     });
 
     test('decodeFloat without autoSoftClip does not call soft clip', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decodeFloat(input: Uint8List.fromList([0x01]));
 
@@ -506,60 +532,71 @@ void main() {
 
     test('decodeFloat with null input signals packet loss', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decodeFloat(input: Uint8List.fromList([0x01]));
       decoder.decodeFloat(input: null);
 
       expect(
-          verify(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-              .callCount,
-          2);
-      decoder.destroy();
-    });
-
-    test('decodeFloat with null input and no prior packet throws StateError',
-        () {
-      final decoder = createDecoder();
-      expect(
-        () => decoder.decodeFloat(input: null),
-        throwsA(isA<StateError>()),
+        verify(
+          mockDecoder.opus_decode_float(any, any, any, any, any, any),
+        ).callCount,
+        2,
       );
       decoder.destroy();
     });
 
+    test(
+      'decodeFloat with null input and no prior packet throws StateError',
+      () {
+        final decoder = createDecoder();
+        expect(
+          () => decoder.decodeFloat(input: null),
+          throwsA(isA<StateError>()),
+        );
+        decoder.destroy();
+      },
+    );
+
     test('decodeFloat with null input uses explicit loss parameter', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decodeFloat(input: null, loss: 20);
 
-      verify(mockDecoder.opus_decode_float(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode_float(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
     test('decodeFloat with fec=true passes fec flag to native', () {
       final decoder = createDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decodeFloat(
-          input: Uint8List.fromList([0x01]), fec: true, loss: 20);
+        input: Uint8List.fromList([0x01]),
+        fec: true,
+        loss: 20,
+      );
 
-      verify(mockDecoder.opus_decode_float(any, any, 1, any, 20, 1)).called(1);
+      verify(mockDecoder.opus_decode_float(any, any, 1, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
     test('decodeFloat updates lastPacketDurationMs', () {
       final decoder = createDecoder(sampleRate: 48000, channels: 2);
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.decodeFloat(input: Uint8List.fromList([0x01]));
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
@@ -599,7 +636,7 @@ void main() {
     test('decode frees output buffer when input allocation throws', () {
       final decoder = createDecoder();
       final failAlloc = _FailingAllocator(2);
-      opus = ApiObject.test(
+      opus = ApiObject.fromFunctions(
         libinfo: mockLibInfo,
         encoder: mockEncoder,
         decoder: mockDecoder,
@@ -616,7 +653,7 @@ void main() {
     test('decodeFloat frees output buffer when input allocation throws', () {
       final decoder = createDecoder();
       final failAlloc = _FailingAllocator(2);
-      opus = ApiObject.test(
+      opus = ApiObject.fromFunctions(
         libinfo: mockLibInfo,
         encoder: mockEncoder,
         decoder: mockDecoder,
@@ -648,14 +685,18 @@ void main() {
     });
 
     test('throws OpusException when native returns an error', () {
-      when(mockEncoder.opus_encoder_create(any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encoder_create(any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_ALLOC_FAIL;
         return Pointer<opus_encoder.OpusEncoder>.fromAddress(0);
       });
       expect(
         () => BufferedOpusEncoder(
-            sampleRate: 48000, channels: 2, application: Application.voip),
+          sampleRate: 48000,
+          channels: 2,
+          application: Application.voip,
+        ),
         throwsA(isA<OpusException>()),
       );
     });
@@ -682,8 +723,9 @@ void main() {
 
     test('encode throws OpusException on native error', () {
       final encoder = createBufferedEncoder();
-      when(mockEncoder.opus_encode(any, any, any, any, any))
-          .thenReturn(OPUS_INTERNAL_ERROR);
+      when(
+        mockEncoder.opus_encode(any, any, any, any, any),
+      ).thenReturn(OPUS_INTERNAL_ERROR);
 
       encoder.inputBufferIndex = 3840;
       expect(() => encoder.encode(), throwsA(isA<OpusException>()));
@@ -692,8 +734,9 @@ void main() {
 
     test('encodeFloat writes to output buffer and returns it', () {
       final encoder = createBufferedEncoder();
-      when(mockEncoder.opus_encode_float(any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encode_float(any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         final outputPtr = inv.positionalArguments[3] as Pointer<Uint8>;
         outputPtr[0] = 0xFF;
         return 1;
@@ -711,8 +754,9 @@ void main() {
 
     test('encodeFloat throws OpusException on native error', () {
       final encoder = createBufferedEncoder();
-      when(mockEncoder.opus_encode_float(any, any, any, any, any))
-          .thenReturn(OPUS_INTERNAL_ERROR);
+      when(
+        mockEncoder.opus_encode_float(any, any, any, any, any),
+      ).thenReturn(OPUS_INTERNAL_ERROR);
 
       encoder.inputBufferIndex = 7680;
       expect(() => encoder.encodeFloat(), throwsA(isA<OpusException>()));
@@ -723,50 +767,61 @@ void main() {
       final encoder = createBufferedEncoder();
       when(mockEncoder.opus_encoder_ctl(any, any, any)).thenReturn(OPUS_OK);
 
-      final result =
-          encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+      final result = encoder.encoderCtl(
+        request: OPUS_SET_BITRATE_REQUEST,
+        value: 64000,
+      );
 
       expect(result, OPUS_OK);
-      verify(mockEncoder.opus_encoder_ctl(any, OPUS_SET_BITRATE_REQUEST, 64000))
-          .called(1);
+      verify(
+        mockEncoder.opus_encoder_ctl(any, OPUS_SET_BITRATE_REQUEST, 64000),
+      ).called(1);
       encoder.destroy();
     });
 
-    test('encoderCtl forwards exact argument values for multiple CTL types',
-        () {
-      final encoder = createBufferedEncoder();
-      final captured = <List<int>>[];
-      when(mockEncoder.opus_encoder_ctl(any, any, any)).thenAnswer((inv) {
-        captured.add([
-          inv.positionalArguments[1] as int,
-          inv.positionalArguments[2] as int,
+    test(
+      'encoderCtl forwards exact argument values for multiple CTL types',
+      () {
+        final encoder = createBufferedEncoder();
+        final captured = <List<int>>[];
+        when(mockEncoder.opus_encoder_ctl(any, any, any)).thenAnswer((inv) {
+          captured.add([
+            inv.positionalArguments[1] as int,
+            inv.positionalArguments[2] as int,
+          ]);
+          return OPUS_OK;
+        });
+
+        encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
+        encoder.encoderCtl(request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
+        encoder.encoderCtl(request: OPUS_SET_VBR_REQUEST, value: 1);
+        encoder.encoderCtl(request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
+        encoder.encoderCtl(
+          request: OPUS_SET_PACKET_LOSS_PERC_REQUEST,
+          value: 25,
+        );
+
+        expect(captured, [
+          [OPUS_SET_BITRATE_REQUEST, 64000],
+          [OPUS_SET_COMPLEXITY_REQUEST, 10],
+          [OPUS_SET_VBR_REQUEST, 1],
+          [OPUS_SET_INBAND_FEC_REQUEST, 1],
+          [OPUS_SET_PACKET_LOSS_PERC_REQUEST, 25],
         ]);
-        return OPUS_OK;
-      });
-
-      encoder.encoderCtl(request: OPUS_SET_BITRATE_REQUEST, value: 64000);
-      encoder.encoderCtl(request: OPUS_SET_COMPLEXITY_REQUEST, value: 10);
-      encoder.encoderCtl(request: OPUS_SET_VBR_REQUEST, value: 1);
-      encoder.encoderCtl(request: OPUS_SET_INBAND_FEC_REQUEST, value: 1);
-      encoder.encoderCtl(request: OPUS_SET_PACKET_LOSS_PERC_REQUEST, value: 25);
-
-      expect(captured, [
-        [OPUS_SET_BITRATE_REQUEST, 64000],
-        [OPUS_SET_COMPLEXITY_REQUEST, 10],
-        [OPUS_SET_VBR_REQUEST, 1],
-        [OPUS_SET_INBAND_FEC_REQUEST, 1],
-        [OPUS_SET_PACKET_LOSS_PERC_REQUEST, 25],
-      ]);
-      encoder.destroy();
-    });
+        encoder.destroy();
+      },
+    );
 
     test('encoderCtl returns native error codes faithfully', () {
       final encoder = createBufferedEncoder();
-      when(mockEncoder.opus_encoder_ctl(any, any, any))
-          .thenReturn(OPUS_UNIMPLEMENTED);
+      when(
+        mockEncoder.opus_encoder_ctl(any, any, any),
+      ).thenReturn(OPUS_UNIMPLEMENTED);
 
       final result = encoder.encoderCtl(
-          request: OPUS_SET_BANDWIDTH_REQUEST, value: OPUS_BANDWIDTH_FULLBAND);
+        request: OPUS_SET_BANDWIDTH_REQUEST,
+        value: OPUS_BANDWIDTH_FULLBAND,
+      );
 
       expect(result, OPUS_UNIMPLEMENTED);
       encoder.destroy();
@@ -812,8 +867,9 @@ void main() {
     });
 
     test('respects custom buffer sizes', () {
-      when(mockEncoder.opus_encoder_create(any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockEncoder.opus_encoder_create(any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         (inv.positionalArguments[3] as Pointer<Int32>).value = OPUS_OK;
         return Pointer<opus_encoder.OpusEncoder>.fromAddress(0xDEAD);
       });
@@ -852,14 +908,18 @@ void main() {
       final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
       // 4 bytes/float * maxSamplesPerPacket ensures a 120ms frame fits
       expect(
-          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(48000, 2));
+        decoder.maxOutputBufferSizeBytes,
+        4 * maxSamplesPerPacket(48000, 2),
+      );
       decoder.destroy();
     });
 
     test('default output buffer is large enough for float decode (mono)', () {
       final decoder = createBufferedDecoder(sampleRate: 8000, channels: 1);
       expect(
-          decoder.maxOutputBufferSizeBytes, 4 * maxSamplesPerPacket(8000, 1));
+        decoder.maxOutputBufferSizeBytes,
+        4 * maxSamplesPerPacket(8000, 1),
+      );
       decoder.destroy();
     });
 
@@ -867,8 +927,9 @@ void main() {
       final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
       // 120ms at 48kHz stereo = 5760 samples per channel
       const samplesPerChannel = 5760;
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(samplesPerChannel);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(samplesPerChannel);
 
       decoder.inputBufferIndex = 10;
       final result = decoder.decodeFloat();
@@ -890,8 +951,9 @@ void main() {
 
     test('decode returns Int16List from output buffer', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockDecoder.opus_decode(any, any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Int16>;
         pcmPtr[0] = 1000;
         pcmPtr[1] = 2000;
@@ -913,20 +975,22 @@ void main() {
 
     test('decode updates lastPacketDurationMs', () {
       final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
       decoder.decode();
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
     test('decode throws OpusException on native error', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       decoder.inputBufferIndex = 10;
       expect(() => decoder.decode(), throwsA(isA<OpusException>()));
@@ -935,8 +999,9 @@ void main() {
 
     test('decode with inputBufferIndex=0 signals packet loss', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       // First decode to set lastPacketDurationMs
       decoder.inputBufferIndex = 10;
@@ -947,9 +1012,9 @@ void main() {
       decoder.decode();
 
       expect(
-          verify(mockDecoder.opus_decode(any, any, any, any, any, any))
-              .callCount,
-          2);
+        verify(mockDecoder.opus_decode(any, any, any, any, any, any)).callCount,
+        2,
+      );
       decoder.destroy();
     });
 
@@ -962,8 +1027,9 @@ void main() {
 
     test('decodeFloat returns Float32List from output buffer', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenAnswer((inv) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Float>;
         pcmPtr[0] = 0.25;
         pcmPtr[1] = -0.75;
@@ -981,8 +1047,9 @@ void main() {
 
     test('decodeFloat throws OpusException on native error', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       decoder.inputBufferIndex = 10;
       expect(() => decoder.decodeFloat(), throwsA(isA<OpusException>()));
@@ -991,32 +1058,36 @@ void main() {
 
     test('decode with fec=true passes fec flag to native', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
-      decoder.decode(fec: true);
+      decoder.decode(fec: true, loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 10, any, any, 1)).called(1);
+      // FEC recovers exactly the lost duration: 20ms at 48kHz.
+      verify(mockDecoder.opus_decode(any, any, 10, any, 960, 1)).called(1);
       decoder.destroy();
     });
 
     test('decode with inputBufferIndex=0 uses explicit loss parameter', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 0;
       decoder.decode(loss: 20);
 
-      verify(mockDecoder.opus_decode(any, any, 0, any, 20, 0)).called(1);
+      verify(mockDecoder.opus_decode(any, any, 0, any, 960, 0)).called(1);
       decoder.destroy();
     });
 
     test('decodeFloat with autoSoftClip calls pcmSoftClipOutputBuffer', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
       when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.inputBufferIndex = 10;
@@ -1028,8 +1099,9 @@ void main() {
 
     test('decodeFloat without autoSoftClip does not call soft clip', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat();
@@ -1040,20 +1112,22 @@ void main() {
 
     test('decodeFloat updates lastPacketDurationMs', () {
       final decoder = createBufferedDecoder(sampleRate: 48000, channels: 2);
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat();
 
-      expect(decoder.lastPacketDurationMs, 10);
+      expect(decoder.lastPacketDurationMs, 20);
       decoder.destroy();
     });
 
     test('decodeFloat with inputBufferIndex=0 signals packet loss', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
       decoder.decodeFloat();
@@ -1062,9 +1136,11 @@ void main() {
       decoder.decodeFloat();
 
       expect(
-          verify(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-              .callCount,
-          2);
+        verify(
+          mockDecoder.opus_decode_float(any, any, any, any, any, any),
+        ).callCount,
+        2,
+      );
       decoder.destroy();
     });
 
@@ -1075,36 +1151,44 @@ void main() {
       decoder.destroy();
     });
 
-    test('decodeFloat with inputBufferIndex=0 uses explicit loss parameter',
-        () {
-      final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+    test(
+      'decodeFloat with inputBufferIndex=0 uses explicit loss parameter',
+      () {
+        final decoder = createBufferedDecoder();
+        when(
+          mockDecoder.opus_decode_float(any, any, any, any, any, any),
+        ).thenReturn(960);
 
-      decoder.inputBufferIndex = 0;
-      decoder.decodeFloat(loss: 20);
+        decoder.inputBufferIndex = 0;
+        decoder.decodeFloat(loss: 20);
 
-      verify(mockDecoder.opus_decode_float(any, any, 0, any, 20, 0)).called(1);
-      decoder.destroy();
-    });
+        verify(
+          mockDecoder.opus_decode_float(any, any, 0, any, 960, 0),
+        ).called(1);
+        decoder.destroy();
+      },
+    );
 
     test('decodeFloat with fec=true passes fec flag to native', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
 
       decoder.inputBufferIndex = 10;
-      decoder.decodeFloat(fec: true);
+      decoder.decodeFloat(fec: true, loss: 20);
 
-      verify(mockDecoder.opus_decode_float(any, any, 10, any, any, 1))
-          .called(1);
+      verify(
+        mockDecoder.opus_decode_float(any, any, 10, any, 960, 1),
+      ).called(1);
       decoder.destroy();
     });
 
     test('pcmSoftClipOutputBuffer applies soft clipping to output buffer', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenReturn(960);
       when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
 
       decoder.inputBufferIndex = 10;
@@ -1124,8 +1208,9 @@ void main() {
 
     test('outputBuffer reflects decoded bytes', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockDecoder.opus_decode(any, any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Int16>;
         pcmPtr[0] = 42;
         pcmPtr[1] = 43;
@@ -1141,8 +1226,9 @@ void main() {
 
     test('outputBufferAsFloat32List after decodeFloat', () {
       final decoder = createBufferedDecoder();
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenAnswer((inv) {
         final pcmPtr = inv.positionalArguments[3] as Pointer<Float>;
         pcmPtr[0] = 0.5;
         pcmPtr[1] = -0.5;
@@ -1191,8 +1277,10 @@ void main() {
     test('pcmSoftClipOutputBuffer after destroy throws OpusDestroyedError', () {
       final decoder = createBufferedDecoder();
       decoder.destroy();
-      expect(() => decoder.pcmSoftClipOutputBuffer(),
-          throwsA(isA<OpusDestroyedError>()));
+      expect(
+        () => decoder.pcmSoftClipOutputBuffer(),
+        throwsA(isA<OpusDestroyedError>()),
+      );
     });
 
     test('respects custom buffer sizes', () {
@@ -1304,7 +1392,7 @@ void main() {
 
     test('frees pcm buffer when scratch allocation throws', () {
       final failAlloc = _FailingAllocator(2);
-      opus = ApiObject.test(
+      opus = ApiObject.fromFunctions(
         libinfo: mockLibInfo,
         encoder: mockEncoder,
         decoder: mockDecoder,
@@ -1328,19 +1416,23 @@ void main() {
     final packet = Uint8List.fromList([0x78, 0x01, 0x02]);
 
     test('returns value from native', () {
-      when(mockDecoder.opus_packet_get_nb_samples(any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_packet_get_nb_samples(any, any, any),
+      ).thenReturn(960);
 
-      final result =
-          OpusPacketUtils.getSampleCount(packet: packet, sampleRate: 48000);
+      final result = OpusPacketUtils.getSampleCount(
+        packet: packet,
+        sampleRate: 48000,
+      );
 
       expect(result, 960);
       verify(mockDecoder.opus_packet_get_nb_samples(any, 3, 48000)).called(1);
     });
 
     test('forwards sampleRate to native', () {
-      when(mockDecoder.opus_packet_get_nb_samples(any, any, any))
-          .thenReturn(160);
+      when(
+        mockDecoder.opus_packet_get_nb_samples(any, any, any),
+      ).thenReturn(160);
 
       OpusPacketUtils.getSampleCount(packet: packet, sampleRate: 16000);
 
@@ -1348,8 +1440,9 @@ void main() {
     });
 
     test('throws OpusException on native error', () {
-      when(mockDecoder.opus_packet_get_nb_samples(any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_packet_get_nb_samples(any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => OpusPacketUtils.getSampleCount(packet: packet, sampleRate: 48000),
@@ -1358,13 +1451,15 @@ void main() {
     });
 
     test('copies packet bytes into native memory', () {
-      when(mockDecoder.opus_packet_get_nb_samples(any, any, any))
-          .thenReturn(960);
+      when(
+        mockDecoder.opus_packet_get_nb_samples(any, any, any),
+      ).thenReturn(960);
 
       OpusPacketUtils.getSampleCount(packet: packet, sampleRate: 48000);
 
-      verify(mockDecoder.opus_packet_get_nb_samples(any, packet.length, any))
-          .called(1);
+      verify(
+        mockDecoder.opus_packet_get_nb_samples(any, packet.length, any),
+      ).called(1);
     });
   });
 
@@ -1390,8 +1485,9 @@ void main() {
     });
 
     test('throws OpusException on native error', () {
-      when(mockDecoder.opus_packet_get_nb_frames(any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_packet_get_nb_frames(any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => OpusPacketUtils.getFrameCount(packet: packet),
@@ -1404,34 +1500,43 @@ void main() {
     final packet = Uint8List.fromList([0x78, 0x01]);
 
     test('returns value from native', () {
-      when(mockDecoder.opus_packet_get_samples_per_frame(any, any))
-          .thenReturn(480);
+      when(
+        mockDecoder.opus_packet_get_samples_per_frame(any, any),
+      ).thenReturn(480);
 
-      final result =
-          OpusPacketUtils.getSamplesPerFrame(packet: packet, sampleRate: 48000);
+      final result = OpusPacketUtils.getSamplesPerFrame(
+        packet: packet,
+        sampleRate: 48000,
+      );
 
       expect(result, 480);
-      verify(mockDecoder.opus_packet_get_samples_per_frame(any, 48000))
-          .called(1);
+      verify(
+        mockDecoder.opus_packet_get_samples_per_frame(any, 48000),
+      ).called(1);
     });
 
     test('forwards sampleRate to native', () {
-      when(mockDecoder.opus_packet_get_samples_per_frame(any, any))
-          .thenReturn(80);
+      when(
+        mockDecoder.opus_packet_get_samples_per_frame(any, any),
+      ).thenReturn(80);
 
       OpusPacketUtils.getSamplesPerFrame(packet: packet, sampleRate: 8000);
 
-      verify(mockDecoder.opus_packet_get_samples_per_frame(any, 8000))
-          .called(1);
+      verify(
+        mockDecoder.opus_packet_get_samples_per_frame(any, 8000),
+      ).called(1);
     });
 
     test('throws OpusException on native error', () {
-      when(mockDecoder.opus_packet_get_samples_per_frame(any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_packet_get_samples_per_frame(any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => OpusPacketUtils.getSamplesPerFrame(
-            packet: packet, sampleRate: 48000),
+          packet: packet,
+          sampleRate: 48000,
+        ),
         throwsA(isA<OpusException>()),
       );
     });
@@ -1458,8 +1563,9 @@ void main() {
     });
 
     test('throws OpusException on native error', () {
-      when(mockDecoder.opus_packet_get_nb_channels(any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_packet_get_nb_channels(any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => OpusPacketUtils.getChannelCount(packet: packet),
@@ -1472,8 +1578,9 @@ void main() {
     final packet = Uint8List.fromList([0x78, 0x01]);
 
     test('returns bandwidth constant from native', () {
-      when(mockDecoder.opus_packet_get_bandwidth(any))
-          .thenReturn(OPUS_BANDWIDTH_FULLBAND);
+      when(
+        mockDecoder.opus_packet_get_bandwidth(any),
+      ).thenReturn(OPUS_BANDWIDTH_FULLBAND);
 
       final result = OpusPacketUtils.getBandwidth(packet: packet);
 
@@ -1482,8 +1589,9 @@ void main() {
     });
 
     test('returns OPUS_BANDWIDTH_NARROWBAND correctly', () {
-      when(mockDecoder.opus_packet_get_bandwidth(any))
-          .thenReturn(OPUS_BANDWIDTH_NARROWBAND);
+      when(
+        mockDecoder.opus_packet_get_bandwidth(any),
+      ).thenReturn(OPUS_BANDWIDTH_NARROWBAND);
 
       expect(
         OpusPacketUtils.getBandwidth(packet: packet),
@@ -1492,8 +1600,9 @@ void main() {
     });
 
     test('throws OpusException on native error', () {
-      when(mockDecoder.opus_packet_get_bandwidth(any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_packet_get_bandwidth(any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       expect(
         () => OpusPacketUtils.getBandwidth(packet: packet),

@@ -1,24 +1,21 @@
 # opus_codec
 
-A Flutter plugin that provides the [Opus audio codec](https://opus-codec.org/) as a `DynamicLibrary` for use with [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) on Flutter platforms.
+A Flutter package that sets up the [Opus audio codec](https://opus-codec.org/) for [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) on every Flutter platform.
 
 ## Overview
 
-This monorepo contains a federated Flutter plugin that loads libopus on each supported platform. The plugin follows the [federated plugin architecture](https://docs.flutter.dev/packages-and-plugins/developing-packages#federated-plugins), splitting platform implementations into separate packages.
+`opus_codec_dart` vendors the libopus sources and builds them with a [Dart build hook](https://dart.dev/tools/hooks) as a native code asset, so native platforms need no per-platform plugin or prebuilt binary. The web uses a WASM build of the same sources, shipped by `opus_codec_web`.
 
 ### Packages
 
 | Package | Directory | Version |
 |---------|-----------|---------|
-| [opus_codec](https://pub.dev/packages/opus_codec) | [opus_flutter](./opus_flutter) | 3.0.5 |
-| [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) | [opus_dart](./opus_dart) | 3.0.5 |
-| [opus_codec_platform_interface](https://pub.dev/packages/opus_codec_platform_interface) | [opus_flutter_platform_interface](./opus_flutter_platform_interface) | 3.0.5 |
-| [opus_codec_android](https://pub.dev/packages/opus_codec_android) | [opus_flutter_android](./opus_flutter_android) | 3.0.5 |
-| [opus_codec_ios](https://pub.dev/packages/opus_codec_ios) | [opus_flutter_ios](./opus_flutter_ios) | 3.0.5 |
-| [opus_codec_linux](https://pub.dev/packages/opus_codec_linux) | [opus_flutter_linux](./opus_flutter_linux) | 3.0.5 |
-| [opus_codec_macos](https://pub.dev/packages/opus_codec_macos) | [opus_flutter_macos](./opus_flutter_macos) | 3.0.5 |
-| [opus_codec_web](https://pub.dev/packages/opus_codec_web) | [opus_flutter_web](./opus_flutter_web) | 3.0.5 |
-| [opus_codec_windows](https://pub.dev/packages/opus_codec_windows) | [opus_flutter_windows](./opus_flutter_windows) | 3.0.5 |
+| [opus_codec](https://pub.dev/packages/opus_codec) | [opus_flutter](./opus_flutter) | 4.0.0 |
+| [opus_codec_dart](https://pub.dev/packages/opus_codec_dart) | [opus_dart](./opus_dart) | 4.0.0 |
+| [opus_codec_platform_interface](https://pub.dev/packages/opus_codec_platform_interface) | [opus_flutter_platform_interface](./opus_flutter_platform_interface) | 4.0.0 |
+| [opus_codec_web](https://pub.dev/packages/opus_codec_web) | [opus_flutter_web](./opus_flutter_web) | 4.0.0 |
+
+The 3.x platform packages (`opus_codec_android`, `_ios`, `_linux`, `_macos`, `_windows`) are retired; their published versions stay on pub.dev.
 
 ## Platform support
 
@@ -32,11 +29,11 @@ Add `opus_codec` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  opus_codec: ^3.0.5
-  opus_codec_dart: ^3.0.5
+  opus_codec: ^4.0.0
+  opus_codec_dart: ^4.0.0
 ```
 
-Platform packages are automatically included through the federated plugin system -- you don't need to add them individually.
+Native platforms also need a C compiler at build time (Xcode, the Android NDK, gcc/clang or MSVC).
 
 ## Usage
 
@@ -46,12 +43,12 @@ import 'package:opus_codec_dart/opus_codec_dart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initOpus(await opus_codec.load());
+  await opus_codec.initializeOpus();
   // opus_codec_dart functions are now available
 }
 ```
 
-The `load()` function returns a `DynamicLibrary` on native platforms (via `dart:ffi`) or a `wasm_ffi` `DynamicLibrary` on the web. See the [example app](./opus_flutter/example) for a complete encoding/decoding demo.
+`initializeOpus()` sets up libopus for the platform. On native platforms it uses the libopus code asset built by `opus_codec_dart`, which needs a C compiler at build time (Xcode, the Android NDK, gcc/clang or MSVC). On the web it loads the WASM backend. See the [example app](./opus_flutter/example) for a complete encoding/decoding demo.
 
 ## Why are opus_codec_dart and opus_codec separate packages?
 
@@ -59,18 +56,37 @@ Dart is more than just Flutter. With this split, Flutter developers get a conven
 
 ## Opus version
 
-Currently, opus **1.5.2** is bundled (on Linux, the system-installed version is used).
+libopus **1.6.1** is vendored in [opus_dart/native](./opus_dart/native) and pinned in [`libopus.json`](./opus_dart/native/libopus.json), with Xiph's published SHA-256.
 
 ## How opus is included per platform
 
 | Platform | Method |
 |----------|--------|
-| Android  | Built from source via CMake ([details](./opus_flutter_android/README.md)) |
-| iOS      | Prebuilt XCFramework, supports CocoaPods and Swift Package Manager ([details](./opus_flutter_ios/README.md)) |
-| Linux    | System library `libopus.so.0` ([details](./opus_flutter_linux/README.md)) |
-| macOS    | Prebuilt XCFramework, supports CocoaPods and Swift Package Manager ([details](./opus_flutter_macos/README.md)) |
-| Web      | Compiled to WebAssembly with Emscripten ([details](./opus_flutter_web/README.md)) |
-| Windows  | Prebuilt DLLs for x86/x64 ([details](./opus_flutter_windows/README.md)) |
+| Android, iOS, Linux, macOS, Windows | Compiled from the vendored sources by `opus_codec_dart`'s build hook and bundled as a code asset |
+| Web      | Compiled to WebAssembly from the same sources with Emscripten (`./build_wasm.sh`) |
+
+### Why libopus is vendored
+
+`opus_codec_dart` keeps a copy of the libopus sources in [`opus_dart/native/vendor/opus`](./opus_dart/native/vendor/opus), taken from Xiph's official release archive. Keeping the copy in the repository means:
+
+- **It works however you depend on the package.** The build hook compiles the copy that ships inside the package, whether you install it from pub.dev, a path or a git URL. Nothing is downloaded during the build.
+- **It is verified.** The archive is checked against the SHA-256 that Xiph publishes, and every file is pinned in `native/checksums.sha256`. CI runs `scripts/vendor_libopus.py --check` and fails if anything is changed, added or missing.
+- **Only what is compiled ships.** The copy holds just the sources and headers the build uses (about 270 files), not upstream's tests, docs and tooling.
+- **Builds are reproducible.** Native and web compile the same files with the same settings, and a libopus update arrives as one reviewable PR.
+
+#### Why not a git submodule?
+
+Pub does not fetch git submodules. If an app depends on `opus_codec_dart` through a `git:` dependency, pub clones the repository without them, so `native/vendor/opus` is empty and the build hook has nothing to compile. Submodules would also mean every clone and CI checkout needs `--recurse-submodules`. A submodule also points at upstream's git tag rather than the release archive, so it lacks the files the release archive adds and can't be checked against Xiph's published SHA-256.
+
+### Updating libopus
+
+The [Update libopus](./.github/workflows/update-libopus.yml) workflow checks Xiph's releases weekly and opens a PR with the new pin, re-vendored sources, regenerated bindings and rebuilt WASM. To do it locally:
+
+```bash
+python3 scripts/vendor_libopus.py --update 1.6.1   # pin, verify, vendor
+cd opus_dart && dart run tool/ffigen.dart           # regenerate bindings
+./build_wasm.sh                                     # rebuild the web backend (Docker)
+```
 
 ## Scripts
 
@@ -82,7 +98,7 @@ The `scripts/` directory contains helper scripts for local development.
 | [`scripts/analyze.sh`](./scripts/analyze.sh) | Runs static analysis (`flutter analyze` / `dart analyze`) across every package and prints a pass/fail summary. Exits with a non-zero code if any package has analysis errors. |
 | [`scripts/format.sh`](./scripts/format.sh) | Checks that all Dart code is formatted correctly (`dart format --set-exit-if-changed`). Exits with a non-zero code if any file needs formatting. |
 | [`scripts/check_dependencies.sh`](./scripts/check_dependencies.sh) | Reports outdated dependencies and checks pub.dev for discontinued or abandoned packages. Requires `curl` and `python3` for the discontinued-package checks. |
-| [`scripts/publish.sh`](./scripts/publish.sh) | Publishes all packages to pub.dev in dependency order (three tiers). Runs in dry-run mode by default; pass `--publish` to push to pub.dev. |
+| [`scripts/publish.sh`](./scripts/publish.sh) | Publishes all packages to pub.dev in dependency order (core, web, then the Flutter package). Runs in dry-run mode by default; pass `--publish` to push to pub.dev. |
 
 ### Running unit tests
 
@@ -110,8 +126,9 @@ The script automatically runs `dart run build_runner build --delete-conflicting-
 
 ## Requirements
 
-- Dart SDK `>=3.6.0`
-- Flutter `>=3.27.0`
+- Dart SDK `>=3.10.0`
+- Flutter `>=3.38.1`
+- A C compiler for native builds
 
 ## License
 

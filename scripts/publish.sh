@@ -39,14 +39,7 @@ done
 # ---------------------------------------------------------------------------
 TIER_1_PACKAGES=("opus_dart:dart" "opus_flutter_platform_interface:flutter")
 
-TIER_2_PACKAGES=(
-  "opus_flutter_android:flutter"
-  "opus_flutter_ios:flutter"
-  "opus_flutter_linux:flutter"
-  "opus_flutter_macos:flutter"
-  "opus_flutter_windows:flutter"
-  "opus_flutter_web:flutter"
-)
+TIER_2_PACKAGES=("opus_flutter_web:flutter")
 
 TIER_3_PACKAGES=("opus_flutter:flutter")
 
@@ -129,7 +122,7 @@ fi
 publish_tier "Tier 1 — core packages" "${TIER_1_PACKAGES[@]}"
 wait_for_indexing
 
-publish_tier "Tier 2 — platform packages" "${TIER_2_PACKAGES[@]}"
+publish_tier "Tier 2 — web package" "${TIER_2_PACKAGES[@]}"
 wait_for_indexing
 
 publish_tier "Tier 3 — app-facing package" "${TIER_3_PACKAGES[@]}"
