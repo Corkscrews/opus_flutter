@@ -114,7 +114,7 @@ The script automatically runs `dart run build_runner build --delete-conflicting-
 ## Requirements
 
 - Dart SDK `>=3.10.0`
-- Flutter `>=3.38.0`
+- Flutter `>=3.38.1`
 - A C compiler for native builds
 
 ## License

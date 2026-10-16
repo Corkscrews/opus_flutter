@@ -10,7 +10,7 @@
 * **`OpusFlutterPlatform.load()` is web-only.** Native platforms have no implementation.
 * **`opus_packet_parse` declares its real C types** (`frames[48]`, `size[48]`) in the wrapper bindings.
 * **`encoderCtl` accepts integer-valued setter requests only.** Getter requests return `OPUS_BAD_ARG` instead of reaching libopus.
-* **Raised SDK floors.** Dart 3.10 for every package; Flutter 3.38 for the Flutter packages.
+* **Raised SDK floors.** Dart 3.10 for every package; Flutter 3.38.1 for the Flutter packages (3.38.0 ships a pre-release Dart 3.10).
 * **Narrowed native targets.** Built: macOS arm64 and x64, iOS arm64 (device and simulator) and x64 (simulator), Android arm, arm64 and x64, Linux x64 and arm64, Windows x64. Windows x86 is no longer built.
 
 ### Changes
