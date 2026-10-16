@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'opus_codec_ios'
-  s.version          = '3.0.5'
+  s.version          = '3.1.0'
   s.summary          = 'libopus wrappers for flutter in iOS.'
   s.description      = <<-DESC
   libopus wrappers for flutter in iOS.
@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.source_files = 'opus_codec_ios/Sources/opus_codec_ios/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
-  s.vendored_frameworks = 'opus.xcframework'
+  s.vendored_frameworks = 'opus_codec_ios/opus.xcframework'
   
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }

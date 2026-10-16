@@ -60,6 +60,7 @@ cleanup() {
     if [ -f "${f}.bak" ]; then
       mv "${f}.bak" "$f"
     fi
+    rm -f "$(dirname "$f")/pubspec_overrides.yaml"
   done
 }
 trap cleanup EXIT
@@ -70,12 +71,13 @@ trap cleanup EXIT
 
 prepare_package() {
   local dir="$1"
+  shift
   local pubspec="$ROOT_DIR/$dir/pubspec.yaml"
 
   cp "$pubspec" "${pubspec}.bak"
   modified_pubspecs+=("$pubspec")
 
-  ( cd "$ROOT_DIR" && dart run scripts/prepare_publish.dart "$dir" )
+  ( cd "$ROOT_DIR" && dart run scripts/prepare_publish.dart "$dir" "$@" )
 }
 
 publish_package() {
@@ -84,11 +86,14 @@ publish_package() {
   local tool="${entry##*:}"
 
   log_info "Publishing ${BOLD}$dir${NC} ($tool pub publish)…"
-  prepare_package "$dir"
-
   if $DRY_RUN; then
-    ( cd "$ROOT_DIR/$dir" && $tool pub publish --dry-run )
+    # A dry run uploads nothing, so sibling versions bumped in this release
+    # are not on pub.dev yet. Resolve them from their paths instead; pub warns
+    # about the overrides, hence --ignore-warnings (errors still fail).
+    prepare_package "$dir" --overrides
+    ( cd "$ROOT_DIR/$dir" && $tool pub publish --dry-run --ignore-warnings )
   else
+    prepare_package "$dir"
     ( cd "$ROOT_DIR/$dir" && $tool pub publish --force )
   fi
 

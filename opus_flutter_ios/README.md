@@ -33,7 +33,7 @@ dependencies:
 
 ## How opus is included
 
-Opus is built from source using CMake and packaged as an XCFramework containing a universal binary (arm64 + x86_64 simulator). The build commands are in [`build_xcframework.sh`][2]. The resulting `opus.xcframework` is vendored in this package and linked at build time via CocoaPods.
+Opus is built from source using CMake and packaged as an XCFramework containing a universal binary (arm64 + x86_64 simulator). The build commands are in [`build_xcframework.sh`][2]. The resulting `ios/opus_codec_ios/opus.xcframework` is vendored inside the Swift package and linked at build time via Swift Package Manager or CocoaPods.
 
 [1]: ../opus_flutter
 [2]: ./ios/build_xcframework.sh

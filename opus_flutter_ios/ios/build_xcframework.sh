@@ -208,12 +208,12 @@ echo "============================================="
 echo " Creating XCFramework"
 echo "============================================="
 
-rm -rf "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+rm -rf "$SCRIPT_DIR/opus_codec_ios/$FRAMEWORK_NAME.xcframework"
 
 xcodebuild -create-xcframework \
   -framework "$device_fw" \
   -framework "$simulator_fw" \
-  -output "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+  -output "$SCRIPT_DIR/opus_codec_ios/$FRAMEWORK_NAME.xcframework"
 
 echo ""
 
@@ -227,10 +227,10 @@ echo "============================================="
 echo " Done!"
 echo "============================================="
 echo ""
-echo "Output: $SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+echo "Output: $SCRIPT_DIR/opus_codec_ios/$FRAMEWORK_NAME.xcframework"
 echo ""
 echo "Architectures:"
-for fw in "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework/"*"/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME"; do
+for fw in "$SCRIPT_DIR/opus_codec_ios/$FRAMEWORK_NAME.xcframework/"*"/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME"; do
   if [ -f "$fw" ]; then
     local_dir="$(basename "$(dirname "$(dirname "$fw")")")"
     echo "  $local_dir : $(lipo -archs "$fw")"

@@ -94,14 +94,17 @@ create_framework() {
   # Remaining positional args: "arch:path_to_static_lib" …
   local arch_lib_pairs=("$@")
 
+  # macOS frameworks are deep bundles: content lives in Versions/A and the
+  # top level only holds symlinks. Xcode rejects the shallow (iOS) layout.
   local fw_dir="$BUILD_DIR/frameworks/$label/$FRAMEWORK_NAME.framework"
-  mkdir -p "$fw_dir/Headers" "$fw_dir/Modules" "$fw_dir/Versions/A"
+  local ver_dir="$fw_dir/Versions/A"
+  mkdir -p "$ver_dir/Headers" "$ver_dir/Modules" "$ver_dir/Resources"
 
   # --- Public headers (identical across architectures) ---
-  cp "$BUILD_DIR/macosx-arm64/install/include/opus/"*.h "$fw_dir/Headers/"
+  cp "$BUILD_DIR/macosx-arm64/install/include/opus/"*.h "$ver_dir/Headers/"
 
   # --- module.modulemap ---
-  cat > "$fw_dir/Modules/module.modulemap" <<'MODULEMAP'
+  cat > "$ver_dir/Modules/module.modulemap" <<'MODULEMAP'
 framework module opus {
   umbrella header "opus.h"
   export *
@@ -111,7 +114,7 @@ framework module opus {
 MODULEMAP
 
   # --- Info.plist ---
-  cat > "$fw_dir/Info.plist" <<PLIST
+  cat > "$ver_dir/Resources/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -152,7 +155,7 @@ PLIST
     xcrun clang -arch "$arch" \
       -isysroot "$sdk_path" \
       -dynamiclib \
-      -install_name "@rpath/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME" \
+      -install_name "@rpath/$FRAMEWORK_NAME.framework/Versions/A/$FRAMEWORK_NAME" \
       -Wl,-all_load "$static_lib" \
       -mmacosx-version-min="$MACOS_DEPLOYMENT_TARGET" \
       -lm \
@@ -164,11 +167,16 @@ PLIST
   done
 
   if [ ${#tmp_dylibs[@]} -eq 1 ]; then
-    cp "${tmp_dylibs[0]}" "$fw_dir/$FRAMEWORK_NAME"
+    cp "${tmp_dylibs[0]}" "$ver_dir/$FRAMEWORK_NAME"
   else
-    lipo -create "${tmp_dylibs[@]}" -output "$fw_dir/$FRAMEWORK_NAME"
+    lipo -create "${tmp_dylibs[@]}" -output "$ver_dir/$FRAMEWORK_NAME"
   fi
   rm -f "${tmp_dylibs[@]}"
+
+  ln -s A "$fw_dir/Versions/Current"
+  for item in "$FRAMEWORK_NAME" Headers Modules Resources; do
+    ln -s "Versions/Current/$item" "$fw_dir/$item"
+  done
 
   echo "$fw_dir"
 }
@@ -192,11 +200,11 @@ echo "============================================="
 echo " Creating XCFramework"
 echo "============================================="
 
-rm -rf "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+rm -rf "$SCRIPT_DIR/opus_codec_macos/$FRAMEWORK_NAME.xcframework"
 
 xcodebuild -create-xcframework \
   -framework "$macos_fw" \
-  -output "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+  -output "$SCRIPT_DIR/opus_codec_macos/$FRAMEWORK_NAME.xcframework"
 
 echo ""
 
@@ -210,10 +218,10 @@ echo "============================================="
 echo " Done!"
 echo "============================================="
 echo ""
-echo "Output: $SCRIPT_DIR/$FRAMEWORK_NAME.xcframework"
+echo "Output: $SCRIPT_DIR/opus_codec_macos/$FRAMEWORK_NAME.xcframework"
 echo ""
 echo "Architectures:"
-for fw in "$SCRIPT_DIR/$FRAMEWORK_NAME.xcframework/"*"/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME"; do
+for fw in "$SCRIPT_DIR/opus_codec_macos/$FRAMEWORK_NAME.xcframework/"*"/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME"; do
   if [ -f "$fw" ]; then
     local_dir="$(basename "$(dirname "$(dirname "$fw")")")"
     echo "  $local_dir : $(lipo -archs "$fw")"

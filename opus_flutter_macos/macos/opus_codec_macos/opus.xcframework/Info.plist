@@ -6,7 +6,7 @@
 	<array>
 		<dict>
 			<key>BinaryPath</key>
-			<string>opus.framework/opus</string>
+			<string>opus.framework/Versions/A/opus</string>
 			<key>LibraryIdentifier</key>
 			<string>macos-arm64_x86_64</string>
 			<key>LibraryPath</key>

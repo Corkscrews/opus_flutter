@@ -1,22 +1,41 @@
 PODS:
+  - audioplayers_darwin (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - Flutter (1.0.0)
-  - opus_flutter_ios (3.0.1):
+  - opus_codec_ios (3.0.6):
+    - Flutter
+  - record_ios (1.2.0):
+    - Flutter
+  - share_plus (0.0.1):
     - Flutter
 
 DEPENDENCIES:
+  - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
   - Flutter (from `Flutter`)
-  - opus_flutter_ios (from `.symlinks/plugins/opus_flutter_ios/ios`)
+  - opus_codec_ios (from `.symlinks/plugins/opus_codec_ios/ios`)
+  - record_ios (from `.symlinks/plugins/record_ios/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
 
 EXTERNAL SOURCES:
+  audioplayers_darwin:
+    :path: ".symlinks/plugins/audioplayers_darwin/darwin"
   Flutter:
     :path: Flutter
-  opus_flutter_ios:
-    :path: ".symlinks/plugins/opus_flutter_ios/ios"
+  opus_codec_ios:
+    :path: ".symlinks/plugins/opus_codec_ios/ios"
+  record_ios:
+    :path: ".symlinks/plugins/record_ios/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
 
 SPEC CHECKSUMS:
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  opus_flutter_ios: 546d485adaebfeee25240a892897b78e440ef846
+  audioplayers_darwin: 4f9ca89d92d3d21cec7ec580e78ca888e5fb68bd
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  opus_codec_ios: 084dc019e252d958f6ff9932799085ef0b10e19a
+  record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
+  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
 
-PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+PODFILE CHECKSUM: 3ba3a73b1b12adcf321a227a745625fe0888cc82
 
 COCOAPODS: 1.16.2
