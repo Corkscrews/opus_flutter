@@ -12,9 +12,9 @@ dependencies:
     sdk: flutter
   opus_codec_platform_interface: ^3.0.0
   opus_codec_android: ^3.0.1
-  opus_codec_ios: ^3.0.6
+  opus_codec_ios: ^3.0.1
   opus_codec_linux: ^3.0.0
-  opus_codec_macos: ^3.0.6
+  opus_codec_macos: ^3.0.0
   opus_codec_windows: ^3.0.0
   opus_codec_web: ^3.0.3
 
