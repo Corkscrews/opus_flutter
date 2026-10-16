@@ -1,3 +1,9 @@
+## 3.0.6
+
+### Bug Fixes
+
+* Move `opus.xcframework` inside the Swift package so Flutter 3.47+ can resolve it (iOS and macOS).
+
 ## 3.0.5
 
 * Bump all package versions

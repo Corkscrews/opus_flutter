@@ -21,7 +21,7 @@ let package = Package(
         ),
         .binaryTarget(
             name: "opus",
-            path: "../opus.xcframework"
+            path: "opus.xcframework"
         )
     ]
 )
