@@ -394,13 +394,12 @@ void main() {
       verify(mockEncoder.opus_encoder_destroy(any)).called(1);
     });
 
-    test('cancel while source is idle completes and destroys (#21)',
-        () async {
+    test('cancel while source is idle completes and destroys (#21)', () async {
       stubEncoderCreate();
       when(mockEncoder.opus_encoder_destroy(any)).thenReturn(null);
       var upstreamCancelled = false;
-      final source = StreamController<Int16List>(
-          onCancel: () => upstreamCancelled = true);
+      final source =
+          StreamController<Int16List>(onCancel: () => upstreamCancelled = true);
 
       final sub = StreamOpusEncoder.s16le(
         frameTime: _frameTime,
@@ -705,8 +704,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusDecoder.s16le bind()', () {
-    test('cancel while source is idle completes and destroys (#21)',
-        () async {
+    test('cancel while source is idle completes and destroys (#21)', () async {
       stubDecoderCreate();
       when(mockDecoder.opus_decoder_destroy(any)).thenReturn(null);
       var upstreamCancelled = false;
