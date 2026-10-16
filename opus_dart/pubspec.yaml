@@ -9,10 +9,10 @@ environment:
   sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
-  code_assets: ^2.1.0
+  code_assets: '>=1.2.0 <3.0.0'
   ffi: ^2.1.0
-  hooks: ^2.2.0
-  native_toolchain_c: ^0.19.5
+  hooks: ^2.0.0
+  native_toolchain_c: '>=0.19.2 <0.20.0'
   wasm_ffi: ^2.1.0
 
 dev_dependencies:

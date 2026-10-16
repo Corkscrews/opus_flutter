@@ -22,6 +22,10 @@
 * The libopus licence is included in `opus_codec_dart`'s `LICENSE`.
 * Calling `initOpus()` again is a no-op, so live encoders and decoders keep their backend.
 
+### Bug Fixes
+
+* Zero the soft-clip state before use. `pcmSoftClip` and decoders with `autoSoftClip` could output values far outside [-1, 1] when the allocator returned uninitialised memory.
+
 ## 3.1.0
 
 ### Bug Fixes

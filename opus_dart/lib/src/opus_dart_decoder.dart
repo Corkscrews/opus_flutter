@@ -30,6 +30,12 @@ Pointer<opus_decoder.OpusDecoder> _createOpusDecoder({
   }
 }
 
+/// Allocates the per-channel `opus_pcm_soft_clip` state. libopus requires it
+/// to start at zero, and the allocator does not clear memory.
+Pointer<Float> _allocSoftClipState(int channels) =>
+    opus.allocator.call<Float>(channels)
+      ..asTypedList(channels).fillRange(0, channels, 0);
+
 /// Soft clips the [input] to a range from -1 to 1 and returns
 /// the result.
 ///
@@ -44,7 +50,7 @@ Float32List pcmSoftClip({required Float32List input, required int channels}) {
   Pointer<Float>? nativeBuffer;
   try {
     nativePcm.asTypedList(input.length).setAll(0, input);
-    nativeBuffer = opus.allocator.call<Float>(channels);
+    nativeBuffer = _allocSoftClipState(channels);
     opus.decoder.opus_pcm_soft_clip(
       nativePcm,
       input.length ~/ channels,
@@ -100,7 +106,7 @@ class SimpleOpusDecoder extends OpusDecoder {
   /// Creates an new [SimpleOpusDecoder] based on the [sampleRate] and [channels].
   /// See the matching fields for more information about these parameters.
   factory SimpleOpusDecoder({required int sampleRate, required int channels}) {
-    final softClipBuffer = opus.allocator.call<Float>(channels);
+    final softClipBuffer = _allocSoftClipState(channels);
     try {
       final decoder = _createOpusDecoder(
         sampleRate: sampleRate,
@@ -416,7 +422,7 @@ class BufferedOpusDecoder extends OpusDecoder {
     Pointer<Float>? softClipBuffer;
     try {
       output = opus.allocator.call<Uint8>(maxOutputBufferSizeBytes);
-      softClipBuffer = opus.allocator.call<Float>(channels);
+      softClipBuffer = _allocSoftClipState(channels);
       final decoder = _createOpusDecoder(
         sampleRate: sampleRate,
         channels: channels,
