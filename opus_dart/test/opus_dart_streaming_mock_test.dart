@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
@@ -393,6 +394,27 @@ void main() {
       verify(mockEncoder.opus_encoder_destroy(any)).called(1);
     });
 
+    test('cancel while source is idle completes and destroys (#21)',
+        () async {
+      stubEncoderCreate();
+      when(mockEncoder.opus_encoder_destroy(any)).thenReturn(null);
+      var upstreamCancelled = false;
+      final source = StreamController<Int16List>(
+          onCancel: () => upstreamCancelled = true);
+
+      final sub = StreamOpusEncoder.s16le(
+        frameTime: _frameTime,
+        sampleRate: _sampleRate,
+        channels: _channels,
+        application: Application.voip,
+      ).bind(source.stream).listen(null);
+      await pumpEventQueue();
+
+      await sub.cancel().timeout(const Duration(seconds: 1));
+      expect(upstreamCancelled, isTrue);
+      verify(mockEncoder.opus_encoder_destroy(any)).called(1);
+    });
+
     test('copyOutput=true returns a copy of the output buffer', () async {
       stubEncoderCreate();
       stubEncode([0x11, 0x22]);
@@ -683,6 +705,25 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusDecoder.s16le bind()', () {
+    test('cancel while source is idle completes and destroys (#21)',
+        () async {
+      stubDecoderCreate();
+      when(mockDecoder.opus_decoder_destroy(any)).thenReturn(null);
+      var upstreamCancelled = false;
+      final source = StreamController<Uint8List?>(
+          onCancel: () => upstreamCancelled = true);
+
+      final sub = StreamOpusDecoder.s16le(
+        sampleRate: _sampleRate,
+        channels: _channels,
+      ).bind(source.stream).listen(null);
+      await pumpEventQueue();
+
+      await sub.cancel().timeout(const Duration(seconds: 1));
+      expect(upstreamCancelled, isTrue);
+      verify(mockDecoder.opus_decoder_destroy(any)).called(1);
+    });
+
     test('one packet emits one Int16List', () async {
       stubDecoderCreate();
       stubDecode([100, 200, 300]);
