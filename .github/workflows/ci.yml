@@ -30,6 +30,12 @@ jobs:
       - name: Check formatting
         if: matrix.flutter.name == 'latest'
         run: ./scripts/format.sh
+      # mockito 5.4.5, the newest that supports Dart 3.6, can't build against
+      # analyzer >=7.4 (fixed in 5.4.6, which needs Dart 3.7).
+      - name: Pin analyzer for mockito
+        if: matrix.flutter.name == 'oldest'
+        run: |
+          printf 'dependency_overrides:\n  analyzer: <7.4.0\n' > opus_dart/pubspec_overrides.yaml
       - name: Run static analysis
         run: ./scripts/analyze.sh
       - name: Run unit tests

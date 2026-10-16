@@ -68,10 +68,14 @@ run_flutter_tests() {
     return 0
   fi
 
+  # The web plugin imports dart:ui_web / dart:js_interop, which the VM lacks.
+  local test_args=(--coverage)
+  [ "$package" = "opus_flutter_web" ] && test_args+=(--platform chrome)
+
   if (
     cd "$package_dir"
     flutter pub get
-    flutter test --coverage
+    flutter test "${test_args[@]}"
   ); then
     log_success "$package"
     copy_lcov "$package" "$package_dir/coverage/lcov.info"
