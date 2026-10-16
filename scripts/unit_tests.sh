@@ -69,8 +69,9 @@ run_flutter_tests() {
   fi
 
   # The web plugin imports dart:ui_web / dart:js_interop, which the VM lacks.
+  # `flutter test --coverage` exits 1 on chrome even when every test passes.
   local test_args=(--coverage)
-  [ "$package" = "opus_flutter_web" ] && test_args+=(--platform chrome)
+  [ "$package" = "opus_flutter_web" ] && test_args=(--platform chrome)
 
   if (
     cd "$package_dir"
