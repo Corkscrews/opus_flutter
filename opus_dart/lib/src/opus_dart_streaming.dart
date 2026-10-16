@@ -23,14 +23,17 @@ enum FrameTime {
   ms40,
 
   /// 60ms
-  ms60
+  ms60,
 }
 
 /// Used to encode a stream of pcm data to opus frames of constant time.
 /// Each StreamOpusEncoder MUST ONLY be used once!
 class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   static int _calculateMaxSampleSize(
-      int sampleRate, int channels, FrameTime frameTime) {
+    int sampleRate,
+    int channels,
+    FrameTime frameTime,
+  ) {
     int samplesPerMs = (channels * sampleRate) ~/ 1000;
     switch (frameTime) {
       case FrameTime.ms2_5:
@@ -75,55 +78,81 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   Application get application => _encoder.application;
 
   /// Creates a new StreamOpusEncoder that expects its input Lists to be [Float32List].
-  StreamOpusEncoder.float(
-      {required FrameTime frameTime,
-      required int sampleRate,
-      required int channels,
-      required Application application,
-      bool fillUpLastFrame = true,
-      bool copyOutput = true})
-      : this._(frameTime, true, Float32List, sampleRate, channels, application,
-            fillUpLastFrame, copyOutput);
+  StreamOpusEncoder.float({
+    required FrameTime frameTime,
+    required int sampleRate,
+    required int channels,
+    required Application application,
+    bool fillUpLastFrame = true,
+    bool copyOutput = true,
+  }) : this._(
+         frameTime,
+         true,
+         Float32List,
+         sampleRate,
+         channels,
+         application,
+         fillUpLastFrame,
+         copyOutput,
+       );
 
   /// Creates a new StreamOpusEncoder that expects its input Lists to be [Int16List].
-  StreamOpusEncoder.s16le(
-      {required FrameTime frameTime,
-      required int sampleRate,
-      required int channels,
-      required Application application,
-      bool fillUpLastFrame = true,
-      bool copyOutput = true})
-      : this._(frameTime, false, Int16List, sampleRate, channels, application,
-            fillUpLastFrame, copyOutput);
+  StreamOpusEncoder.s16le({
+    required FrameTime frameTime,
+    required int sampleRate,
+    required int channels,
+    required Application application,
+    bool fillUpLastFrame = true,
+    bool copyOutput = true,
+  }) : this._(
+         frameTime,
+         false,
+         Int16List,
+         sampleRate,
+         channels,
+         application,
+         fillUpLastFrame,
+         copyOutput,
+       );
 
   /// Creates a new StreamOpusEncoder that expects its input Lists to be bytes
   /// in form of [Uint8List].
-  StreamOpusEncoder.bytes(
-      {required FrameTime frameTime,
-      required bool floatInput,
-      required int sampleRate,
-      required int channels,
-      required Application application,
-      bool fillUpLastFrame = true,
-      bool copyOutput = true})
-      : this._(frameTime, floatInput, Uint8List, sampleRate, channels,
-            application, fillUpLastFrame, copyOutput);
+  StreamOpusEncoder.bytes({
+    required FrameTime frameTime,
+    required bool floatInput,
+    required int sampleRate,
+    required int channels,
+    required Application application,
+    bool fillUpLastFrame = true,
+    bool copyOutput = true,
+  }) : this._(
+         frameTime,
+         floatInput,
+         Uint8List,
+         sampleRate,
+         channels,
+         application,
+         fillUpLastFrame,
+         copyOutput,
+       );
 
   StreamOpusEncoder._(
-      this.frameTime,
-      this.floats,
-      this._expect,
-      int sampleRate,
-      int channels,
-      Application application,
-      this.fillUpLastFrame,
-      this.copyOutput)
-      : _encoder = BufferedOpusEncoder(
-            sampleRate: sampleRate,
-            channels: channels,
-            application: application,
-            maxInputBufferSizeBytes: (floats ? 4 : 2) *
-                _calculateMaxSampleSize(sampleRate, channels, frameTime));
+    this.frameTime,
+    this.floats,
+    this._expect,
+    int sampleRate,
+    int channels,
+    Application application,
+    this.fillUpLastFrame,
+    this.copyOutput,
+  ) : _encoder = BufferedOpusEncoder(
+        sampleRate: sampleRate,
+        channels: channels,
+        application: application,
+        maxInputBufferSizeBytes:
+            (floats ? 4 : 2) *
+            _calculateMaxSampleSize(sampleRate, channels, frameTime),
+      );
 
   /// Transforms an incoming PCM stream into encoded opus packets.
   ///
@@ -141,11 +170,11 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   /// listener cancels its subscription.
   @override
   Stream<Uint8List> bind(Stream<List<T>> stream) => _bindNative(
-        _mapStream(stream),
-        onData: (pcm, sink) => _processChunk(pcm).forEach(sink.add),
-        onDone: (sink) => _flushRemaining().forEach(sink.add),
-        cleanup: destroy,
-      );
+    _mapStream(stream),
+    onData: (pcm, sink) => _processChunk(pcm).forEach(sink.add),
+    onDone: (sink) => _flushRemaining().forEach(sink.add),
+    cleanup: destroy,
+  );
 
   /// Converts the typed input stream into a uniform [Stream<Uint8List>].
   ///
@@ -154,12 +183,15 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
   /// unchanged.
   Stream<Uint8List> _mapStream(Stream<List<T>> stream) {
     if (_expect == Int16List) {
-      return stream.cast<Int16List>().map((s16le) =>
-          s16le.buffer.asUint8List(s16le.offsetInBytes, s16le.lengthInBytes));
+      return stream.cast<Int16List>().map(
+        (s16le) =>
+            s16le.buffer.asUint8List(s16le.offsetInBytes, s16le.lengthInBytes),
+      );
     }
     if (_expect == Float32List) {
-      return stream.cast<Float32List>().map((f32) =>
-          f32.buffer.asUint8List(f32.offsetInBytes, f32.lengthInBytes));
+      return stream.cast<Float32List>().map(
+        (f32) => f32.buffer.asUint8List(f32.offsetInBytes, f32.lengthInBytes),
+      );
     }
     return stream.cast<Uint8List>();
   }
@@ -177,8 +209,12 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
       final space =
           _encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex;
       final count = space < remaining ? space : remaining;
-      _encoder.inputBuffer.setRange(_encoder.inputBufferIndex,
-          _encoder.inputBufferIndex + count, pcm, offset);
+      _encoder.inputBuffer.setRange(
+        _encoder.inputBufferIndex,
+        _encoder.inputBufferIndex + count,
+        pcm,
+        offset,
+      );
       offset += count;
       _encoder.inputBufferIndex += count;
       remaining -= count;
@@ -207,7 +243,7 @@ class StreamOpusEncoder<T> extends StreamTransformerBase<List<T>, Uint8List> {
     if (!fillUpLastFrame) {
       final missingSamples =
           (_encoder.maxInputBufferSizeBytes - _encoder.inputBufferIndex) ~/
-              (floats ? 4 : 2);
+          (floats ? 4 : 2);
       throw UnfinishedFrameException._(missingSamples: missingSamples);
     }
     _padInputBuffer();
@@ -271,55 +307,71 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   final Type _outputType;
 
   /// Creates a new StreamOpusDecoder that outputs [Float32List].
-  StreamOpusDecoder.float(
-      {required int sampleRate,
-      required int channels,
-      bool forwardErrorCorrection = false,
-      bool copyOutput = true,
-      bool autoSoftClip = false})
-      : this._(true, Float32List, sampleRate, channels, forwardErrorCorrection,
-            copyOutput, autoSoftClip);
+  StreamOpusDecoder.float({
+    required int sampleRate,
+    required int channels,
+    bool forwardErrorCorrection = false,
+    bool copyOutput = true,
+    bool autoSoftClip = false,
+  }) : this._(
+         true,
+         Float32List,
+         sampleRate,
+         channels,
+         forwardErrorCorrection,
+         copyOutput,
+         autoSoftClip,
+       );
 
   /// Creates a new StreamOpusDecoder that outputs [Int16List].
-  StreamOpusDecoder.s16le(
-      {required int sampleRate,
-      required int channels,
-      bool forwardErrorCorrection = false,
-      bool copyOutput = true})
-      : this._(false, Int16List, sampleRate, channels, forwardErrorCorrection,
-            copyOutput, false);
+  StreamOpusDecoder.s16le({
+    required int sampleRate,
+    required int channels,
+    bool forwardErrorCorrection = false,
+    bool copyOutput = true,
+  }) : this._(
+         false,
+         Int16List,
+         sampleRate,
+         channels,
+         forwardErrorCorrection,
+         copyOutput,
+         false,
+       );
 
   /// Creates a new StreamOpusDecoder that outputs plain bytes (in form of [Uint8List]).
-  StreamOpusDecoder.bytes(
-      {required bool floatOutput,
-      required int sampleRate,
-      required int channels,
-      bool forwardErrorCorrection = false,
-      bool copyOutput = true,
-      bool autoSoftClip = false})
-      : this._(
-            floatOutput,
-            Uint8List,
-            sampleRate,
-            channels,
-            forwardErrorCorrection,
-            copyOutput,
-            floatOutput == true ? autoSoftClip : false);
+  StreamOpusDecoder.bytes({
+    required bool floatOutput,
+    required int sampleRate,
+    required int channels,
+    bool forwardErrorCorrection = false,
+    bool copyOutput = true,
+    bool autoSoftClip = false,
+  }) : this._(
+         floatOutput,
+         Uint8List,
+         sampleRate,
+         channels,
+         forwardErrorCorrection,
+         copyOutput,
+         floatOutput == true ? autoSoftClip : false,
+       );
 
   StreamOpusDecoder._(
-      this.floats,
-      this._outputType,
-      int sampleRate,
-      int channels,
-      this.forwardErrorCorrection,
-      this.copyOutput,
-      this.autoSoftClip)
-      : _lastPacketLost = false,
-        _decoder = BufferedOpusDecoder(
-            sampleRate: sampleRate,
-            channels: channels,
-            maxOutputBufferSizeBytes:
-                (floats ? 4 : 2) * maxSamplesPerPacket(sampleRate, channels));
+    this.floats,
+    this._outputType,
+    int sampleRate,
+    int channels,
+    this.forwardErrorCorrection,
+    this.copyOutput,
+    this.autoSoftClip,
+  ) : _lastPacketLost = false,
+      _decoder = BufferedOpusDecoder(
+        sampleRate: sampleRate,
+        channels: channels,
+        maxOutputBufferSizeBytes:
+            (floats ? 4 : 2) * maxSamplesPerPacket(sampleRate, channels),
+      );
 
   void _reportPacketLoss() {
     _decodeFec(false, loss: _decoder.lastPacketDurationMs);
@@ -336,12 +388,16 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   List<num> _output() {
     Uint8List output = Uint8List.fromList(_decoder.outputBuffer);
     if (_outputType == Float32List) {
-      return output.buffer
-          .asFloat32List(output.offsetInBytes, output.lengthInBytes ~/ 4);
+      return output.buffer.asFloat32List(
+        output.offsetInBytes,
+        output.lengthInBytes ~/ 4,
+      );
     }
     if (_outputType == Int16List) {
-      return output.buffer
-          .asInt16List(output.offsetInBytes, output.lengthInBytes ~/ 2);
+      return output.buffer.asInt16List(
+        output.offsetInBytes,
+        output.lengthInBytes ~/ 2,
+      );
     }
     return output;
   }
@@ -349,11 +405,8 @@ class StreamOpusDecoder extends StreamTransformerBase<Uint8List?, List<num>> {
   /// The decoder is destroyed when the stream completes, errors, or the
   /// listener cancels its subscription.
   @override
-  Stream<List<num>> bind(Stream<Uint8List?> stream) => _bindNative(
-        stream,
-        onData: _onPacket,
-        cleanup: destroy,
-      );
+  Stream<List<num>> bind(Stream<Uint8List?> stream) =>
+      _bindNative(stream, onData: _onPacket, cleanup: destroy);
 
   void _onPacket(Uint8List? packet, EventSink<List<num>> sink) {
     if (packet == null) {

@@ -24,6 +24,8 @@ jobs:
           channel: stable
       - name: Check formatting
         run: ./scripts/format.sh
+      - name: Verify vendored libopus
+        run: python3 scripts/vendor_libopus.py --check
       - name: Run static analysis
         run: ./scripts/analyze.sh
       - name: Run unit tests

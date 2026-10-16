@@ -15,7 +15,11 @@ Pointer<opus_encoder.OpusEncoder> _createOpusEncoder({
   final error = opus.allocator.call<Int32>(1);
   try {
     final encoder = opus.encoder.opus_encoder_create(
-        sampleRate, channels, _applicationCodes[application]!, error);
+      sampleRate,
+      channels,
+      _applicationCodes[application]!,
+      error,
+    );
     if (error.value != opus_defines.OPUS_OK) {
       throw OpusException(error.value);
     }
@@ -45,8 +49,11 @@ class SimpleOpusEncoder extends OpusEncoder {
   bool get destroyed => _destroyed;
 
   SimpleOpusEncoder._(
-      this._opusEncoder, this.sampleRate, this.channels, this.application)
-      : _destroyed = false {
+    this._opusEncoder,
+    this.sampleRate,
+    this.channels,
+    this.application,
+  ) : _destroyed = false {
     final encoder = _opusEncoder;
     _finalizer.attach(this, () {
       opus.encoder.opus_encoder_destroy(encoder);
@@ -55,12 +62,16 @@ class SimpleOpusEncoder extends OpusEncoder {
 
   /// Creates an new [SimpleOpusEncoder] based on the [sampleRate], [channels] and [application] type.
   /// See the matching fields for more information about these parameters.
-  factory SimpleOpusEncoder(
-      {required int sampleRate,
-      required int channels,
-      required Application application}) {
+  factory SimpleOpusEncoder({
+    required int sampleRate,
+    required int channels,
+    required Application application,
+  }) {
     final encoder = _createOpusEncoder(
-        sampleRate: sampleRate, channels: channels, application: application);
+      sampleRate: sampleRate,
+      channels: channels,
+      application: application,
+    );
     return SimpleOpusEncoder._(encoder, sampleRate, channels, application);
   }
 
@@ -74,7 +85,7 @@ class SimpleOpusEncoder extends OpusEncoder {
     required int inputSampleCount,
     required int maxOutputSizeBytes,
     required int Function(int sampleCountPerChannel, Pointer<Uint8> output)
-        nativeEncode,
+    nativeEncode,
   }) {
     final outputNative = opus.allocator.call<Uint8>(maxOutputSizeBytes);
     try {
@@ -104,8 +115,10 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// The returned list contains the bytes of the encoded opus packet.
   ///
   /// [input] and the returned list are copied to and respectively from native memory.
-  Uint8List encode(
-      {required Int16List input, int maxOutputSizeBytes = maxDataBytes}) {
+  Uint8List encode({
+    required Int16List input,
+    int maxOutputSizeBytes = maxDataBytes,
+  }) {
     if (_destroyed) throw OpusDestroyedError.encoder();
     final inputNative = opus.allocator.call<Int16>(input.length);
     try {
@@ -114,7 +127,12 @@ class SimpleOpusEncoder extends OpusEncoder {
         inputSampleCount: input.length,
         maxOutputSizeBytes: maxOutputSizeBytes,
         nativeEncode: (spc, output) => opus.encoder.opus_encode(
-            _opusEncoder, inputNative, spc, output, maxOutputSizeBytes),
+          _opusEncoder,
+          inputNative,
+          spc,
+          output,
+          maxOutputSizeBytes,
+        ),
       );
     } finally {
       opus.allocator.free(inputNative);
@@ -124,8 +142,10 @@ class SimpleOpusEncoder extends OpusEncoder {
   /// Encodes a frame of pcm data, stored as Float32List.
   ///
   /// This method behaves just as [encode], so see there for more information.
-  Uint8List encodeFloat(
-      {required Float32List input, int maxOutputSizeBytes = maxDataBytes}) {
+  Uint8List encodeFloat({
+    required Float32List input,
+    int maxOutputSizeBytes = maxDataBytes,
+  }) {
     if (_destroyed) throw OpusDestroyedError.encoder();
     final inputNative = opus.allocator.call<Float>(input.length);
     try {
@@ -134,7 +154,12 @@ class SimpleOpusEncoder extends OpusEncoder {
         inputSampleCount: input.length,
         maxOutputSizeBytes: maxOutputSizeBytes,
         nativeEncode: (spc, output) => opus.encoder.opus_encode_float(
-            _opusEncoder, inputNative, spc, output, maxOutputSizeBytes),
+          _opusEncoder,
+          inputNative,
+          spc,
+          output,
+          maxOutputSizeBytes,
+        ),
       );
     } finally {
       opus.allocator.free(inputNative);
@@ -230,17 +255,17 @@ class BufferedOpusEncoder extends OpusEncoder {
       Uint8List.fromList(_outputBuffer.asTypedList(_outputBufferIndex));
 
   BufferedOpusEncoder._(
-      this._opusEncoder,
-      this.sampleRate,
-      this.channels,
-      this.application,
-      this._inputBuffer,
-      this.maxInputBufferSizeBytes,
-      this._outputBuffer,
-      this.maxOutputBufferSizeBytes)
-      : _destroyed = false,
-        inputBufferIndex = 0,
-        _outputBufferIndex = 0 {
+    this._opusEncoder,
+    this.sampleRate,
+    this.channels,
+    this.application,
+    this._inputBuffer,
+    this.maxInputBufferSizeBytes,
+    this._outputBuffer,
+    this.maxOutputBufferSizeBytes,
+  ) : _destroyed = false,
+      inputBufferIndex = 0,
+      _outputBufferIndex = 0 {
     final encoder = _opusEncoder;
     final input = _inputBuffer;
     final output = _outputBuffer;
@@ -263,12 +288,13 @@ class BufferedOpusEncoder extends OpusEncoder {
   /// output buffer for any possible valid input.
   ///
   /// For the other parameters, see the matching fields for more information.
-  factory BufferedOpusEncoder(
-      {required int sampleRate,
-      required int channels,
-      required Application application,
-      int? maxInputBufferSizeBytes,
-      int? maxOutputBufferSizeBytes}) {
+  factory BufferedOpusEncoder({
+    required int sampleRate,
+    required int channels,
+    required Application application,
+    int? maxInputBufferSizeBytes,
+    int? maxOutputBufferSizeBytes,
+  }) {
     maxInputBufferSizeBytes ??=
         bytesPerFloatSample * maxSamplesPerPacket(sampleRate, channels);
     maxOutputBufferSizeBytes ??= maxDataBytes;
@@ -277,9 +303,20 @@ class BufferedOpusEncoder extends OpusEncoder {
     try {
       output = opus.allocator.call<Uint8>(maxOutputBufferSizeBytes);
       final encoder = _createOpusEncoder(
-          sampleRate: sampleRate, channels: channels, application: application);
-      return BufferedOpusEncoder._(encoder, sampleRate, channels, application,
-          input, maxInputBufferSizeBytes, output, maxOutputBufferSizeBytes);
+        sampleRate: sampleRate,
+        channels: channels,
+        application: application,
+      );
+      return BufferedOpusEncoder._(
+        encoder,
+        sampleRate,
+        channels,
+        application,
+        input,
+        maxInputBufferSizeBytes,
+        output,
+        maxOutputBufferSizeBytes,
+      );
     } catch (_) {
       if (output != null) opus.allocator.free(output);
       opus.allocator.free(input);
@@ -310,9 +347,15 @@ class BufferedOpusEncoder extends OpusEncoder {
             _inputBuffer.cast<Float>(),
             sampleCountPerChannel,
             _outputBuffer,
-            maxOutputBufferSizeBytes)
-        : opus.encoder.opus_encode(_opusEncoder, _inputBuffer.cast<Int16>(),
-            sampleCountPerChannel, _outputBuffer, maxOutputBufferSizeBytes);
+            maxOutputBufferSizeBytes,
+          )
+        : opus.encoder.opus_encode(
+            _opusEncoder,
+            _inputBuffer.cast<Int16>(),
+            sampleCountPerChannel,
+            _outputBuffer,
+            maxOutputBufferSizeBytes,
+          );
     if (_outputBufferIndex < opus_defines.OPUS_OK) {
       throw OpusException(_outputBufferIndex);
     }
@@ -382,5 +425,5 @@ const Map<Application, int> _applicationCodes = <Application, int>{
   Application.voip: opus_defines.OPUS_APPLICATION_VOIP,
   Application.audio: opus_defines.OPUS_APPLICATION_AUDIO,
   Application.restrictedLowdelay:
-      opus_defines.OPUS_APPLICATION_RESTRICTED_LOWDELAY
+      opus_defines.OPUS_APPLICATION_RESTRICTED_LOWDELAY,
 };

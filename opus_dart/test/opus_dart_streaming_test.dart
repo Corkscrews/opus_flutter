@@ -21,15 +21,9 @@ void main() {
 
     test('all values are accessible by name', () {
       expect(
-          FrameTime.values.map((e) => e.name),
-          containsAll([
-            'ms2_5',
-            'ms5',
-            'ms10',
-            'ms20',
-            'ms40',
-            'ms60',
-          ]));
+        FrameTime.values.map((e) => e.name),
+        containsAll(['ms2_5', 'ms5', 'ms10', 'ms20', 'ms40', 'ms60']),
+      );
     });
   });
 
@@ -44,7 +38,10 @@ void main() {
     // produce garbled audio.
 
     int calculateMaxSampleSize(
-        int sampleRate, int channels, FrameTime frameTime) {
+      int sampleRate,
+      int channels,
+      FrameTime frameTime,
+    ) {
       final samplesPerMs = (channels * sampleRate) ~/ 1000;
       switch (frameTime) {
         case FrameTime.ms2_5:
@@ -105,8 +102,11 @@ void main() {
         for (final ch in validChannels) {
           for (final ft in FrameTime.values) {
             final size = calculateMaxSampleSize(rate, ch, ft);
-            expect(size, greaterThan(0),
-                reason: '$rate Hz, $ch ch, $ft should produce >0 samples');
+            expect(
+              size,
+              greaterThan(0),
+              reason: '$rate Hz, $ch ch, $ft should produce >0 samples',
+            );
           }
         }
       }

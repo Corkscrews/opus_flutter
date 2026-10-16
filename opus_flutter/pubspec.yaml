@@ -1,29 +1,21 @@
 name: opus_codec
-description: Loads a DynamicLibrary of opus for usage with opus_codec_dart on flutter platforms.
+description: Initializes libopus for opus_codec_dart on Flutter platforms. Native platforms use the bundled code asset; web loads the WASM backend.
 repository: https://github.com/Corkscrews/opus_flutter/tree/master/opus_flutter
-version: 3.1.0
+version: 4.0.0
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
-  flutter: '>=3.27.0'
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.0'
 
 dependencies:
   flutter:
     sdk: flutter
   # Path dependencies are rewritten to ^<version> by
   # scripts/prepare_publish.dart when publishing.
+  opus_codec_dart:
+    path: ../opus_dart
   opus_codec_platform_interface:
     path: ../opus_flutter_platform_interface
-  opus_codec_android:
-    path: ../opus_flutter_android
-  opus_codec_ios:
-    path: ../opus_flutter_ios
-  opus_codec_linux:
-    path: ../opus_flutter_linux
-  opus_codec_macos:
-    path: ../opus_flutter_macos
-  opus_codec_windows:
-    path: ../opus_flutter_windows
   opus_codec_web:
     path: ../opus_flutter_web
 
@@ -33,18 +25,10 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   plugin_platform_interface: ^2.1.0
 
+# Native platforms need no plugin: libopus is a code asset built by
+# opus_codec_dart's build hook. Only web loads a plugin (the WASM backend).
 flutter:
   plugin:
     platforms:
-      android:
-        default_package: opus_codec_android
-      ios:
-        default_package: opus_codec_ios
-      linux:
-        default_package: opus_codec_linux
-      macos:
-        default_package: opus_codec_macos
-      windows:
-        default_package: opus_codec_windows
       web:
         default_package: opus_codec_web

@@ -8,6 +8,7 @@ class OpusFlutterPlatformUnsupported extends OpusFlutterPlatform {
   @override
   Future<Object> load() {
     throw UnsupportedError(
-        'Automatic loading is not supported on this platform!');
+      'Automatic loading is not supported on this platform!',
+    );
   }
 }
