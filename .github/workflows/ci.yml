@@ -146,6 +146,41 @@ jobs:
         working-directory: opus_flutter/example
         run: flutter build macos --debug
 
+  # Release builds enable native asset linking (Flutter 3.47+), which debug
+  # builds never do, so the build hook's routing is only exercised here.
+  build-example-release:
+    name: Build example release (${{ matrix.target }}, Flutter 3.47.7)
+    runs-on: ${{ matrix.os }}
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: apk, os: ubuntu-latest }
+          - { target: ios, os: macos-latest }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        if: matrix.target == 'apk'
+        with:
+          distribution: zulu
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+      - name: Patch Gradle, AGP and Kotlin for Flutter 3.47
+        if: matrix.target == 'apk'
+        working-directory: opus_flutter/example/android
+        run: |
+          sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/"com.android.application" version "8.7.0"/"com.android.application" version "8.11.1"/' settings.gradle
+          sed -i 's/"org.jetbrains.kotlin.android" version "2.1.0"/"org.jetbrains.kotlin.android" version "2.2.20"/' settings.gradle
+          grep -q '8.11.1' settings.gradle && grep -q '2.2.20' settings.gradle
+      - name: Build release
+        working-directory: opus_flutter/example
+        run: flutter pub get && flutter build ${{ matrix.target }} --release ${{ matrix.target == 'ios' && '--no-codesign' || '' }}
+
   build-example-linux:
     name: Build example (Linux, Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest

@@ -95,7 +95,15 @@ void main(List<String> args) async {
         if (isWindows) '@${responseFile.toFilePath()}',
       ],
     );
-    await library.build(input: input, output: output);
+    // CLibrary routes to a link hook and links statically when linking is
+    // enabled (Flutter 3.47+ release builds). There is no hook/link.dart, so
+    // always bundle a dynamic library.
+    await library.build(
+      input: input,
+      output: output,
+      routing: const [ToAppBundle()],
+      linkModePreference: LinkModePreference.dynamic,
+    );
 
     // Sources passed through the response file are not tracked by CBuilder.
     if (isWindows) output.dependencies.addAll(sourceUris);

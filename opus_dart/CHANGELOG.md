@@ -28,6 +28,7 @@
 * `lastPacketDurationMs` is correct for stereo; it reported half the real duration.
 * `SimpleOpusDecoder.decodeFloat(autoSoftClip: true)` clips the whole stereo frame, not only its first half.
 * A `loss` larger than the output buffer throws `RangeError` instead of letting libopus write past the buffer.
+* Release builds work on Flutter 3.47 and later. They enable native asset linking, and the build hook sent a static library to a link hook the package does not have, so `flutter build apk --release` and iOS archives failed with "invalid output". The hook now always bundles libopus as a dynamic library.
 * `OpusPacketUtils` rejects an empty packet with `OPUS_BAD_ARG` instead of reading past it.
 * `StreamOpusEncoder` no longer emits an extra silent frame when the input ends on a frame boundary, and with `fillUpLastFrame: false` no longer throws `UnfinishedFrameException` in that case.
 * **`StreamOpusDecoder` emits concealment audio for lost packets** (breaking). Each `null` element now yields audio as long as the previous packet, so the output keeps its timing. Before, the concealed audio was decoded and dropped. Without FEC, it also wasn't concealment: the decoder decoded the previous packet a second time. With `forwardErrorCorrection`, a loss still pending when the input ends is concealed then.
