@@ -94,6 +94,9 @@ void main(List<String> args) async {
         // cl applies options to every source wherever they appear.
         if (isWindows) '@${responseFile.toFilePath()}',
       ],
+      // ELF only: exp, log, cos and friends live in libm, which the linker
+      // does not add by itself. Apple's libSystem and the MSVC CRT have them.
+      libraries: [if (isElf) 'm'],
     );
     // CLibrary routes to a link hook and links statically when linking is
     // enabled (Flutter 3.47+ release builds). There is no hook/link.dart, so
