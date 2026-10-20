@@ -11,7 +11,9 @@ void main() {
     test('OPUS_OK is 0', () => expect(OPUS_OK, 0));
     test('OPUS_BAD_ARG is -1', () => expect(OPUS_BAD_ARG, -1));
     test(
-        'OPUS_BUFFER_TOO_SMALL is -2', () => expect(OPUS_BUFFER_TOO_SMALL, -2));
+      'OPUS_BUFFER_TOO_SMALL is -2',
+      () => expect(OPUS_BUFFER_TOO_SMALL, -2),
+    );
     test('OPUS_INTERNAL_ERROR is -3', () => expect(OPUS_INTERNAL_ERROR, -3));
     test('OPUS_INVALID_PACKET is -4', () => expect(OPUS_INVALID_PACKET, -4));
     test('OPUS_UNIMPLEMENTED is -5', () => expect(OPUS_UNIMPLEMENTED, -5));
@@ -20,12 +22,18 @@ void main() {
   });
 
   group('Application types', () {
-    test('OPUS_APPLICATION_VOIP is 2048',
-        () => expect(OPUS_APPLICATION_VOIP, 2048));
-    test('OPUS_APPLICATION_AUDIO is 2049',
-        () => expect(OPUS_APPLICATION_AUDIO, 2049));
-    test('OPUS_APPLICATION_RESTRICTED_LOWDELAY is 2051',
-        () => expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051));
+    test(
+      'OPUS_APPLICATION_VOIP is 2048',
+      () => expect(OPUS_APPLICATION_VOIP, 2048),
+    );
+    test(
+      'OPUS_APPLICATION_AUDIO is 2049',
+      () => expect(OPUS_APPLICATION_AUDIO, 2049),
+    );
+    test(
+      'OPUS_APPLICATION_RESTRICTED_LOWDELAY is 2051',
+      () => expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051),
+    );
 
     test('application types are distinct', () {
       final values = {
@@ -43,16 +51,26 @@ void main() {
   });
 
   group('Bandwidth constants', () {
-    test('OPUS_BANDWIDTH_NARROWBAND is 1101',
-        () => expect(OPUS_BANDWIDTH_NARROWBAND, 1101));
-    test('OPUS_BANDWIDTH_MEDIUMBAND is 1102',
-        () => expect(OPUS_BANDWIDTH_MEDIUMBAND, 1102));
-    test('OPUS_BANDWIDTH_WIDEBAND is 1103',
-        () => expect(OPUS_BANDWIDTH_WIDEBAND, 1103));
-    test('OPUS_BANDWIDTH_SUPERWIDEBAND is 1104',
-        () => expect(OPUS_BANDWIDTH_SUPERWIDEBAND, 1104));
-    test('OPUS_BANDWIDTH_FULLBAND is 1105',
-        () => expect(OPUS_BANDWIDTH_FULLBAND, 1105));
+    test(
+      'OPUS_BANDWIDTH_NARROWBAND is 1101',
+      () => expect(OPUS_BANDWIDTH_NARROWBAND, 1101),
+    );
+    test(
+      'OPUS_BANDWIDTH_MEDIUMBAND is 1102',
+      () => expect(OPUS_BANDWIDTH_MEDIUMBAND, 1102),
+    );
+    test(
+      'OPUS_BANDWIDTH_WIDEBAND is 1103',
+      () => expect(OPUS_BANDWIDTH_WIDEBAND, 1103),
+    );
+    test(
+      'OPUS_BANDWIDTH_SUPERWIDEBAND is 1104',
+      () => expect(OPUS_BANDWIDTH_SUPERWIDEBAND, 1104),
+    );
+    test(
+      'OPUS_BANDWIDTH_FULLBAND is 1105',
+      () => expect(OPUS_BANDWIDTH_FULLBAND, 1105),
+    );
 
     test('bandwidths form a contiguous ascending range', () {
       expect(OPUS_BANDWIDTH_NARROWBAND + 1, OPUS_BANDWIDTH_MEDIUMBAND);
@@ -64,24 +82,42 @@ void main() {
 
   group('Frame size constants', () {
     test('OPUS_FRAMESIZE_ARG is 5000', () => expect(OPUS_FRAMESIZE_ARG, 5000));
-    test('OPUS_FRAMESIZE_2_5_MS is 5001',
-        () => expect(OPUS_FRAMESIZE_2_5_MS, 5001));
     test(
-        'OPUS_FRAMESIZE_5_MS is 5002', () => expect(OPUS_FRAMESIZE_5_MS, 5002));
-    test('OPUS_FRAMESIZE_10_MS is 5003',
-        () => expect(OPUS_FRAMESIZE_10_MS, 5003));
-    test('OPUS_FRAMESIZE_20_MS is 5004',
-        () => expect(OPUS_FRAMESIZE_20_MS, 5004));
-    test('OPUS_FRAMESIZE_40_MS is 5005',
-        () => expect(OPUS_FRAMESIZE_40_MS, 5005));
-    test('OPUS_FRAMESIZE_60_MS is 5006',
-        () => expect(OPUS_FRAMESIZE_60_MS, 5006));
-    test('OPUS_FRAMESIZE_80_MS is 5007',
-        () => expect(OPUS_FRAMESIZE_80_MS, 5007));
-    test('OPUS_FRAMESIZE_100_MS is 5008',
-        () => expect(OPUS_FRAMESIZE_100_MS, 5008));
-    test('OPUS_FRAMESIZE_120_MS is 5009',
-        () => expect(OPUS_FRAMESIZE_120_MS, 5009));
+      'OPUS_FRAMESIZE_2_5_MS is 5001',
+      () => expect(OPUS_FRAMESIZE_2_5_MS, 5001),
+    );
+    test(
+      'OPUS_FRAMESIZE_5_MS is 5002',
+      () => expect(OPUS_FRAMESIZE_5_MS, 5002),
+    );
+    test(
+      'OPUS_FRAMESIZE_10_MS is 5003',
+      () => expect(OPUS_FRAMESIZE_10_MS, 5003),
+    );
+    test(
+      'OPUS_FRAMESIZE_20_MS is 5004',
+      () => expect(OPUS_FRAMESIZE_20_MS, 5004),
+    );
+    test(
+      'OPUS_FRAMESIZE_40_MS is 5005',
+      () => expect(OPUS_FRAMESIZE_40_MS, 5005),
+    );
+    test(
+      'OPUS_FRAMESIZE_60_MS is 5006',
+      () => expect(OPUS_FRAMESIZE_60_MS, 5006),
+    );
+    test(
+      'OPUS_FRAMESIZE_80_MS is 5007',
+      () => expect(OPUS_FRAMESIZE_80_MS, 5007),
+    );
+    test(
+      'OPUS_FRAMESIZE_100_MS is 5008',
+      () => expect(OPUS_FRAMESIZE_100_MS, 5008),
+    );
+    test(
+      'OPUS_FRAMESIZE_120_MS is 5009',
+      () => expect(OPUS_FRAMESIZE_120_MS, 5009),
+    );
 
     test('frame size constants are sequential from ARG', () {
       final expected = List.generate(10, (i) => 5000 + i);
@@ -111,19 +147,26 @@ void main() {
       expect(OPUS_GET_APPLICATION_REQUEST - OPUS_SET_APPLICATION_REQUEST, 1);
       expect(OPUS_GET_BITRATE_REQUEST - OPUS_SET_BITRATE_REQUEST, 1);
       expect(
-          OPUS_GET_MAX_BANDWIDTH_REQUEST - OPUS_SET_MAX_BANDWIDTH_REQUEST, 1);
+        OPUS_GET_MAX_BANDWIDTH_REQUEST - OPUS_SET_MAX_BANDWIDTH_REQUEST,
+        1,
+      );
       expect(OPUS_GET_VBR_REQUEST - OPUS_SET_VBR_REQUEST, 1);
       expect(OPUS_GET_BANDWIDTH_REQUEST - OPUS_SET_BANDWIDTH_REQUEST, 1);
       expect(OPUS_GET_COMPLEXITY_REQUEST - OPUS_SET_COMPLEXITY_REQUEST, 1);
       expect(OPUS_GET_INBAND_FEC_REQUEST - OPUS_SET_INBAND_FEC_REQUEST, 1);
       expect(
-          OPUS_GET_PACKET_LOSS_PERC_REQUEST - OPUS_SET_PACKET_LOSS_PERC_REQUEST,
-          1);
+        OPUS_GET_PACKET_LOSS_PERC_REQUEST - OPUS_SET_PACKET_LOSS_PERC_REQUEST,
+        1,
+      );
       expect(OPUS_GET_DTX_REQUEST - OPUS_SET_DTX_REQUEST, 1);
       expect(
-          OPUS_GET_VBR_CONSTRAINT_REQUEST - OPUS_SET_VBR_CONSTRAINT_REQUEST, 1);
+        OPUS_GET_VBR_CONSTRAINT_REQUEST - OPUS_SET_VBR_CONSTRAINT_REQUEST,
+        1,
+      );
       expect(
-          OPUS_GET_FORCE_CHANNELS_REQUEST - OPUS_SET_FORCE_CHANNELS_REQUEST, 1);
+        OPUS_GET_FORCE_CHANNELS_REQUEST - OPUS_SET_FORCE_CHANNELS_REQUEST,
+        1,
+      );
       expect(OPUS_GET_SIGNAL_REQUEST - OPUS_SET_SIGNAL_REQUEST, 1);
       expect(OPUS_GET_LSB_DEPTH_REQUEST - OPUS_SET_LSB_DEPTH_REQUEST, 1);
       expect(

@@ -49,7 +49,7 @@ void main() {
     mockDecoder = MockOpusDecoderFunctions();
     mockEncoder = MockOpusEncoderFunctions();
     mockLibInfo = MockOpusLibInfoFunctions();
-    opus = ApiObject.test(
+    opus = ApiObject.fromFunctions(
       libinfo: mockLibInfo,
       encoder: mockEncoder,
       decoder: mockDecoder,
@@ -92,8 +92,9 @@ void main() {
   /// Stubs `opus_encode_float` to write [outputBytes] into the native output
   /// buffer and return [outputBytes.length].
   void stubEncodeFloat(List<int> outputBytes) {
-    when(mockEncoder.opus_encode_float(any, any, any, any, any))
-        .thenAnswer((inv) {
+    when(mockEncoder.opus_encode_float(any, any, any, any, any)).thenAnswer((
+      inv,
+    ) {
       final ptr = inv.positionalArguments[3] as Pointer<Uint8>;
       for (var i = 0; i < outputBytes.length; i++) {
         ptr[i] = outputBytes[i];
@@ -105,8 +106,9 @@ void main() {
   /// Stubs `opus_decode` to write [pcmSamples] (Int16) into the native PCM
   /// buffer and return [pcmSamples.length] as samplesPerChannel.
   void stubDecode(List<int> pcmSamples) {
-    when(mockDecoder.opus_decode(any, any, any, any, any, any))
-        .thenAnswer((inv) {
+    when(mockDecoder.opus_decode(any, any, any, any, any, any)).thenAnswer((
+      inv,
+    ) {
       final ptr = inv.positionalArguments[3] as Pointer<Int16>;
       for (var i = 0; i < pcmSamples.length; i++) {
         ptr[i] = pcmSamples[i];
@@ -118,8 +120,9 @@ void main() {
   /// Stubs `opus_decode_float` to write [pcmSamples] (Float) into the native
   /// PCM buffer and return [pcmSamples.length] as samplesPerChannel.
   void stubDecodeFloat(List<double> pcmSamples) {
-    when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-        .thenAnswer((inv) {
+    when(
+      mockDecoder.opus_decode_float(any, any, any, any, any, any),
+    ).thenAnswer((inv) {
       final ptr = inv.positionalArguments[3] as Pointer<Float>;
       for (var i = 0; i < pcmSamples.length; i++) {
         ptr[i] = pcmSamples[i];
@@ -183,9 +186,9 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusEncoder.s16le bind()', () {
-    // The encoder always appends a trailing silence-flush frame when
-    // fillUpLastFrame=true.  An exact frame during streaming + 1 flush = 2 total.
-    test('exact single frame emits frame packet plus trailing flush', () async {
+    // Input that ends on a frame boundary leaves nothing to flush, so no
+    // trailing silence frame is emitted.
+    test('exact single frame emits one packet', () async {
       stubEncoderCreate();
       stubEncode([0xDE, 0xAD]);
 
@@ -199,15 +202,15 @@ void main() {
       final input = Int16List(_samplesPerFrame); // 80 zero samples
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      // 1 encode while streaming + 1 trailing silence flush = 2
-      expect(packets, hasLength(2));
+      // 1 encode while streaming, nothing left to flush
+      expect(packets, hasLength(1));
       expect(packets[0], [0xDE, 0xAD]);
-      verify(mockEncoder.opus_encode(any, any, _samplesPerFrame, any, any))
-          .called(2);
+      verify(
+        mockEncoder.opus_encode(any, any, _samplesPerFrame, any, any),
+      ).called(1);
     });
 
-    test('two exact frames emit two frame packets plus trailing flush',
-        () async {
+    test('two exact frames emit two packets', () async {
       stubEncoderCreate();
       stubEncode([0xAA]);
 
@@ -221,9 +224,9 @@ void main() {
       final input = Int16List(_samplesPerFrame * 2);
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      // 2 encodes while streaming + 1 trailing flush = 3
-      expect(packets, hasLength(3));
-      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(3);
+      // 2 encodes while streaming, nothing left to flush
+      expect(packets, hasLength(2));
+      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(2);
     });
 
     test('data split across stream events buffers correctly', () async {
@@ -238,13 +241,13 @@ void main() {
       );
 
       // 40 samples in first event, 40 in second → 1 full frame during streaming
-      // + 1 trailing flush = 2 packets total
       final half = Int16List(_samplesPerFrame ~/ 2);
-      final packets =
-          await encoder.bind(Stream.fromIterable([half, half])).toList();
+      final packets = await encoder
+          .bind(Stream.fromIterable([half, half]))
+          .toList();
 
-      expect(packets, hasLength(2));
-      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(2);
+      expect(packets, hasLength(1));
+      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(1);
     });
 
     test('partial frame with fillUpLastFrame=true pads and yields', () async {
@@ -268,25 +271,26 @@ void main() {
     });
 
     test(
-        'partial frame with fillUpLastFrame=false throws UnfinishedFrameException',
-        () async {
-      stubEncoderCreate();
+      'partial frame with fillUpLastFrame=false throws UnfinishedFrameException',
+      () async {
+        stubEncoderCreate();
 
-      final encoder = StreamOpusEncoder.s16le(
-        frameTime: _frameTime,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        application: Application.voip,
-        fillUpLastFrame: false,
-      );
+        final encoder = StreamOpusEncoder.s16le(
+          frameTime: _frameTime,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          application: Application.voip,
+          fillUpLastFrame: false,
+        );
 
-      // Send half a frame — missingSamples = (_s16leFrameBytes - 80) ~/ 2 = 40
-      final half = Int16List(_samplesPerFrame ~/ 2);
-      await expectLater(
-        encoder.bind(Stream.value(half)).toList(),
-        throwsA(isA<UnfinishedFrameException>()),
-      );
-    });
+        // Send half a frame — missingSamples = (_s16leFrameBytes - 80) ~/ 2 = 40
+        final half = Int16List(_samplesPerFrame ~/ 2);
+        await expectLater(
+          encoder.bind(Stream.value(half)).toList(),
+          throwsA(isA<UnfinishedFrameException>()),
+        );
+      },
+    );
 
     test('UnfinishedFrameException reports correct missingSamples', () async {
       stubEncoderCreate();
@@ -311,35 +315,38 @@ void main() {
       expect(caught!.missingSamples, _samplesPerFrame - _samplesPerFrame ~/ 4);
     });
 
-    test('UnfinishedFrameException.toString() contains missing sample count',
-        () async {
-      stubEncoderCreate();
+    test(
+      'UnfinishedFrameException.toString() contains missing sample count',
+      () async {
+        stubEncoderCreate();
 
-      final encoder = StreamOpusEncoder.s16le(
-        frameTime: _frameTime,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        application: Application.voip,
-        fillUpLastFrame: false,
-      );
+        final encoder = StreamOpusEncoder.s16le(
+          frameTime: _frameTime,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          application: Application.voip,
+          fillUpLastFrame: false,
+        );
 
-      final quarter = Int16List(_samplesPerFrame ~/ 4);
-      UnfinishedFrameException? caught;
-      try {
-        await encoder.bind(Stream.value(quarter)).toList();
-      } on UnfinishedFrameException catch (e) {
-        caught = e;
-      }
-      expect(caught, isNotNull);
-      final message = caught.toString();
-      expect(message, contains('UnfinishedFrameException'));
-      expect(message, contains('${caught!.missingSamples}'));
-    });
+        final quarter = Int16List(_samplesPerFrame ~/ 4);
+        UnfinishedFrameException? caught;
+        try {
+          await encoder.bind(Stream.value(quarter)).toList();
+        } on UnfinishedFrameException catch (e) {
+          caught = e;
+        }
+        expect(caught, isNotNull);
+        final message = caught.toString();
+        expect(message, contains('UnfinishedFrameException'));
+        expect(message, contains('${caught!.missingSamples}'));
+      },
+    );
 
     test('encode error propagates as OpusException in stream', () async {
       stubEncoderCreate();
-      when(mockEncoder.opus_encode(any, any, any, any, any))
-          .thenReturn(OPUS_INTERNAL_ERROR);
+      when(
+        mockEncoder.opus_encode(any, any, any, any, any),
+      ).thenReturn(OPUS_INTERNAL_ERROR);
 
       final encoder = StreamOpusEncoder.s16le(
         frameTime: _frameTime,
@@ -398,8 +405,9 @@ void main() {
       stubEncoderCreate();
       when(mockEncoder.opus_encoder_destroy(any)).thenReturn(null);
       var upstreamCancelled = false;
-      final source =
-          StreamController<Int16List>(onCancel: () => upstreamCancelled = true);
+      final source = StreamController<Int16List>(
+        onCancel: () => upstreamCancelled = true,
+      );
 
       final sub = StreamOpusEncoder.s16le(
         frameTime: _frameTime,
@@ -449,7 +457,7 @@ void main() {
           .bind(Stream.value(Int16List(_samplesPerFrame)))
           .toList();
 
-      expect(packets, hasLength(2));
+      expect(packets, hasLength(1));
       expect(packets[0], [0x33, 0x44]);
     });
   });
@@ -459,8 +467,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusEncoder.float bind()', () {
-    test('exact float frame calls encodeFloat and emits frame + flush',
-        () async {
+    test('exact float frame calls encodeFloat and emits one packet', () async {
       stubEncoderCreate();
       stubEncodeFloat([0xFF, 0xEE]);
 
@@ -474,12 +481,12 @@ void main() {
       final input = Float32List(_samplesPerFrame);
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      // 1 encode during streaming + 1 trailing silence flush = 2
-      expect(packets, hasLength(2));
+      // 1 encode during streaming, nothing left to flush
+      expect(packets, hasLength(1));
       expect(packets[0], [0xFF, 0xEE]);
-      verify(mockEncoder.opus_encode_float(
-              any, any, _samplesPerFrame, any, any))
-          .called(2);
+      verify(
+        mockEncoder.opus_encode_float(any, any, _samplesPerFrame, any, any),
+      ).called(1);
       verifyNever(mockEncoder.opus_encode(any, any, any, any, any));
     });
 
@@ -501,25 +508,29 @@ void main() {
       );
     });
 
-    test('partial float frame with fillUpLastFrame=true pads and yields',
-        () async {
-      stubEncoderCreate();
-      stubEncodeFloat([0xAB]);
+    test(
+      'partial float frame with fillUpLastFrame=true pads and yields',
+      () async {
+        stubEncoderCreate();
+        stubEncodeFloat([0xAB]);
 
-      final encoder = StreamOpusEncoder.float(
-        frameTime: _frameTime,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        application: Application.voip,
-        fillUpLastFrame: true,
-      );
+        final encoder = StreamOpusEncoder.float(
+          frameTime: _frameTime,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          application: Application.voip,
+          fillUpLastFrame: true,
+        );
 
-      final half = Float32List(_samplesPerFrame ~/ 2);
-      final packets = await encoder.bind(Stream.value(half)).toList();
+        final half = Float32List(_samplesPerFrame ~/ 2);
+        final packets = await encoder.bind(Stream.value(half)).toList();
 
-      expect(packets, hasLength(1));
-      verify(mockEncoder.opus_encode_float(any, any, any, any, any)).called(1);
-    });
+        expect(packets, hasLength(1));
+        verify(
+          mockEncoder.opus_encode_float(any, any, any, any, any),
+        ).called(1);
+      },
+    );
 
     test('copyOutput=false still copies output for safety', () async {
       stubEncoderCreate();
@@ -536,7 +547,7 @@ void main() {
       final input = Float32List(_samplesPerFrame);
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      expect(packets, hasLength(2));
+      expect(packets, hasLength(1));
       expect(packets[0], [0xDD]);
     });
 
@@ -555,8 +566,8 @@ void main() {
       final input = Float32List(160);
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      expect(packets, hasLength(2));
-      verify(mockEncoder.opus_encode_float(any, any, 160, any, any)).called(2);
+      expect(packets, hasLength(1));
+      verify(mockEncoder.opus_encode_float(any, any, 160, any, any)).called(1);
     });
   });
 
@@ -565,8 +576,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('StreamOpusEncoder.bytes bind()', () {
-    test('raw s16le bytes frame emits frame packet plus trailing flush',
-        () async {
+    test('raw s16le bytes frame emits one packet', () async {
       stubEncoderCreate();
       stubEncode([0x77]);
 
@@ -578,57 +588,67 @@ void main() {
         application: Application.voip,
       );
 
-      final input =
-          Uint8List(_s16leFrameBytes); // 160 raw bytes = 1 exact frame
+      final input = Uint8List(
+        _s16leFrameBytes,
+      ); // 160 raw bytes = 1 exact frame
       final packets = await encoder.bind(Stream.value(input)).toList();
 
-      // 1 encode during streaming + 1 trailing flush = 2
-      expect(packets, hasLength(2));
-      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(2);
-    });
-
-    test('raw float bytes frame calls encodeFloat and emits frame + flush',
-        () async {
-      stubEncoderCreate();
-      stubEncodeFloat([0x88]);
-
-      final encoder = StreamOpusEncoder.bytes(
-        frameTime: _frameTime,
-        floatInput: true,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        application: Application.voip,
-      );
-
-      final input =
-          Uint8List(_floatFrameBytes); // 320 raw bytes = 1 exact frame
-      final packets = await encoder.bind(Stream.value(input)).toList();
-
-      // 1 encode during streaming + 1 trailing flush = 2
-      expect(packets, hasLength(2));
-      verify(mockEncoder.opus_encode_float(any, any, any, any, any)).called(2);
-    });
-
-    test('partial float bytes with fillUpLastFrame=true pads and yields',
-        () async {
-      stubEncoderCreate();
-      stubEncodeFloat([0x99]);
-
-      final encoder = StreamOpusEncoder.bytes(
-        frameTime: _frameTime,
-        floatInput: true,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        application: Application.voip,
-        fillUpLastFrame: true,
-      );
-
-      final half = Uint8List(_floatFrameBytes ~/ 2);
-      final packets = await encoder.bind(Stream.value(half)).toList();
-
+      // 1 encode during streaming, nothing left to flush
       expect(packets, hasLength(1));
-      verify(mockEncoder.opus_encode_float(any, any, any, any, any)).called(1);
+      verify(mockEncoder.opus_encode(any, any, any, any, any)).called(1);
     });
+
+    test(
+      'raw float bytes frame calls encodeFloat and emits one packet',
+      () async {
+        stubEncoderCreate();
+        stubEncodeFloat([0x88]);
+
+        final encoder = StreamOpusEncoder.bytes(
+          frameTime: _frameTime,
+          floatInput: true,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          application: Application.voip,
+        );
+
+        final input = Uint8List(
+          _floatFrameBytes,
+        ); // 320 raw bytes = 1 exact frame
+        final packets = await encoder.bind(Stream.value(input)).toList();
+
+        // 1 encode during streaming, nothing left to flush
+        expect(packets, hasLength(1));
+        verify(
+          mockEncoder.opus_encode_float(any, any, any, any, any),
+        ).called(1);
+      },
+    );
+
+    test(
+      'partial float bytes with fillUpLastFrame=true pads and yields',
+      () async {
+        stubEncoderCreate();
+        stubEncodeFloat([0x99]);
+
+        final encoder = StreamOpusEncoder.bytes(
+          frameTime: _frameTime,
+          floatInput: true,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          application: Application.voip,
+          fillUpLastFrame: true,
+        );
+
+        final half = Uint8List(_floatFrameBytes ~/ 2);
+        final packets = await encoder.bind(Stream.value(half)).toList();
+
+        expect(packets, hasLength(1));
+        verify(
+          mockEncoder.opus_encode_float(any, any, any, any, any),
+        ).called(1);
+      },
+    );
 
     test('partial float bytes with fillUpLastFrame=false throws', () async {
       stubEncoderCreate();
@@ -709,7 +729,8 @@ void main() {
       when(mockDecoder.opus_decoder_destroy(any)).thenReturn(null);
       var upstreamCancelled = false;
       final source = StreamController<Uint8List?>(
-          onCancel: () => upstreamCancelled = true);
+        onCancel: () => upstreamCancelled = true,
+      );
 
       final sub = StreamOpusDecoder.s16le(
         sampleRate: _sampleRate,
@@ -749,8 +770,9 @@ void main() {
       );
 
       final packet = Uint8List.fromList([0x01]);
-      final results =
-          await decoder.bind(Stream.fromIterable([packet, packet])).toList();
+      final results = await decoder
+          .bind(Stream.fromIterable([packet, packet]))
+          .toList();
 
       expect(results, hasLength(2));
       verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(2);
@@ -758,8 +780,9 @@ void main() {
 
     test('decode error propagates as OpusException in stream', () async {
       stubDecoderCreate();
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenReturn(OPUS_INVALID_PACKET);
+      when(
+        mockDecoder.opus_decode(any, any, any, any, any, any),
+      ).thenReturn(OPUS_INVALID_PACKET);
 
       final decoder = StreamOpusDecoder.s16le(
         sampleRate: _sampleRate,
@@ -772,24 +795,7 @@ void main() {
       );
     });
 
-    test('null first packet (no FEC) propagates StateError', () async {
-      stubDecoderCreate();
-
-      final decoder = StreamOpusDecoder.s16le(
-        sampleRate: _sampleRate,
-        channels: _channels,
-        forwardErrorCorrection: false,
-      );
-
-      // No prior packet → lastPacketDurationMs is null → StateError
-      await expectLater(
-        decoder.bind(Stream.value(null)).toList(),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    test('null packet after successful decode uses lastPacketDurationMs',
-        () async {
+    test('null first packet (no FEC) emits nothing and keeps going', () async {
       stubDecoderCreate();
       stubDecode([1, 2]);
 
@@ -799,18 +805,43 @@ void main() {
         forwardErrorCorrection: false,
       );
 
-      // Normal packet sets lastPacketDurationMs; null uses it for loss
+      // No prior packet: no length to conceal, so the loss is skipped.
       final packet = Uint8List.fromList([0x01]);
-      final results =
-          await decoder.bind(Stream.fromIterable([packet, null])).toList();
+      final results = await decoder
+          .bind(Stream.fromIterable(<Uint8List?>[null, packet]))
+          .toList();
 
-      // Only the first packet yields output; null triggers loss decode but
-      // the result is discarded (no yield on packet loss)
       expect(results, hasLength(1));
-      verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(2);
+      verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(1);
     });
 
-    test('null packet does not emit output', () async {
+    test(
+      'null packet after successful decode uses lastPacketDurationMs',
+      () async {
+        stubDecoderCreate();
+        stubDecode([1, 2]);
+
+        final decoder = StreamOpusDecoder.s16le(
+          sampleRate: _sampleRate,
+          channels: _channels,
+          forwardErrorCorrection: false,
+        );
+
+        // Normal packet sets lastPacketDurationMs; null uses it for loss
+        final packet = Uint8List.fromList([0x01]);
+        final results = await decoder
+            .bind(Stream.fromIterable([packet, null]))
+            .toList();
+
+        // The packet and the concealment of the loss each yield output.
+        expect(results, hasLength(2));
+        // The loss decodes an empty input (len 0), not the previous packet.
+        verify(mockDecoder.opus_decode(any, any, 1, any, any, 0)).called(1);
+        verify(mockDecoder.opus_decode(any, any, 0, any, any, 0)).called(1);
+      },
+    );
+
+    test('null packet emits concealment audio', () async {
       stubDecoderCreate();
       stubDecode([1]);
 
@@ -820,11 +851,12 @@ void main() {
       );
 
       final packet = Uint8List.fromList([0x01]);
-      final results =
-          await decoder.bind(Stream.fromIterable([packet, null])).toList();
+      final results = await decoder
+          .bind(Stream.fromIterable([packet, null]))
+          .toList();
 
-      // null is packet loss — no yield for it
-      expect(results, hasLength(1));
+      // null is packet loss — concealed, so the output keeps its timing
+      expect(results, hasLength(2));
     });
 
     test('consecutive nulls without FEC call loss decode for each', () async {
@@ -842,7 +874,7 @@ void main() {
           .bind(Stream.fromIterable([packet, null, null]))
           .toList();
 
-      expect(results, hasLength(1));
+      expect(results, hasLength(3));
       // 1 normal + 2 loss decodes = 3
       verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(3);
     });
@@ -875,8 +907,9 @@ void main() {
       stubDecoderCreate();
       // 120ms at 8kHz mono = 960 samples per channel
       const maxSamplesPerCh = 960;
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).thenAnswer((inv) {
         final ptr = inv.positionalArguments[3] as Pointer<Float>;
         for (var i = 0; i < maxSamplesPerCh; i++) {
           ptr[i] = 0.0;
@@ -958,16 +991,17 @@ void main() {
       );
 
       final packet = Uint8List.fromList([0x01]);
-      final results =
-          await decoder.bind(Stream.fromIterable([packet, null])).toList();
+      final results = await decoder
+          .bind(Stream.fromIterable([packet, null]))
+          .toList();
 
-      expect(results, hasLength(1));
-      verify(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .called(2);
+      expect(results, hasLength(2));
+      verify(
+        mockDecoder.opus_decode_float(any, any, any, any, any, any),
+      ).called(2);
     });
 
-    test('null first packet (no FEC) with float propagates StateError',
-        () async {
+    test('null first packet (no FEC) with float emits nothing', () async {
       stubDecoderCreate();
 
       final decoder = StreamOpusDecoder.float(
@@ -976,10 +1010,10 @@ void main() {
         forwardErrorCorrection: false,
       );
 
-      await expectLater(
-        decoder.bind(Stream.value(null)).toList(),
-        throwsA(isA<StateError>()),
-      );
+      final results = await decoder.bind(Stream.value(null)).toList();
+
+      expect(results, isEmpty);
+      verifyNever(mockDecoder.opus_decode_float(any, any, any, any, any, any));
     });
 
     test('copyOutput=false still copies output for safety', () async {
@@ -1044,26 +1078,30 @@ void main() {
       expect(results[0].length, 8);
     });
 
-    test('bytes with floatOutput=true and autoSoftClip=true calls soft clip',
-        () async {
-      stubDecoderCreate();
-      stubDecodeFloat([0.5]);
-      when(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).thenReturn(null);
+    test(
+      'bytes with floatOutput=true and autoSoftClip=true calls soft clip',
+      () async {
+        stubDecoderCreate();
+        stubDecodeFloat([0.5]);
+        when(
+          mockDecoder.opus_pcm_soft_clip(any, any, any, any),
+        ).thenReturn(null);
 
-      final decoder = StreamOpusDecoder.bytes(
-        floatOutput: true,
-        sampleRate: _sampleRate,
-        channels: _channels,
-        autoSoftClip: true,
-      );
+        final decoder = StreamOpusDecoder.bytes(
+          floatOutput: true,
+          sampleRate: _sampleRate,
+          channels: _channels,
+          autoSoftClip: true,
+        );
 
-      expect(decoder.autoSoftClip, isTrue);
+        expect(decoder.autoSoftClip, isTrue);
 
-      final packet = Uint8List.fromList([0x01]);
-      await decoder.bind(Stream.value(packet)).toList();
+        final packet = Uint8List.fromList([0x01]);
+        await decoder.bind(Stream.value(packet)).toList();
 
-      verify(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).called(1);
-    });
+        verify(mockDecoder.opus_pcm_soft_clip(any, any, any, any)).called(1);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1108,8 +1146,42 @@ void main() {
       verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(3);
     });
 
-    test('two consecutive nulls with FEC reports first loss on second null',
-        () async {
+    test(
+      'two consecutive nulls with FEC reports first loss on second null',
+      () async {
+        stubDecoderCreate();
+        stubDecode([10]);
+
+        final decoder = StreamOpusDecoder.s16le(
+          sampleRate: _sampleRate,
+          channels: _channels,
+          forwardErrorCorrection: true,
+        );
+
+        // packet → decode(normal)
+        // null   → held: the next packet may carry it
+        // null   → the first loss is concealed
+        // packet → FEC decode of the second loss + normal decode
+        final packet = Uint8List.fromList([0x01]);
+        final stream = Stream.fromIterable(<Uint8List?>[
+          packet,
+          null,
+          null,
+          packet,
+        ]);
+        final results = await decoder.bind(stream).toList();
+
+        // packet1 → 1 output
+        // null1   → 0 outputs
+        // null2   → concealment of null1 → 1 output
+        // packet2 → FEC + normal → 2 outputs
+        expect(results, hasLength(4));
+        // decode called: 1 (packet1) + 1 (concealment) + 1 (FEC) + 1 (normal) = 4
+        verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(4);
+      },
+    );
+
+    test('a loss pending when the input ends is concealed', () async {
       stubDecoderCreate();
       stubDecode([10]);
 
@@ -1119,30 +1191,23 @@ void main() {
         forwardErrorCorrection: true,
       );
 
-      // packet → decode(normal)
-      // null   → _lastPacketLost=true, no decode
-      // null   → _lastPacketLost=true → _reportPacketLoss → decode(loss)
-      // packet → FEC decode + normal decode
       final packet = Uint8List.fromList([0x01]);
-      final stream =
-          Stream.fromIterable(<Uint8List?>[packet, null, null, packet]);
-      final results = await decoder.bind(stream).toList();
+      final results = await decoder
+          .bind(Stream.fromIterable(<Uint8List?>[packet, null]))
+          .toList();
 
-      // packet1 → 1 output
-      // null1   → 0 outputs
-      // null2   → _reportPacketLoss (no yield) → 0 outputs
-      // packet2 → FEC + normal → 2 outputs
-      expect(results, hasLength(3));
-      // decode called: 1 (packet1) + 1 (_reportPacketLoss) + 1 (FEC) + 1 (normal) = 4
-      verify(mockDecoder.opus_decode(any, any, any, any, any, any)).called(4);
+      // No next packet can recover it, so it is concealed at the end.
+      expect(results, hasLength(2));
+      verify(mockDecoder.opus_decode(any, any, 0, any, any, 0)).called(1);
     });
 
     test('FEC decode uses fec=true flag', () async {
       stubDecoderCreate();
 
       final calls = <int>[]; // capture fec argument (5th positional = index 5)
-      when(mockDecoder.opus_decode(any, any, any, any, any, any))
-          .thenAnswer((inv) {
+      when(mockDecoder.opus_decode(any, any, any, any, any, any)).thenAnswer((
+        inv,
+      ) {
         calls.add(inv.positionalArguments[5] as int);
         return 1;
       });
@@ -1161,54 +1226,63 @@ void main() {
       expect(calls, [0, 1, 0]);
     });
 
-    test('float decoder with FEC decodes via decodeFloat with fec=true',
-        () async {
-      stubDecoderCreate();
+    test(
+      'float decoder with FEC decodes via decodeFloat with fec=true',
+      () async {
+        stubDecoderCreate();
 
-      final fecArgs = <int>[];
-      when(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .thenAnswer((inv) {
-        fecArgs.add(inv.positionalArguments[5] as int);
-        return 1;
-      });
+        final fecArgs = <int>[];
+        when(
+          mockDecoder.opus_decode_float(any, any, any, any, any, any),
+        ).thenAnswer((inv) {
+          fecArgs.add(inv.positionalArguments[5] as int);
+          return 1;
+        });
 
-      final decoder = StreamOpusDecoder.float(
-        sampleRate: _sampleRate,
-        channels: _channels,
-        forwardErrorCorrection: true,
-      );
+        final decoder = StreamOpusDecoder.float(
+          sampleRate: _sampleRate,
+          channels: _channels,
+          forwardErrorCorrection: true,
+        );
 
-      final packet = Uint8List.fromList([0x01]);
-      final stream = Stream.fromIterable(<Uint8List?>[packet, null, packet]);
-      await decoder.bind(stream).toList();
+        final packet = Uint8List.fromList([0x01]);
+        final stream = Stream.fromIterable(<Uint8List?>[packet, null, packet]);
+        await decoder.bind(stream).toList();
 
-      // fecArgs: [0 (normal), 1 (FEC recovery), 0 (normal)]
-      expect(fecArgs, [0, 1, 0]);
-      verifyNever(mockDecoder.opus_decode(any, any, any, any, any, any));
-    });
+        // fecArgs: [0 (normal), 1 (FEC recovery), 0 (normal)]
+        expect(fecArgs, [0, 1, 0]);
+        verifyNever(mockDecoder.opus_decode(any, any, any, any, any, any));
+      },
+    );
 
     test(
-        'float decoder with FEC and consecutive nulls reports loss via decodeFloat',
-        () async {
-      stubDecoderCreate();
-      stubDecodeFloat([0.1]);
+      'float decoder with FEC and consecutive nulls reports loss via decodeFloat',
+      () async {
+        stubDecoderCreate();
+        stubDecodeFloat([0.1]);
 
-      final decoder = StreamOpusDecoder.float(
-        sampleRate: _sampleRate,
-        channels: _channels,
-        forwardErrorCorrection: true,
-      );
+        final decoder = StreamOpusDecoder.float(
+          sampleRate: _sampleRate,
+          channels: _channels,
+          forwardErrorCorrection: true,
+        );
 
-      final packet = Uint8List.fromList([0x01]);
-      final stream =
-          Stream.fromIterable(<Uint8List?>[packet, null, null, packet]);
-      final results = await decoder.bind(stream).toList();
+        final packet = Uint8List.fromList([0x01]);
+        final stream = Stream.fromIterable(<Uint8List?>[
+          packet,
+          null,
+          null,
+          packet,
+        ]);
+        final results = await decoder.bind(stream).toList();
 
-      // packet → normal(1), null → no decode, null → loss decode(1),
-      // packet → FEC(1) + normal(1) = 4 decodeFloat calls total
-      expect(results, hasLength(3));
-      verify(mockDecoder.opus_decode_float(any, any, any, any, any, any))
-          .called(4);
-    });
+        // packet → normal(1), null → no decode, null → loss decode(1),
+        // packet → FEC(1) + normal(1) = 4 decodeFloat calls, 4 outputs
+        expect(results, hasLength(4));
+        verify(
+          mockDecoder.opus_decode_float(any, any, any, any, any, any),
+        ).called(4);
+      },
+    );
   });
 }

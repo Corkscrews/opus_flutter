@@ -38,9 +38,10 @@ final class RecorderState {
       RecorderPhase.recording => 'REC ${_formatDuration(recordingDuration)}',
       RecorderPhase.stopping => 'Stopping...',
       RecorderPhase.decoding => 'Decoding...',
-      RecorderPhase.playing => totalPlaybackDuration != null
-          ? 'PLAYING ${_formatDuration(playbackDuration)} / ${_formatDuration(totalPlaybackDuration!)}'
-          : 'PLAYING ${_formatDuration(playbackDuration)}',
+      RecorderPhase.playing =>
+        totalPlaybackDuration != null
+            ? 'PLAYING ${_formatDuration(playbackDuration)} / ${_formatDuration(totalPlaybackDuration!)}'
+            : 'PLAYING ${_formatDuration(playbackDuration)}',
     };
   }
 

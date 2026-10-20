@@ -1,0 +1,130 @@
+name: Update libopus
+
+# Prepares one complete PR when Xiph publishes a new stable libopus: pinned
+# digest, re-vendored sources, regenerated bindings, rebuilt WASM, and a
+# native test run. A maintainer reviews, merges and releases.
+#
+# Pushes made with the default GITHUB_TOKEN do not trigger CI on the PR. Set a
+# LIBOPUS_UPDATE_TOKEN secret (a GitHub App or fine-grained token with
+# contents and pull-requests write) so the generated PR is validated.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'libopus version to pin (default: newest stable)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-libopus
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: Detect new release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.detect.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: detect
+        run: |
+          current=$(python3 -c "import json; print(json.load(open('opus_dart/native/libopus.json'))['version'])")
+          target="${{ inputs.version }}"
+          [ -n "$target" ] || target=$(python3 scripts/vendor_libopus.py --latest)
+          echo "current=$current target=$target"
+          if [ "$target" != "$current" ]; then
+            echo "version=$target" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Untrusted upstream code is compiled here, without write credentials.
+  vendor:
+    name: Vendor ${{ needs.detect.outputs.version }} and test natively
+    needs: detect
+    if: needs.detect.outputs.version != ''
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      # Fails on a digest mismatch or on any new unresolved include.
+      - name: Pin and vendor
+        run: python3 scripts/vendor_libopus.py --update "${{ needs.detect.outputs.version }}"
+      - name: Regenerate bindings
+        working-directory: opus_dart
+        run: |
+          dart pub get
+          LIBCLANG_PATH="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" \
+            dart run tool/ffigen.dart
+      - name: Native tests
+        working-directory: opus_dart
+        run: dart test test/opus_dart_native_test.dart
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vendored
+          path: |
+            opus_dart/native
+            opus_dart/lib/src/native/opus_bindings.dart
+
+  wasm:
+    name: Rebuild WASM
+    needs: vendor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: vendored
+          path: opus_dart
+      - run: ./build_wasm.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: opus_flutter_web/assets
+
+  pull-request:
+    name: Open update PR
+    needs: [detect, vendor, wasm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: vendored
+          path: opus_dart
+      - uses: actions/download-artifact@v4
+        with:
+          name: wasm
+          path: opus_flutter_web/assets
+      - id: summary
+        run: |
+          sha=$(python3 -c "import json; print(json.load(open('opus_dart/native/libopus.json'))['archive']['sha256'])")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.LIBOPUS_UPDATE_TOKEN || github.token }}
+          branch: deps/libopus-${{ needs.detect.outputs.version }}
+          commit-message: 'deps: libopus ${{ needs.detect.outputs.version }}'
+          title: 'deps: libopus ${{ needs.detect.outputs.version }}'
+          body: |
+            Automated libopus update to ${{ needs.detect.outputs.version }}.
+
+            - Archive: https://downloads.xiph.org/releases/opus/opus-${{ needs.detect.outputs.version }}.tar.gz
+            - SHA-256 (from Xiph's SHA256SUMS.txt): `${{ steps.summary.outputs.sha }}`
+            - Release notes: https://opus-codec.org/release/
+            - Vendored sources, `sources.json`, `config.h` and checksums regenerated
+            - Bindings regenerated with ffigen; WASM rebuilt from the same sources
+            - Native tests passed on macOS in the update run
+
+            Review the source diff before merging. A checksum proves the archive
+            is Xiph's; it does not prove the new code is safe. Bump package
+            versions and changelogs before releasing.

@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix: &flutter-matrix
         flutter:
-          - { name: oldest, version: '3.27.0' }
+          - { name: oldest, version: '3.38.1' }
           - { name: latest, version: '' }
     steps:
       - uses: actions/checkout@v6
@@ -30,12 +30,9 @@ jobs:
       - name: Check formatting
         if: matrix.flutter.name == 'latest'
         run: ./scripts/format.sh
-      # mockito 5.4.5, the newest that supports Dart 3.6, can't build against
-      # analyzer >=7.4 (fixed in 5.4.6, which needs Dart 3.7).
-      - name: Pin analyzer for mockito
-        if: matrix.flutter.name == 'oldest'
-        run: |
-          printf 'dependency_overrides:\n  analyzer: <7.4.0\n' > opus_dart/pubspec_overrides.yaml
+      # Checks the vendored libopus against native/checksums.sha256 offline.
+      - name: Verify vendored libopus
+        run: python3 scripts/vendor_libopus.py --check
       - name: Run static analysis
         run: ./scripts/analyze.sh
       - name: Run unit tests
@@ -46,6 +43,49 @@ jobs:
         with:
           name: coverage
           path: opus_dart/coverage/
+
+  # The build hook compiles libopus with each platform's C toolchain, so the
+  # real codec runs here on every OS, not only in mock tests.
+  native-tests:
+    name: Native tests (${{ matrix.os }}, Flutter ${{ matrix.flutter.name }})
+    runs-on: ${{ matrix.os }}
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        flutter:
+          - { name: oldest, version: '3.38.1' }
+          - { name: latest, version: '' }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter.version }}
+          channel: stable
+      - name: Run native smoke test
+        working-directory: opus_dart
+        run: dart pub get && dart test test/opus_dart_native_test.dart
+
+  # The committed bindings must be exactly what ffigen generates from the
+  # vendored headers. macOS ships a libclang that matches the runner's arch.
+  bindings-drift:
+    name: Bindings match vendored headers
+    runs-on: macos-latest
+    needs: analyze-and-test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Regenerate bindings
+        working-directory: opus_dart
+        run: |
+          dart pub get
+          LIBCLANG_PATH="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" \
+            dart run tool/ffigen.dart
+      - name: Fail on drift
+        run: git diff --exit-code -- opus_dart/lib/src/native/opus_bindings.dart
 
   build-example-android:
     name: Build example (Android, Flutter ${{ matrix.flutter.name }})
@@ -106,6 +146,41 @@ jobs:
         working-directory: opus_flutter/example
         run: flutter build macos --debug
 
+  # Release builds enable native asset linking (Flutter 3.47+), which debug
+  # builds never do, so the build hook's routing is only exercised here.
+  build-example-release:
+    name: Build example release (${{ matrix.target }}, Flutter 3.47.7)
+    runs-on: ${{ matrix.os }}
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: apk, os: ubuntu-latest }
+          - { target: ios, os: macos-latest }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        if: matrix.target == 'apk'
+        with:
+          distribution: zulu
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+      - name: Patch Gradle, AGP and Kotlin for Flutter 3.47
+        if: matrix.target == 'apk'
+        working-directory: opus_flutter/example/android
+        run: |
+          sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/"com.android.application" version "8.7.0"/"com.android.application" version "8.11.1"/' settings.gradle
+          sed -i 's/"org.jetbrains.kotlin.android" version "2.1.0"/"org.jetbrains.kotlin.android" version "2.2.20"/' settings.gradle
+          grep -q '8.11.1' settings.gradle && grep -q '2.2.20' settings.gradle
+      - name: Build release
+        working-directory: opus_flutter/example
+        run: flutter pub get && flutter build ${{ matrix.target }} --release ${{ matrix.target == 'ios' && '--no-codesign' || '' }}
+
   build-example-linux:
     name: Build example (Linux, Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest
@@ -147,7 +222,8 @@ jobs:
         # MSVC rejects unless silenced. cl.exe reads extra flags from CL.
         env:
           CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
-        run: flutter pub get && flutter build windows --debug
+        # -v prints the build hook output when native assets fail.
+        run: flutter pub get && flutter build windows --debug -v
 
   deploy-web:
     name: Build web (Flutter ${{ matrix.flutter.name }})

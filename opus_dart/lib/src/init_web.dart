@@ -14,8 +14,15 @@ import '../wrappers/opus_repacketizer.dart' as opus_repacketizer;
 import '../wrappers/opus_encoder.dart' as opus_encoder;
 import '../wrappers/opus_decoder.dart' as opus_decoder;
 
-ApiObject createApiObject(Object lib) {
-  final library = lib as DynamicLibrary;
+ApiObject createApiObject(Object? opusLib) {
+  if (opusLib == null) {
+    throw ArgumentError.value(
+      opusLib,
+      'opusLib',
+      'web builds need the wasm_ffi DynamicLibrary from the web plugin',
+    );
+  }
+  final library = opusLib as DynamicLibrary;
   registerOpaqueType<opus_encoder.OpusEncoder>();
   registerOpaqueType<opus_decoder.OpusDecoder>();
   registerOpaqueType<opus_custom.OpusCustomEncoder>();

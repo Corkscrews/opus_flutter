@@ -110,10 +110,7 @@ class _ButtonPainter extends CustomPainter {
     // ── Drop shadow — soft, offset downward ────────────────────────────────
     if (!pressed) {
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          faceRect.translate(0, 5),
-          r,
-        ),
+        RRect.fromRectAndRadius(faceRect.translate(0, 5), r),
         Paint()
           ..color = Colors.black.withValues(alpha: 0.7)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
@@ -164,8 +161,9 @@ class _ButtonPainter extends CustomPainter {
     const indicatorSize = 6.0;
     const indicatorGap = 4.0;
     final hasIndicator = indicator != ButtonIndicator.none;
-    final totalContentWidth =
-        hasIndicator ? indicatorSize + indicatorGap + textWidth : textWidth;
+    final totalContentWidth = hasIndicator
+        ? indicatorSize + indicatorGap + textWidth
+        : textWidth;
     final contentStartX = size.width / 2 - totalContentWidth / 2;
 
     final textX = hasIndicator
