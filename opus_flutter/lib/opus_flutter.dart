@@ -1,1 +1,1 @@
-export 'src/opus_flutter_load.dart';
+export 'src/opus_flutter_init.dart';

@@ -57,7 +57,9 @@ class OpusampTransportPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OpusampFileInfo(
-                          opusStorage: opusStorage, wavStorage: wavStorage),
+                        opusStorage: opusStorage,
+                        wavStorage: wavStorage,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     const OpusampSpeaker(),
@@ -80,16 +82,14 @@ class OpusampTransportPanel extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  OpusampTransportButton(
-                    onPressed: onDecode,
-                    label: 'DECODE',
-                  ),
+                  OpusampTransportButton(onPressed: onDecode, label: 'DECODE'),
                   const SizedBox(width: 3),
                   OpusampTransportButton(
                     onPressed: onPlay,
                     label: 'PLAY',
-                    activeColor:
-                        phase.isPlaying ? opusampGreen : opusampGreenDim,
+                    activeColor: phase.isPlaying
+                        ? opusampGreen
+                        : opusampGreenDim,
                     indicator: ButtonIndicator.arrow,
                     lockColor: true,
                   ),

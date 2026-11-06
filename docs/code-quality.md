@@ -1,5 +1,7 @@
 # Code Quality
 
+> **Note (4.0.0):** The native platform packages assessed here were retired in 4.0.0; see [architecture.md](./architecture.md) for the current layout.
+
 This document provides an assessment of the opus_flutter codebase's quality across multiple dimensions.
 
 ## Summary

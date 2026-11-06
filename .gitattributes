@@ -4,3 +4,7 @@
 *.dart text eol=lf
 *.yaml text eol=lf
 *.md   text eol=lf
+
+# Vendored upstream libopus must stay byte-identical to the pinned archive, or
+# checksums.sha256 fails on Windows checkouts.
+opus_dart/native/vendor/** -text

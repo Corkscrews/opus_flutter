@@ -3,8 +3,6 @@ PODS:
     - Flutter
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - opus_codec_macos (3.0.6):
-    - FlutterMacOS
   - record_macos (1.2.0):
     - FlutterMacOS
   - share_plus (0.0.1):
@@ -13,7 +11,6 @@ PODS:
 DEPENDENCIES:
   - audioplayers_darwin (from `Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/darwin`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - opus_codec_macos (from `Flutter/ephemeral/.symlinks/plugins/opus_codec_macos/macos`)
   - record_macos (from `Flutter/ephemeral/.symlinks/plugins/record_macos/macos`)
   - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
 
@@ -22,8 +19,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/darwin
   FlutterMacOS:
     :path: Flutter/ephemeral
-  opus_codec_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/opus_codec_macos/macos
   record_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/record_macos/macos
   share_plus:
@@ -32,7 +27,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   audioplayers_darwin: 4f9ca89d92d3d21cec7ec580e78ca888e5fb68bd
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
-  opus_codec_macos: 7e7e7b27d23c9316eaaef2e128f0ce214e5c0a82
   record_macos: 7f227161b93c49e7e34fe681c5891c8622c8cc8b
   share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
 

@@ -11,11 +11,7 @@ import '../../core/recorder_phase.dart';
 import 'opusamp_lcd_surface.dart';
 
 class OpusampLcd extends StatefulWidget {
-  const OpusampLcd({
-    super.key,
-    required this.phase,
-    required this.statusText,
-  });
+  const OpusampLcd({super.key, required this.phase, required this.statusText});
 
   final RecorderPhase phase;
   final String statusText;
@@ -65,14 +61,10 @@ class _OpusampLcdState extends State<OpusampLcd>
     for (int i = 0; i < pulses; i++) {
       // Drop brightness by 20–70 %.
       _flicker.value = 0.20 + _rng.nextDouble() * 0.50;
-      await Future.delayed(
-        Duration(milliseconds: 30 + _rng.nextInt(80)),
-      );
+      await Future.delayed(Duration(milliseconds: 30 + _rng.nextInt(80)));
       _flicker.value = 0.0;
       if (i < pulses - 1) {
-        await Future.delayed(
-          Duration(milliseconds: 20 + _rng.nextInt(60)),
-        );
+        await Future.delayed(Duration(milliseconds: 20 + _rng.nextInt(60)));
       }
     }
     _scheduleNextFlicker();
@@ -121,9 +113,9 @@ class _LcdPixelPainter extends CustomPainter {
     required this.infoColor,
     required Animation<double> infoScroll,
     required ValueNotifier<double> flicker,
-  })  : _infoScroll = infoScroll,
-        _flicker = flicker,
-        super(repaint: Listenable.merge([infoScroll, flicker]));
+  }) : _infoScroll = infoScroll,
+       _flicker = flicker,
+       super(repaint: Listenable.merge([infoScroll, flicker]));
 
   final String statusText;
   final Color statusColor;
@@ -144,7 +136,8 @@ class _LcdPixelPainter extends CustomPainter {
       (lcdCharWidth + _charSpacing) * _infoCellSize;
   static const _blankGlyph = [0, 0, 0, 0, 0, 0, 0];
   static const double infoCellSize = _infoCellSize;
-  static const double totalHeight = _padding +
+  static const double totalHeight =
+      _padding +
       (lcdCharHeight * _cellSize) +
       _lineGap +
       (lcdCharHeight * _infoCellSize) +
@@ -157,18 +150,42 @@ class _LcdPixelPainter extends CustomPainter {
 
     final flicker = _flicker.value;
 
-    _drawText(canvas, statusText, _padding, statusY, statusColor, flicker,
-        _cellSize, _charSlot);
+    _drawText(
+      canvas,
+      statusText,
+      _padding,
+      statusY,
+      statusColor,
+      flicker,
+      _cellSize,
+      _charSlot,
+    );
 
     final textWidth = infoText.length * _infoCharSlot;
     final totalCycle = textWidth + _scrollGap;
     final rawOffset = _infoScroll.value * totalCycle;
     final pixelOffset = (rawOffset / _infoCellSize).floor() * _infoCellSize;
 
-    _drawText(canvas, infoText, -pixelOffset, infoY, infoColor, flicker,
-        _infoCellSize, _infoCharSlot);
-    _drawText(canvas, infoText, -pixelOffset + totalCycle, infoY, infoColor,
-        flicker, _infoCellSize, _infoCharSlot);
+    _drawText(
+      canvas,
+      infoText,
+      -pixelOffset,
+      infoY,
+      infoColor,
+      flicker,
+      _infoCellSize,
+      _infoCharSlot,
+    );
+    _drawText(
+      canvas,
+      infoText,
+      -pixelOffset + totalCycle,
+      infoY,
+      infoColor,
+      flicker,
+      _infoCellSize,
+      _infoCharSlot,
+    );
 
     final gapPaint = Paint()..color = const Color(0x28000000);
     final innerSize = _cellSize - _gapWidth;

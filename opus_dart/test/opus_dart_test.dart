@@ -50,7 +50,8 @@ void main() {
         expect(
           maxSamplesPerPacket(rates[i + 1], 1),
           greaterThan(maxSamplesPerPacket(rates[i], 1)),
-          reason: '${rates[i + 1]} Hz should produce more samples than '
+          reason:
+              '${rates[i + 1]} Hz should produce more samples than '
               '${rates[i]} Hz',
         );
       }
@@ -136,10 +137,7 @@ void main() {
     });
 
     test('can be caught as Exception', () {
-      expect(
-        () => throw const OpusException(-1),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => throw const OpusException(-1), throwsA(isA<Exception>()));
     });
   });
 
@@ -163,10 +161,11 @@ void main() {
     });
 
     test(
-        'restrictedLowdelay maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
-        () {
-      expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051);
-    });
+      'restrictedLowdelay maps to OPUS_APPLICATION_RESTRICTED_LOWDELAY (2051)',
+      () {
+        expect(OPUS_APPLICATION_RESTRICTED_LOWDELAY, 2051);
+      },
+    );
   });
 
   group('FrameTime enum', () {
