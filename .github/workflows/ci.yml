@@ -6,33 +6,94 @@ on:
   pull_request:
     branches: [master, development]
 
+# Every job runs on the oldest Flutter the packages support (the `flutter:`
+# lower bound in the pubspecs) and on the latest stable release.
+# An empty version makes flutter-action use the newest release of the channel.
+
 jobs:
   analyze-and-test:
-    name: Analyze & Test
+    name: Analyze & Test (Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: &flutter-matrix
+        flutter:
+          - { name: oldest, version: '3.38.1' }
+          - { name: latest, version: '' }
     steps:
       - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.4'
+          flutter-version: ${{ matrix.flutter.version }}
           channel: stable
+      # dart format output differs between Dart versions, so check it on one.
       - name: Check formatting
+        if: matrix.flutter.name == 'latest'
         run: ./scripts/format.sh
+      # Checks the vendored libopus against native/checksums.sha256 offline.
+      - name: Verify vendored libopus
+        run: python3 scripts/vendor_libopus.py --check
       - name: Run static analysis
         run: ./scripts/analyze.sh
       - name: Run unit tests
         run: ./scripts/unit_tests.sh
       - name: Upload coverage
-        if: always()
+        if: always() && matrix.flutter.name == 'latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: opus_dart/coverage/
 
+  # The build hook compiles libopus with each platform's C toolchain, so the
+  # real codec runs here on every OS, not only in mock tests.
+  native-tests:
+    name: Native tests (${{ matrix.os }}, Flutter ${{ matrix.flutter.name }})
+    runs-on: ${{ matrix.os }}
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        flutter:
+          - { name: oldest, version: '3.38.1' }
+          - { name: latest, version: '' }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter.version }}
+          channel: stable
+      - name: Run native smoke test
+        working-directory: opus_dart
+        run: dart pub get && dart test test/opus_dart_native_test.dart
+
+  # The committed bindings must be exactly what ffigen generates from the
+  # vendored headers. macOS ships a libclang that matches the runner's arch.
+  bindings-drift:
+    name: Bindings match vendored headers
+    runs-on: macos-latest
+    needs: analyze-and-test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Regenerate bindings
+        working-directory: opus_dart
+        run: |
+          dart pub get
+          LIBCLANG_PATH="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" \
+            dart run tool/ffigen.dart
+      - name: Fail on drift
+        run: git diff --exit-code -- opus_dart/lib/src/native/opus_bindings.dart
+
   build-example-android:
-    name: Build example (Android)
+    name: Build example (Android, Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest
     needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix: *flutter-matrix
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
@@ -41,21 +102,39 @@ jobs:
           java-version: 17
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.4'
+          flutter-version: ${{ matrix.flutter.version }}
           channel: stable
+      # CI-only patches; the example keeps its checked-in toolchain.
+      # Latest Flutter requires Gradle >= 8.14, AGP >= 8.11.1 and Kotlin >= 2.2.20.
+      - name: Patch Gradle, AGP and Kotlin for latest Flutter
+        if: matrix.flutter.name == 'latest'
+        working-directory: opus_flutter/example/android
+        run: |
+          sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/"com.android.application" version "8.7.0"/"com.android.application" version "8.11.1"/' settings.gradle
+          sed -i 's/"org.jetbrains.kotlin.android" version "2.1.0"/"org.jetbrains.kotlin.android" version "2.2.20"/' settings.gradle
+          grep -q '8.11.1' settings.gradle && grep -q '2.2.20' settings.gradle
+      # record_android needs minSdk 23; Flutter 3.27 defaults to 21.
+      - name: Patch minSdk for oldest Flutter
+        if: matrix.flutter.name == 'oldest'
+        working-directory: opus_flutter/example/android
+        run: sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' app/build.gradle
       - name: Build APK
         working-directory: opus_flutter/example
         run: flutter pub get && flutter build apk --debug
 
   build-example-apple:
-    name: Build example (iOS + macOS)
+    name: Build example (iOS + macOS, Flutter ${{ matrix.flutter.name }})
     runs-on: macos-latest
     needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix: *flutter-matrix
     steps:
       - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.4'
+          flutter-version: ${{ matrix.flutter.version }}
           channel: stable
       - name: Install dependencies
         working-directory: opus_flutter/example
@@ -67,15 +146,53 @@ jobs:
         working-directory: opus_flutter/example
         run: flutter build macos --debug
 
+  # Release builds enable native asset linking (Flutter 3.47+), which debug
+  # builds never do, so the build hook's routing is only exercised here.
+  build-example-release:
+    name: Build example release (${{ matrix.target }}, Flutter 3.47.7)
+    runs-on: ${{ matrix.os }}
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: apk, os: ubuntu-latest }
+          - { target: ios, os: macos-latest }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        if: matrix.target == 'apk'
+        with:
+          distribution: zulu
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+      - name: Patch Gradle, AGP and Kotlin for Flutter 3.47
+        if: matrix.target == 'apk'
+        working-directory: opus_flutter/example/android
+        run: |
+          sed -i 's/gradle-8\.9-all/gradle-8.14-all/' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/"com.android.application" version "8.7.0"/"com.android.application" version "8.11.1"/' settings.gradle
+          sed -i 's/"org.jetbrains.kotlin.android" version "2.1.0"/"org.jetbrains.kotlin.android" version "2.2.20"/' settings.gradle
+          grep -q '8.11.1' settings.gradle && grep -q '2.2.20' settings.gradle
+      - name: Build release
+        working-directory: opus_flutter/example
+        run: flutter pub get && flutter build ${{ matrix.target }} --release ${{ matrix.target == 'ios' && '--no-codesign' || '' }}
+
   build-example-linux:
-    name: Build example (Linux)
+    name: Build example (Linux, Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest
     needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix: *flutter-matrix
     steps:
       - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.4'
+          flutter-version: ${{ matrix.flutter.version }}
           channel: stable
       - name: Install system dependencies
         run: |
@@ -86,23 +203,57 @@ jobs:
         run: flutter pub get && flutter build linux --debug
 
   build-example-windows:
-    name: Build example (Windows)
-    runs-on: windows-latest
+    name: Build example (Windows, Flutter ${{ matrix.flutter.name }})
+    # Flutter 3.27 doesn't detect Visual Studio 2026 (windows-latest).
+    runs-on: ${{ matrix.flutter.name == 'oldest' && 'windows-2022' || 'windows-latest' }}
     needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix: *flutter-matrix
     steps:
       - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.4'
+          flutter-version: ${{ matrix.flutter.version }}
           channel: stable
       - name: Build Windows
         working-directory: opus_flutter/example
-        run: flutter pub get && flutter build windows --debug
+        # audioplayers_windows includes <experimental/coroutine>, which newer
+        # MSVC rejects unless silenced. cl.exe reads extra flags from CL.
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+        # -v prints the build hook output when native assets fail.
+        run: flutter pub get && flutter build windows --debug -v
 
   deploy-web:
-    name: Build & Deploy Web
+    name: Build web (Flutter ${{ matrix.flutter.name }})
     runs-on: ubuntu-latest
     needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix: *flutter-matrix
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter.version }}
+          channel: stable
+      - name: Build web (release)
+        working-directory: opus_flutter/example
+        run: flutter pub get && flutter build web --release --base-href /opus_flutter/
+      # Only the latest build is deployed to GitHub Pages.
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && matrix.flutter.name == 'latest'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: opus_flutter/example/build/web
+
+  # Separate job so PR builds never claim the protected environment.
+  deploy-pages:
+    name: Deploy web to GitHub Pages
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: deploy-web
     permissions:
       pages: write
       id-token: write
@@ -110,20 +261,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.4'
-          channel: stable
-      - name: Build web (release)
-        working-directory: opus_flutter/example
-        run: flutter pub get && flutter build web --release --base-href /opus_flutter/
-      - name: Upload Pages artifact
-        if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: opus_flutter/example/build/web
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push'
         id: deployment
         uses: actions/deploy-pages@v4

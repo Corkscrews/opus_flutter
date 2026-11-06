@@ -8,12 +8,8 @@ import '../src/proxy_ffi.dart' as ffi;
 
 typedef _opus_get_version_string_C = ffi.Pointer<ffi.Uint8> Function();
 typedef _opus_get_version_string_Dart = ffi.Pointer<ffi.Uint8> Function();
-typedef _opus_strerror_C = ffi.Pointer<ffi.Uint8> Function(
-  ffi.Int32 error,
-);
-typedef _opus_strerror_Dart = ffi.Pointer<ffi.Uint8> Function(
-  int error,
-);
+typedef _opus_strerror_C = ffi.Pointer<ffi.Uint8> Function(ffi.Int32 error);
+typedef _opus_strerror_Dart = ffi.Pointer<ffi.Uint8> Function(int error);
 
 abstract class OpusLibInfoFunctions {
   ffi.Pointer<ffi.Uint8> opus_get_version_string();
@@ -22,14 +18,15 @@ abstract class OpusLibInfoFunctions {
 
 class FunctionsAndGlobals implements OpusLibInfoFunctions {
   FunctionsAndGlobals(ffi.DynamicLibrary dynamicLibrary)
-      : _opus_get_version_string = dynamicLibrary.lookupFunction<
-            _opus_get_version_string_C, _opus_get_version_string_Dart>(
-          'opus_get_version_string',
-        ),
-        _opus_strerror = dynamicLibrary
-            .lookupFunction<_opus_strerror_C, _opus_strerror_Dart>(
-          'opus_strerror',
-        );
+    : _opus_get_version_string = dynamicLibrary
+          .lookupFunction<
+            _opus_get_version_string_C,
+            _opus_get_version_string_Dart
+          >('opus_get_version_string'),
+      _opus_strerror = dynamicLibrary
+          .lookupFunction<_opus_strerror_C, _opus_strerror_Dart>(
+            'opus_strerror',
+          );
 
   @override
   ffi.Pointer<ffi.Uint8> opus_get_version_string() {
@@ -39,9 +36,7 @@ class FunctionsAndGlobals implements OpusLibInfoFunctions {
   final _opus_get_version_string_Dart _opus_get_version_string;
 
   @override
-  ffi.Pointer<ffi.Uint8> opus_strerror(
-    int error,
-  ) {
+  ffi.Pointer<ffi.Uint8> opus_strerror(int error) {
     return _opus_strerror(error);
   }
 

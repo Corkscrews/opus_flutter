@@ -1,21 +1,28 @@
 /// Rewrites path dependencies in a package's pubspec.yaml to version constraints.
 ///
-/// Usage: dart run scripts/prepare_publish.dart <package_dir>
+/// Usage: dart run scripts/prepare_publish.dart <package_dir> [--overrides]
 ///
 /// For each dependency using `path:`, this script reads the target package's
 /// version from its pubspec.yaml and replaces the path reference with a caret
 /// version constraint (e.g. `^3.0.0`).
+///
+/// With `--overrides`, it also writes a `pubspec_overrides.yaml` that points
+/// those dependencies back at their paths, so a dry run can resolve versions
+/// that are not on pub.dev yet.
 library;
 
 import 'dart:io';
 
 void main(List<String> args) {
   if (args.isEmpty) {
-    stderr.writeln('Usage: dart run scripts/prepare_publish.dart <package_dir>');
+    stderr.writeln(
+        'Usage: dart run scripts/prepare_publish.dart <package_dir> [--overrides]');
     exit(1);
   }
 
   final packageDir = args[0];
+  final writeOverrides = args.contains('--overrides');
+  final overrides = <String>[];
   final pubspecFile = File('$packageDir/pubspec.yaml');
 
   if (!pubspecFile.existsSync()) {
@@ -51,6 +58,7 @@ void main(List<String> args) {
             final indent = line.substring(0, line.indexOf(depName));
 
             result.add('$indent$depName: ^$version');
+            overrides.add('  $depName:\n    path: $relativePath');
             stdout.writeln('  $depName: path -> ^$version');
             i += 2;
             continue;
@@ -65,4 +73,10 @@ void main(List<String> args) {
 
   pubspecFile.writeAsStringSync('${result.join('\n')}\n');
   stdout.writeln('Updated $packageDir/pubspec.yaml');
+
+  if (writeOverrides && overrides.isNotEmpty) {
+    File('$packageDir/pubspec_overrides.yaml')
+        .writeAsStringSync('dependency_overrides:\n${overrides.join('\n')}\n');
+    stdout.writeln('Wrote $packageDir/pubspec_overrides.yaml');
+  }
 }

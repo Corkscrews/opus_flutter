@@ -79,18 +79,6 @@ void main() {
 
       expect(OpusFlutterPlatform.instance.load(), isA<Future<Object>>());
     });
-
-    test('opusVersion is 1.5.2', () {
-      expect(OpusFlutterPlatform.opusVersion, '1.5.2');
-    });
-
-    test('opusVersion is a non-empty semver string', () {
-      expect(OpusFlutterPlatform.opusVersion, isNotEmpty);
-      expect(
-        RegExp(r'^\d+\.\d+\.\d+$').hasMatch(OpusFlutterPlatform.opusVersion),
-        isTrue,
-      );
-    });
   });
 
   group('OpusFlutterPlatformUnsupported', () {
@@ -121,7 +109,9 @@ void main() {
       final unsupported = OpusFlutterPlatformUnsupported();
       OpusFlutterPlatform.instance = unsupported;
       expect(
-          OpusFlutterPlatform.instance, isA<OpusFlutterPlatformUnsupported>());
+        OpusFlutterPlatform.instance,
+        isA<OpusFlutterPlatformUnsupported>(),
+      );
     });
   });
 }

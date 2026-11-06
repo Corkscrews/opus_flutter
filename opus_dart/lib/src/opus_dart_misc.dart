@@ -39,7 +39,8 @@ String _asString(Pointer<Uint8> pointer) {
   }
   if (i == maxStringLength) {
     throw StateError(
-        '_asString: no null terminator found within $maxStringLength bytes');
+      '_asString: no null terminator found within $maxStringLength bytes',
+    );
   }
   return utf8.decode(pointer.asTypedList(i));
 }
@@ -59,13 +60,11 @@ class OpusException implements Exception {
 class OpusDestroyedError extends StateError {
   /// Creates an error indicating a destroyed encoder was used.
   OpusDestroyedError.encoder()
-      : super(
-            'OpusDestroyedException: This OpusEncoder was already destroyed!');
+    : super('OpusDestroyedException: This OpusEncoder was already destroyed!');
 
   /// Creates an error indicating a destroyed decoder was used.
   OpusDestroyedError.decoder()
-      : super(
-            'OpusDestroyedException: This OpusDecoder was already destroyed!');
+    : super('OpusDestroyedException: This OpusDecoder was already destroyed!');
 }
 
 late ApiObject opus;
@@ -78,12 +77,14 @@ class ApiObject {
 
   // coverage:ignore-start
   ApiObject(DynamicLibrary lib, this.allocator)
-      : libinfo = opus_libinfo.FunctionsAndGlobals(lib),
-        encoder = opus_encoder.FunctionsAndGlobals(lib),
-        decoder = opus_decoder.FunctionsAndGlobals(lib);
+    : libinfo = opus_libinfo.FunctionsAndGlobals(lib),
+      encoder = opus_encoder.FunctionsAndGlobals(lib),
+      decoder = opus_decoder.FunctionsAndGlobals(lib);
   // coverage:ignore-end
 
-  ApiObject.test({
+  /// Builds an [ApiObject] from already-bound function tables. The native
+  /// backend and the mock tests both use this constructor.
+  ApiObject.fromFunctions({
     required this.libinfo,
     required this.encoder,
     required this.decoder,
@@ -91,14 +92,18 @@ class ApiObject {
   });
 }
 
-/// Must be called to initialize this library.
+bool _initialized = false;
+
+/// Must be called once before using any encoder, decoder or stream.
 ///
-/// [opusLib] must be a `DynamicLibrary` pointing to a native libopus binary.
-/// It accepts [Object] so callers don't need to cast from the platform
-/// interface's `Future<Object>` return type -- on native platforms this is a
-/// `dart:ffi` DynamicLibrary, on web a `wasm_ffi` DynamicLibrary.
+/// On native platforms libopus is the bundled code asset, so call this with
+/// no argument. On web, pass the `wasm_ffi` `DynamicLibrary` from the web
+/// plugin. Later calls do nothing, so the first backend stays in use and live
+/// codec objects are never orphaned. Each isolate has its own [opus].
 // coverage:ignore-start
-void initOpus(Object opusLib) {
+void initOpus([Object? opusLib]) {
+  if (_initialized) return;
   opus = createApiObject(opusLib);
+  _initialized = true;
 }
 // coverage:ignore-end

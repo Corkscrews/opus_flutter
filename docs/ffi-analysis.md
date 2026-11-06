@@ -1,5 +1,7 @@
 # FFI and wasm_ffi Analysis
 
+> **Note (4.0.0):** Native code now uses ffigen-generated `@Native` bindings bound to the build-hook code asset (`lib/src/native/`) instead of `DynamicLibrary` lookups, and the encoder CTL goes through the fixed-signature `opus_codec_encoder_ctl_int` shim on native and web. Sections describing native `DynamicLibrary` loading, per-platform loaders or the variadic CTL fallback describe 3.x.
+
 This document catalogues every use of `dart:ffi`, `package:ffi`, and `package:wasm_ffi`
 across the project. Its purpose is to serve as a reference for identifying potential bugs,
 memory safety issues, and behavioral differences between native and web platforms.

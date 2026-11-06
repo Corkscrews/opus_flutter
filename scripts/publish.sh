@@ -39,14 +39,7 @@ done
 # ---------------------------------------------------------------------------
 TIER_1_PACKAGES=("opus_dart:dart" "opus_flutter_platform_interface:flutter")
 
-TIER_2_PACKAGES=(
-  "opus_flutter_android:flutter"
-  "opus_flutter_ios:flutter"
-  "opus_flutter_linux:flutter"
-  "opus_flutter_macos:flutter"
-  "opus_flutter_windows:flutter"
-  "opus_flutter_web:flutter"
-)
+TIER_2_PACKAGES=("opus_flutter_web:flutter")
 
 TIER_3_PACKAGES=("opus_flutter:flutter")
 
@@ -60,6 +53,7 @@ cleanup() {
     if [ -f "${f}.bak" ]; then
       mv "${f}.bak" "$f"
     fi
+    rm -f "$(dirname "$f")/pubspec_overrides.yaml"
   done
 }
 trap cleanup EXIT
@@ -70,12 +64,13 @@ trap cleanup EXIT
 
 prepare_package() {
   local dir="$1"
+  shift
   local pubspec="$ROOT_DIR/$dir/pubspec.yaml"
 
   cp "$pubspec" "${pubspec}.bak"
   modified_pubspecs+=("$pubspec")
 
-  ( cd "$ROOT_DIR" && dart run scripts/prepare_publish.dart "$dir" )
+  ( cd "$ROOT_DIR" && dart run scripts/prepare_publish.dart "$dir" "$@" )
 }
 
 publish_package() {
@@ -84,11 +79,14 @@ publish_package() {
   local tool="${entry##*:}"
 
   log_info "Publishing ${BOLD}$dir${NC} ($tool pub publish)…"
-  prepare_package "$dir"
-
   if $DRY_RUN; then
-    ( cd "$ROOT_DIR/$dir" && $tool pub publish --dry-run )
+    # A dry run uploads nothing, so sibling versions bumped in this release
+    # are not on pub.dev yet. Resolve them from their paths instead; pub warns
+    # about the overrides, hence --ignore-warnings (errors still fail).
+    prepare_package "$dir" --overrides
+    ( cd "$ROOT_DIR/$dir" && $tool pub publish --dry-run --ignore-warnings )
   else
+    prepare_package "$dir"
     ( cd "$ROOT_DIR/$dir" && $tool pub publish --force )
   fi
 
@@ -124,7 +122,7 @@ fi
 publish_tier "Tier 1 — core packages" "${TIER_1_PACKAGES[@]}"
 wait_for_indexing
 
-publish_tier "Tier 2 — platform packages" "${TIER_2_PACKAGES[@]}"
+publish_tier "Tier 2 — web package" "${TIER_2_PACKAGES[@]}"
 wait_for_indexing
 
 publish_tier "Tier 3 — app-facing package" "${TIER_3_PACKAGES[@]}"

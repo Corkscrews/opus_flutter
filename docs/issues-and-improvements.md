@@ -2,6 +2,11 @@
 
 This document lists known issues, potential risks, and suggested improvements for the opus_flutter project.
 
+> **4.0.0 supersedes the platform-specific items below.** libopus is now vendored in
+> `opus_dart/native` and compiled by a build hook on every native platform, and the
+> per-platform packages are retired. Items 3, 8, 9, 12, 13, 14 and 15 describe the
+> 3.x packages and are kept as history. See [architecture.md](./architecture.md).
+
 ```mermaid
 graph LR
     subgraph Critical
@@ -178,7 +183,7 @@ FFI-dependent code (encoding, decoding, streaming, packet inspection) requires t
 
 ### 14. ~~Add version checking~~ RESOLVED
 
-**Status:** Fixed. Added `static const String opusVersion = '1.5.2'` to `OpusFlutterPlatform` in the platform interface. All platforms (Android, iOS, macOS, Windows, Web) bundle opus v1.5.2.
+**Status:** Fixed in 3.x with `OpusFlutterPlatform.opusVersion`. **Superseded in 4.0.0:** the constant is removed; the version is pinned once in `opus_dart/native/libopus.json` and `getOpusVersion()` reports the linked library. A native test asserts the two agree.
 
 ### 15. ~~Modernize Android build configuration~~ RESOLVED
 
@@ -189,10 +194,6 @@ FFI-dependent code (encoding, decoding, streaming, packet inspection) requires t
 - `namespace` set directly (removed conditional check).
 - Example app also updated: AGP `8.7.0`, Gradle `8.9`, Java `VERSION_17`.
 
-### 16. Bundle opus sources for reproducible builds
+### 16. ~~Bundle opus sources for reproducible builds~~ RESOLVED
 
-Currently, Android fetches opus at build time via `FetchContent`, iOS/macOS use a build script that clones from GitHub, and Windows/Web use Docker. If GitHub is unavailable or the tag is removed, builds will fail.
-
-**Recommendation:**
-- Consider vendoring a source archive or using a git submodule for opus across all platforms.
-- Pin checksums for downloaded archives.
+**Status:** Fixed in 4.0.0. The upstream release is vendored in `opus_dart/native/vendor/opus`, pinned with Xiph's published SHA-256 in `libopus.json`, and checked file by file against `checksums.sha256` in CI (`scripts/vendor_libopus.py --check`). Native and web builds use these files only; no build fetches libopus from the network.

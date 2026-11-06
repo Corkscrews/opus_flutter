@@ -30,18 +30,12 @@ abstract class OpusFlutterPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  /// The version of the bundled opus library.
-  static const String opusVersion = '1.5.2';
-
-  /// Obtains a `DynamicLibrary` of `libopus` on the current platform.
+  /// Loads the WASM build of `libopus` on the web and returns its
+  /// [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html).
   ///
-  /// On platforms where there is [dart:ffi], the returned object is a
-  /// [dart:ffi DynamicLibrary](https://api.dart.dev/stable/dart-ffi/DynamicLibrary-class.html),
-  /// so it is safe to cast it.
-  ///
-  /// On the web, where there is no [dart:ffi], the returned object is a
-  /// [wasm_ffi DynamicLibrary](https://pub.dev/documentation/wasm_ffi/latest/wasm_ffi/DynamicLibrary-class.html),
-  /// so it is safe to cast it.
+  /// Native platforms have no implementation: libopus there is a code asset
+  /// built by `opus_codec_dart`, and `opus_codec.initializeOpus()` never
+  /// calls this.
   Future<Object> load() {
     throw UnimplementedError('load() has not been implemented.');
   }

@@ -10,12 +10,14 @@ class OpusWavCodec {
     final output = <Uint8List>[Uint8List(demoWavHeaderSize)];
 
     await Stream<Uint8List?>.fromIterable(packets)
-        .transform(StreamOpusDecoder.bytes(
-          floatOutput: false,
-          sampleRate: demoSampleRate,
-          channels: demoChannels,
-          copyOutput: true,
-        ))
+        .transform(
+          StreamOpusDecoder.bytes(
+            floatOutput: false,
+            sampleRate: demoSampleRate,
+            channels: demoChannels,
+            copyOutput: true,
+          ),
+        )
         .cast<Uint8List>()
         .forEach(output.add);
 

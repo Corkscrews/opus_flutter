@@ -84,10 +84,7 @@ class _SpeakerGrillePainter extends CustomPainter {
       radius,
       Paint()
         ..shader = RadialGradient(
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.45),
-          ],
+          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
           stops: const [0.55, 1.0],
         ).createShader(Rect.fromCircle(center: center, radius: radius)),
     );
